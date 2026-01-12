@@ -1,6 +1,6 @@
 {
-  "name": "starisian/sparxstar-starter",
-  "description": "A WordPress plugin template by Starisian Technologies with PSR-4 autoloading and modular architecture.",
+  "name": "starisian/sparxstar-3iatlas-dictionary",
+  "description": "SPARXSTAR 3iAtlas Dictionary - A WordPress plugin for dictionary management with SCF and WPGraphQL integration.",
   "license": "proprietary",
   "authors": [
     {
@@ -43,6 +43,18 @@
   "minimum-stability": "dev",
   "prefer-stable": true,
   "extra": {
-    "installer-name": "starisian-plugin-template"
+    "installer-name": "sparxstar-3iatlas-dictionary",
+    "wordpress-plugin-dependencies": {
+      "Smart Custom Fields (SCF)": {
+        "slug": "smart-custom-fields",
+        "required": true,
+        "uri": "https://wordpress.org/plugins/smart-custom-fields/"
+      },
+      "WPGraphQL": {
+        "slug": "wp-graphql",
+        "required": true,
+        "uri": "https://www.wpgraphql.com/"
+      }
+    }
   }
 }
