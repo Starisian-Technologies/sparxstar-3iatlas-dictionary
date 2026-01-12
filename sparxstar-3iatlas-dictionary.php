@@ -31,8 +31,13 @@ if (!defined('SPARXSTAR_3IATLAS_URL')) {
 if (!defined('SPARXSTAR_3IATLAS_VERSION')) {
 	define('SPARXSTAR_3IATLAS_VERSION', '1.0.0');
 }
-if (!defined('SPARXSTAR_3IATLAS_NAMESPACE')) {
-	define('SPARXSTAR_3IATLAS_NAMESPACE', 'Starisian\\src\\');
+
+// Define constants expected by the Autoloader
+if (!defined('STARISIAN_PATH')) {
+	define('STARISIAN_PATH', SPARXSTAR_3IATLAS_PATH);
+}
+if (!defined('STARISIAN_NAMESPACE')) {
+	define('STARISIAN_NAMESPACE', 'Starisian\\src\\');
 }
 
 use Starisian\src\includes\Autoloader;

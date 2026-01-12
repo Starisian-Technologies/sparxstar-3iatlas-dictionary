@@ -47,9 +47,13 @@ final class Sparxstar3IAtlasDictionary
 
 	private function load_dependencies(): void {
 		if (!class_exists('Starisian\src\core\PluginCore', false)) {
+			$message = 'SPARXSTAR 3iAtlas Dictionary: Main class PluginCore not found.';
 			if (defined('WP_DEBUG') && WP_DEBUG) {
-				error_log('SPARXSTAR 3iAtlas Dictionary: Main class PluginCore not found.');
+				error_log($message);
 			}
+			add_action('admin_notices', function () use ($message): void {
+				echo '<div class="notice notice-error"><p>' . esc_html($message) . '</p></div>';
+			});
 			return;
 		}
 		$this->core = \Starisian\src\core\PluginCore::getInstance();
@@ -98,11 +102,6 @@ final class Sparxstar3IAtlasDictionary
 	{
 		_doing_it_wrong(__FUNCTION__, esc_html__('Serialization is not allowed.', 'sparxstar-3iatlas-dictionary'), self::VERSION);
 		return [];
-	}
-
-	private function __destruct()
-	{
-		_doing_it_wrong(__FUNCTION__, esc_html__('Destruction is not allowed.', 'sparxstar-3iatlas-dictionary'), self::VERSION);
 	}
 
 	public function __call($name, $arguments): void
