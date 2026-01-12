@@ -1,0 +1,62 @@
+{
+    "name": "sparxstar-starter",
+    "private": true,
+    "scripts": {
+        "lint": "npm run lint:js && npm run lint:css",
+        "lint:js": "eslint .",
+        "lint:css": "stylelint \"**/*.css\"",
+        "format": "prettier --write .",
+        "test": "jest",
+        "prepare": "husky"
+    },
+    "lint-staged": {
+        "*.{js,ts,jsx,tsx}": [
+            "eslint --fix",
+            "prettier --write"
+        ],
+        "*.css": [
+            "stylelint --fix",
+            "prettier --write"
+        ],
+        "*.php": [
+            "phpcs -q",
+            "composer run analyze:php"
+        ],
+        "*.{json,md,yml,yaml}": [
+            "prettier --write"
+        ]
+    },
+    "version": "1.0.0",
+    "description": "A template repository for building WordPress plugins that follow Starisian coding conventions and SPARXSTAR deployment needs.",
+    "main": "commitlint.config.js",
+    "directories": {
+        "doc": "docs",
+        "example": "examples",
+        "test": "tests"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Starisian-Technologies/sparxstar-starter.git"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "type": "commonjs",
+    "bugs": {
+        "url": "https://github.com/Starisian-Technologies/sparxstar-starter/issues"
+    },
+    "homepage": "https://github.com/Starisian-Technologies/sparxstar-starter#readme",
+    "devDependencies": {
+        "@eslint/js": "^9.39.2",
+        "eslint": "^9.39.2",
+        "eslint-config-prettier": "^10.1.8",
+        "eslint-plugin-prettier": "^5.5.4",
+        "globals": "^17.0.0",
+        "husky": "^9.1.7",
+        "jest": "^30.2.0",
+        "lint-staged": "^16.2.7",
+        "prettier": "^3.7.4",
+        "stylelint": "^16.26.1",
+        "stylelint-config-standard": "^39.0.1"
+    }
+}

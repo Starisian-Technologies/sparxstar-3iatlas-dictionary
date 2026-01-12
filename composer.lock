@@ -1,0 +1,6 @@
+{
+    "_readme": ["Lock file placeholder. Run 'composer update' to regenerate with actual dependencies."],
+    "packages": [],
+    "packages-dev": [],
+    "plugin-api-version": "2.6.0"
+}

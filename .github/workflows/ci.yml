@@ -1,0 +1,70 @@
+name: CI
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
+
+permissions:
+    contents: read
+
+jobs:
+    build-and-test:
+        name: Build & Test (PHP ${{ matrix.php-version }})
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                php-version: ['8.2', '8.3', '8.4']
+
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v4
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@44454db4f0199b8b9685a5d763dc37cbf79108e1
+              with:
+                  php-version: ${{ matrix.php-version }}
+                  extensions: mbstring, intl, json
+                  tools: composer:v2
+                  coverage: none
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: 'npm'
+
+            - name: Get Composer Cache Directory
+              id: composer-cache
+              run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+            - name: Cache Composer Dependencies
+              uses: actions/cache@v4
+              with:
+                  path: ${{ steps.composer-cache.outputs.dir }}
+                  key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-composer-
+
+            - name: Install PHP Dependencies
+              run: composer install --no-interaction --prefer-dist
+
+            - name: Install JS Dependencies
+              run: npm ci
+
+            - name: Lint JS & CSS
+              run: npm run lint
+
+            - name: Lint PHP
+              run: composer run lint:php
+
+            - name: Static Analysis (PHPStan)
+              run: composer run analyze:php
+
+            - name: Test PHP
+              run: composer run test:php
+
+            - name: Test JS
+              run: npm test

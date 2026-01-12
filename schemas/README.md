@@ -1,0 +1,1 @@
+Shared JSON/YAML schemas.

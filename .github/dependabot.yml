@@ -1,0 +1,37 @@
+version: 2
+updates:
+    # PHP/Composer dependencies
+    - package-ecosystem: 'composer'
+      directory: '/' # Root of plugin repo
+      schedule:
+          interval: 'weekly'
+      open-pull-requests-limit: 5
+      commit-message:
+          prefix: 'chore(deps)'
+      ignore:
+          - dependency-name: 'phpunit/phpunit'
+            versions: ['<9']
+
+    # JS/Node dependencies for asset builds (optional)
+    - package-ecosystem: 'npm'
+      directory: '/' # Or /assets/ if you separate frontend
+      schedule:
+          interval: 'weekly'
+      open-pull-requests-limit: 5
+
+    # GitHub Actions
+    - package-ecosystem: 'github-actions'
+      directory: '/'
+      schedule:
+          interval: 'weekly'
+      open-pull-requests-limit: 5
+      commit-message:
+          prefix: 'chore(deps)'
+
+    # GitHub Actions workflow dependencies
+    - package-ecosystem: 'github-actions'
+      directory: '/'
+      schedule:
+          interval: 'weekly'
+      commit-message:
+          prefix: 'chore(ci)'
