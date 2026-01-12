@@ -2,6 +2,8 @@
     "name": "sparxstar-starter",
     "private": true,
     "scripts": {
+        "build": "npm run build:css",
+        "build:css": "tailwindcss -i ./src/css/iatlas-dictionary-form.css -o ./assets/css/iatlas-dictionary-form.css --minify",
         "lint": "npm run lint:js && npm run lint:css",
         "lint:js": "eslint .",
         "lint:css": "stylelint \"**/*.css\"",
@@ -48,6 +50,8 @@
     "homepage": "https://github.com/Starisian-Technologies/sparxstar-starter#readme",
     "devDependencies": {
         "@eslint/js": "^9.39.2",
+        "@wordpress/scripts": "^31.2.0",
+        "autoprefixer": "^10.4.23",
         "eslint": "^9.39.2",
         "eslint-config-prettier": "^10.1.8",
         "eslint-plugin-prettier": "^5.5.4",
@@ -55,8 +59,18 @@
         "husky": "^9.1.7",
         "jest": "^30.2.0",
         "lint-staged": "^16.2.7",
+        "postcss": "^8.5.6",
         "prettier": "^3.7.4",
         "stylelint": "^16.26.1",
-        "stylelint-config-standard": "^39.0.1"
+        "stylelint-config-standard": "^39.0.1",
+        "tailwindcss": "^4.1.18"
+    },
+    "dependencies": {
+        "@apollo/client": "^4.0.12",
+        "graphql": "^16.12.0",
+        "lucide-react": "^0.562.0",
+        "react": "^19.2.3",
+        "react-dom": "^19.2.3",
+        "react-virtuoso": "^4.18.1"
     }
 }

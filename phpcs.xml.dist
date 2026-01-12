@@ -24,12 +24,25 @@
   <arg name="parallel" value="8"/>
 
   <!-- Coding standard rules -->
-  <rule ref="WordPress-Extra"/>
+  <rule ref="WordPress-Extra">
+    <exclude name="Generic.WhiteSpace.DisallowSpaceIndent"/>
+  </rule>
   <rule ref="WordPress-Docs"/>
+  <rule ref="WordPress-VIP-Go"/>
   <rule ref="Generic.Commenting.Todo"/>
 
+  <!-- Enforce spaces, not tabs -->
+  <arg name="tab-width" value="4"/>
+  <rule ref="Generic.WhiteSpace.ScopeIndent">
+    <properties>
+      <property name="indent" value="4"/>
+      <property name="tabIndent" value="false"/>
+    </properties>
+  </rule>
+  <rule ref="Generic.WhiteSpace.DisallowTabIndent"/>
+
   <!-- Minimum WordPress version for compatibility checks -->
-  <config name="minimum_wp_version" value="6.4"/>
+  <config name="minimum_wp_version" value="6.8"/>
 
   <!-- Text domain config (override per project if needed) -->
   <rule ref="WordPress.WP.I18n">
@@ -57,12 +70,8 @@
     <exclude-pattern>tests/*Test.php</exclude-pattern>
   </rule>
 
-  <!-- Optional: Uncomment if PHPCompatibilityWP is installed -->
-  <!--
+  <!-- PHPCompatibility checks -->
   <config name="testVersion" value="8.2-"/>
-  <rule ref="PHPCompatibilityWP">
-    <include-pattern>*.php</include-pattern>
-  </rule>
-  -->
+  <rule ref="PHPCompatibilityWP"/>
 
 </ruleset>
