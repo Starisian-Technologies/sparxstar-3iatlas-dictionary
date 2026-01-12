@@ -9,8 +9,6 @@
 
     // Initialize when DOM is ready
     $(document).ready(function() {
-        console.log('SPARXSTAR 3iAtlas Dictionary admin initialized');
-        
         // Add your admin JavaScript code here
     });
 

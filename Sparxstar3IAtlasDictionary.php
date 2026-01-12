@@ -75,10 +75,19 @@ final class Sparxstar3IAtlasDictionary
 	{
 		echo '<div class="notice notice-error"><p>';
 		if (version_compare(PHP_VERSION, self::MINIMUM_PHP_VERSION, '<')) {
-			echo esc_html__('This plugin requires PHP version ' . self::MINIMUM_PHP_VERSION . ' or higher.', 'sparxstar-3iatlas-dictionary') . '<br>';
+			/* translators: %s: Minimum PHP version required */
+			printf(
+				esc_html__('This plugin requires PHP version %s or higher.', 'sparxstar-3iatlas-dictionary'),
+				esc_html(self::MINIMUM_PHP_VERSION)
+			);
+			echo '<br>';
 		}
 		if (version_compare($GLOBALS['wp_version'], self::MINIMUM_WP_VERSION, '<')) {
-			echo esc_html__('This plugin requires WordPress version ' . self::MINIMUM_WP_VERSION . ' or higher.', 'sparxstar-3iatlas-dictionary');
+			/* translators: %s: Minimum WordPress version required */
+			printf(
+				esc_html__('This plugin requires WordPress version %s or higher.', 'sparxstar-3iatlas-dictionary'),
+				esc_html(self::MINIMUM_WP_VERSION)
+			);
 		}
 		echo '</p></div>';
 	}
