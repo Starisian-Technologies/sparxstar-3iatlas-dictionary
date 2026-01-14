@@ -61,6 +61,8 @@ if (file_exists(SPARXSTAR_3IATLAS_PATH . 'Sparxstar3IAtlasDictionary.php')) {
  * Check if required plugins are active
  */
 function sparxstar_3iatlas_check_dependencies(): bool {
+	static $checked = false;
+	
 	$required_plugins = [
 		'Smart Custom Fields' => 'smart-custom-fields/smart-custom-fields.php',
 		'WPGraphQL' => 'wp-graphql/wp-graphql.php',
@@ -73,7 +75,7 @@ function sparxstar_3iatlas_check_dependencies(): bool {
 		}
 	}
 
-	if (!empty($missing_plugins)) {
+	if (!empty($missing_plugins) && !$checked) {
 		add_action('admin_notices', function () use ($missing_plugins): void {
 			echo '<div class="notice notice-error"><p>';
 			printf(
@@ -82,6 +84,7 @@ function sparxstar_3iatlas_check_dependencies(): bool {
 			);
 			echo '</p></div>';
 		});
+		$checked = true;
 		return false;
 	}
 
