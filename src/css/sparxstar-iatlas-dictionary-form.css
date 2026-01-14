@@ -1,0 +1,455 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* AIWA Dictionary Form Styles */
+/* Design approach: Editorial magazine style with clean typography and organized sections */
+
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600&family=Work+Sans:wght@400;500;600&display=swap');
+
+:root {
+    --color-primary: #1a472a;
+    --color-primary-light: #2d6b45;
+    --color-accent: #c17817;
+    --color-error: #b91c1c;
+    --color-success: #15803d;
+    --color-info: #1e40af;
+    --color-border: #e5e7eb;
+    --color-bg: #fafafa;
+    --color-bg-section: #ffffff;
+    --color-text: #1f2937;
+    --color-text-light: #6b7280;
+    --font-serif: 'Crimson Pro', serif;
+    --font-sans: 'Work Sans', sans-serif;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* Container */
+.aiwa-dict-form-container {
+    max-width: 900px;
+    margin: 3rem auto;
+    padding: 0 1.5rem;
+    font-family: var(--font-sans);
+    color: var(--color-text);
+}
+
+/* Header */
+.aiwa-dict-form-header {
+    margin-bottom: 2.5rem;
+    border-bottom: 3px solid var(--color-primary);
+    padding-bottom: 1.5rem;
+}
+
+.aiwa-dict-form-header h2 {
+    font-family: var(--font-serif);
+    font-size: 2.75rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    margin: 0 0 0.5rem 0;
+    letter-spacing: -0.02em;
+}
+
+/* Notices */
+.aiwa-dict-notice {
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+    font-size: 0.95rem;
+    border-left: 4px solid;
+}
+
+.aiwa-dict-notice.error {
+    background: #fef2f2;
+    border-color: var(--color-error);
+    color: var(--color-error);
+}
+
+.aiwa-dict-notice.info {
+    background: #eff6ff;
+    border-color: var(--color-info);
+    color: var(--color-info);
+}
+
+/* Form */
+.aiwa-dict-form {
+    background: var(--color-bg);
+}
+
+/* Section */
+.aiwa-form-section {
+    background: var(--color-bg-section);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border-radius: 12px;
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.3s ease;
+}
+
+.aiwa-form-section:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.section-title {
+    font-family: var(--font-serif);
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    margin: 0 0 1.5rem 0;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--color-accent);
+}
+
+/* Form Groups */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: var(--color-text);
+    font-size: 0.95rem;
+}
+
+.form-group small {
+    display: block;
+    margin-top: 0.375rem;
+    color: var(--color-text-light);
+    font-size: 0.85rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Form Controls */
+.aiwa-dict-form input[type="text"],
+.aiwa-dict-form input[type="number"],
+.aiwa-dict-form select,
+.aiwa-dict-form textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--color-border);
+    border-radius: 6px;
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    color: var(--color-text);
+    background: #ffffff;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.aiwa-dict-form input[type="text"]:focus,
+.aiwa-dict-form input[type="number"]:focus,
+.aiwa-dict-form select:focus,
+.aiwa-dict-form textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(26, 71, 42, 0.1);
+}
+
+.aiwa-dict-form textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* Buttons */
+.btn-primary,
+.btn-secondary,
+.btn-text {
+    font-family: var(--font-sans);
+    font-weight: 500;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 1rem;
+}
+
+.btn-primary {
+    background: var(--color-primary);
+    color: white;
+    padding: 1rem 2rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--color-primary-light);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background: var(--color-accent);
+    color: white;
+    padding: 0.75rem 1.5rem;
+}
+
+.btn-secondary:hover {
+    background: #a66614;
+    transform: translateY(-1px);
+}
+
+.btn-text {
+    background: transparent;
+    color: var(--color-error);
+    padding: 0.5rem 1rem;
+    text-decoration: underline;
+}
+
+.btn-text:hover {
+    color: #991b1b;
+}
+
+/* Media Upload */
+.media-upload-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.media-filename {
+    color: var(--color-text-light);
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
+.image-preview-container {
+    width: 100%;
+    margin-top: 1rem;
+}
+
+.image-preview-container img {
+    max-width: 200px;
+    height: auto;
+    border-radius: 8px;
+    border: 2px solid var(--color-border);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Example Sentences */
+.sentence-row {
+    background: var(--color-bg);
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    border: 1px solid var(--color-border);
+    position: relative;
+}
+
+.sentence-fields {
+    display: grid;
+    gap: 1rem;
+}
+
+.sentence-row .remove-sentence-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+}
+
+/* Synonyms */
+#aiwa_synonyms_search {
+    margin-bottom: 1rem;
+}
+
+.synonym-results {
+    background: white;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+}
+
+.synonym-result-item {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.synonym-result-item:last-child {
+    border-bottom: none;
+}
+
+.synonym-result-item:hover {
+    background: var(--color-bg);
+}
+
+.no-results {
+    padding: 1rem;
+    text-align: center;
+    color: var(--color-text-light);
+    font-style: italic;
+}
+
+.selected-synonyms {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    min-height: 2.5rem;
+}
+
+.synonym-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--color-primary);
+    color: white;
+    padding: 0.5rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.remove-synonym {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1.25rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    margin-left: 0.25rem;
+    transition: transform 0.15s ease;
+}
+
+.remove-synonym:hover {
+    transform: scale(1.2);
+}
+
+/* Form Actions */
+.form-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 2px solid var(--color-border);
+}
+
+.form-message {
+    width: 100%;
+    text-align: center;
+}
+
+/* Messages */
+.success-message,
+.error-message,
+.info-message {
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    margin: 0.5rem 0;
+    font-weight: 500;
+}
+
+.success-message {
+    background: #f0fdf4;
+    color: var(--color-success);
+    border: 2px solid var(--color-success);
+}
+
+.error-message {
+    background: #fef2f2;
+    color: var(--color-error);
+    border: 2px solid var(--color-error);
+}
+
+.info-message {
+    background: #eff6ff;
+    color: var(--color-info);
+    border: 2px solid var(--color-info);
+}
+
+.info-message a {
+    color: var(--color-info);
+    text-decoration: underline;
+    font-weight: 600;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.sentence-row,
+.synonym-tag {
+    animation: fadeIn 0.3s ease;
+}
+
+/* Loading State */
+.btn-primary:disabled::after {
+    content: '';
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid white;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .aiwa-dict-form-container {
+        padding: 0 1rem;
+        margin: 2rem auto;
+    }
+
+    .aiwa-dict-form-header h2 {
+        font-size: 2rem;
+    }
+
+    .aiwa-form-section {
+        padding: 1.5rem;
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+    }
+
+    .sentence-row {
+        padding: 1rem;
+    }
+
+    .media-upload-container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
