@@ -76,8 +76,10 @@ function sparxstar_3iatlas_check_dependencies(): bool {
 	if (!empty($missing_plugins)) {
 		add_action('admin_notices', function () use ($missing_plugins): void {
 			echo '<div class="notice notice-error"><p>';
-			echo esc_html__('SPARXSTAR 3iAtlas Dictionary requires the following plugins to be installed and activated: ', 'sparxstar-3iatlas-dictionary');
-			echo esc_html(implode(', ', $missing_plugins));
+			printf(
+				esc_html__('SPARXSTAR 3iAtlas Dictionary requires the following plugins to be installed and activated: %s', 'sparxstar-3iatlas-dictionary'),
+				esc_html(implode(', ', $missing_plugins))
+			);
 			echo '</p></div>';
 		});
 		return false;
