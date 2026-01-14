@@ -20,7 +20,7 @@ final class Sparxstar3IAtlasDictionary
 	private string $pluginPath;
 	private string $pluginUrl;
 	private string $version;
-	private $core;
+	private ?\Starisian\src\core\PluginCore $core = null;
 
 	private function __construct()
 	{
