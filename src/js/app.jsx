@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { ApolloClient, InMemoryCache, gql, useQuery } from '@apollo/client';
+import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import { Virtuoso } from 'react-virtuoso';
 import { Search, Volume2, X, Globe, BookOpen, Image as ImageIcon } from 'lucide-react';
-import '../css/iatlas-dictionary-form.css';
+import '../css/sparxstar-iatlas-dictionary-form.css';
 
 // --- CONFIGURATION ---
 // Replace with your actual WordPress GraphQL endpoint

@@ -1,20 +1,29 @@
 <?php
-namespace Starisian;
+namespace Starisian\Sparxstar\IAtlas;
 
 /**
- * Plugin Name:       SPARXSTAR 3iAtlas Dictionary
- * Plugin URI:        https://www.starisian.com/
+ * SPARXSTAR 3IAtlas Dictionary
+ * 
+ * @file		     sparxstar-3iatlas-dictionary.php
+ * @package 	     Starisian\Sparxstar\IAtlas
+ * @author           Starisian Technologies (Max Barrett) <support@starisian.com>
+ * @license	         Starisian Technologies Proprietary License (STPL)
+ * @copyright	     Copyright (c) 2024 Starisian Technologies. All rights reserved.
+ * 
+ * @wordpress-plugin
+ * Plugin Name:       SPARXSTAR 3IAtlas Dictionary
+ * Plugin URI:        https://starisian.com/sparxstar/sparxstar-3iatlas-dictionary/
  * Description:       A WordPress plugin for 3iAtlas Dictionary management with SCF and WPGraphQL integration.
  * Version:           1.0.0
  * Author:            Starisian Technologies
  * Author URI:        https://www.starisian.com/
  * Contributor:       Max Barrett
- * License:           Proprietary
+ * License:           Starisian Technologies Proprietary License (STPL)
  * License URI:
- * Text Domain:       sparxstar-3iatlas-dictionary
- * Requires at least: 6.4
+ * Text Domain:       SparxstarIAtlasDictionary
+ * Requires at least: 6.8
  * Requires PHP:      8.2
- * Tested up to:      6.4
+ * Tested up to:      6.9
  * Domain Path:       /languages
  */
 
@@ -22,100 +31,73 @@ if (!defined('ABSPATH')) {
 	exit;
 }
 
-if (!defined('SPARXSTAR_3IATLAS_PATH')) {
-	define('SPARXSTAR_3IATLAS_PATH', plugin_dir_path(__FILE__));
+// 1. Define Constants
+if (!defined('SPARX_IATLAS_PATH')) {
+	define('SPARX_IATLAS_PATH', plugin_dir_path(__FILE__));
 }
-if (!defined('SPARXSTAR_3IATLAS_URL')) {
-	define('SPARXSTAR_3IATLAS_URL', plugin_dir_url(__FILE__));
+if (!defined('SPARX_IATLAS_URL')) {
+	define('SPARX_IATLAS_URL', plugin_dir_url(__FILE__));
 }
-if (!defined('SPARXSTAR_3IATLAS_VERSION')) {
-	define('SPARXSTAR_3IATLAS_VERSION', '1.0.0');
+if (!defined('SPARX_IATLAS_VERSION')) {
+	define('SPARX_IATLAS_VERSION', '1.0.0');
 }
-
-// Define constants expected by the Autoloader
-if (!defined('STARISIAN_PATH')) {
-	define('STARISIAN_PATH', SPARXSTAR_3IATLAS_PATH);
-}
-if (!defined('STARISIAN_NAMESPACE')) {
-	define('STARISIAN_NAMESPACE', 'Starisian\\src\\');
+if (!defined('SPARX_IATLAS_NAMESPACE')) {
+	define('SPARX_IATLAS_NAMESPACE', 'Starisian\\Sparxstar\\IAtlas\\');
 }
 
-use Starisian\src\includes\Autoloader;
-
-if (file_exists(SPARXSTAR_3IATLAS_PATH . 'src/includes/Autoloader.php')) {
-	require_once SPARXSTAR_3IATLAS_PATH . 'src/includes/Autoloader.php';
-	Autoloader::register();
-} else {
-	add_action('admin_notices', function (): void {
-		echo '<div class="error"><p>' . esc_html__('Critical file Autoloader.php is missing.', 'sparxstar-3iatlas-dictionary') . '</p></div>';
-	});
-	return;
+// 2. Compatibility Checks (Bootloader level)
+if (version_compare(PHP_VERSION, '8.2', '<') || version_compare($GLOBALS['wp_version'], '6.4', '<')) {
+    add_action('admin_notices', function() {
+        echo '<div class="notice notice-error"><p>' . esc_html__('Sparxstar 3IAtlas Dictionary requires PHP 8.2+ and WordPress 6.4+.', 'SparxstarIAtlasDictionary') . '</p></div>';
+    });
+    return;
 }
 
-// Load the orchestrator
-if (file_exists(SPARXSTAR_3IATLAS_PATH . 'Sparxstar3IAtlasDictionary.php')) {
-	require_once SPARXSTAR_3IATLAS_PATH . 'Sparxstar3IAtlasDictionary.php';
-}
-
-/**
- * Check if required plugins are active
- */
-function sparxstar_3iatlas_check_dependencies(): bool {
-	static $checked = false;
+// 3. Autoloader Setup
+if (file_exists(SPARX_IATLAS_PATH . 'vendor/autoload.php')) {
+	require_once SPARX_IATLAS_PATH . 'vendor/autoload.php';
+} elseif (file_exists(SPARX_IATLAS_PATH . 'src/includes/Autoloader.php')) {
+	require_once SPARX_IATLAS_PATH . 'src/includes/Autoloader.php';
 	
-	$required_plugins = [
-		'Smart Custom Fields' => 'smart-custom-fields/smart-custom-fields.php',
-		'WPGraphQL' => 'wp-graphql/wp-graphql.php',
-	];
-
-	$missing_plugins = [];
-	foreach ($required_plugins as $name => $path) {
-		if (!is_plugin_active($path) && !is_plugin_active_for_network($path)) {
-			$missing_plugins[] = $name;
-		}
-	}
-
-	if (!empty($missing_plugins) && !$checked) {
-		add_action('admin_notices', function () use ($missing_plugins): void {
-			echo '<div class="notice notice-error"><p>';
-			printf(
-				esc_html__('SPARXSTAR 3iAtlas Dictionary requires the following plugins to be installed and activated: %s', 'sparxstar-3iatlas-dictionary'),
-				esc_html(implode(', ', $missing_plugins))
-			);
-			echo '</p></div>';
-		});
-	}
+	if (!defined('STARISIAN_NAMESPACE')) define('STARISIAN_NAMESPACE', 'Starisian\\Sparxstar\\IAtlas\\');
+	if (!defined('STARISIAN_PATH')) define('STARISIAN_PATH', SPARX_IATLAS_PATH);
 	
-	$checked = true;
-	return empty($missing_plugins);
+	// Register the Autoloder
+	if (class_exists('Starisian\Sparxstar\IAtlas\Includes\Autoloader')) {
+		\Starisian\Sparxstar\IAtlas\Includes\Autoloader::sparxIAtlas_register();
+	}
 }
 
-// Hooks and initialization
-register_activation_hook(__FILE__, ['Starisian\Sparxstar3IAtlasDictionary', 'activate']);
-register_deactivation_hook(__FILE__, ['Starisian\Sparxstar3IAtlasDictionary', 'deactivate']);
-register_uninstall_hook(__FILE__, ['Starisian\Sparxstar3IAtlasDictionary', 'uninstall']);
+use Starisian\Sparxstar\IAtlas\Core\SparxstarIAtlasOrchestrator;
+use Starisian\Sparxstar\IAtlas\Includes\SparxstarIAtlasPostTypes;
 
-/**
- * Initialize plugin at plugins_loaded
- * Plugin runs if dependencies are met, regardless of admin context
- */
-add_action('plugins_loaded', function (): void {
-	// Initialize plugin after all plugins are loaded
-	if (sparxstar_3iatlas_check_dependencies()) {
-		\Starisian\Sparxstar3IAtlasDictionary::run();
-	}
-});
+// 4. Activation / Deactivation Hooks
+register_activation_hook(__FILE__, 'Starisian\Sparxstar\IAtlas\sparxIAtlas_activate_plugin');
+register_deactivation_hook(__FILE__, 'Starisian\Sparxstar\IAtlas\sparxIAtlas_deactivate_plugin');
+register_uninstall_hook(__FILE__, 'Starisian\Sparxstar\IAtlas\sparxIAtlas_uninstall_plugin');
 
-/**
- * Validate dependencies at admin_init
- * Ensures is_plugin_active() is available and admin notices display properly
- * Static flag in check function prevents duplicate notices
- */
-add_action('admin_init', function (): void {
-	if (!function_exists('is_plugin_active')) {
-		require_once ABSPATH . 'wp-admin/includes/plugin.php';
-	}
-	
-	// Trigger dependency check which will display admin notices if needed
-	sparxstar_3iatlas_check_dependencies();
+function sparxIAtlas_activate_plugin() {
+    // Trigger CPT registration to verify rewrite rules
+    if (class_exists(SparxstarIAtlasPostTypes::class)) {
+        $pt = new SparxstarIAtlasPostTypes();
+        if(method_exists($pt, 'sparxIAtlas_register_dictionary_cpt')) {
+            $pt->sparxIAtlas_register_dictionary_cpt();
+        }
+    }
+    flush_rewrite_rules();
+}
+
+function sparxIAtlas_deactivate_plugin() {
+    flush_rewrite_rules();
+}
+
+function sparxIAtlas_uninstall_plugin() {
+    // Clean up options or data if needed
+}
+
+// 5. Run the Plugin (Orchestration)
+add_action('plugins_loaded', function() {
+    if (class_exists(SparxstarIAtlasOrchestrator::class)) {
+        SparxstarIAtlasOrchestrator::sparxIAtlas_get_instance();
+    }
 });
