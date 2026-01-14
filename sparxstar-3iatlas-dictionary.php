@@ -94,12 +94,18 @@ register_deactivation_hook(__FILE__, ['Starisian\Sparxstar3IAtlasDictionary', 'd
 register_uninstall_hook(__FILE__, ['Starisian\Sparxstar3IAtlasDictionary', 'uninstall']);
 
 add_action('plugins_loaded', function (): void {
-	// Check dependencies first
+	// Initialize plugin after all plugins are loaded
+	if (sparxstar_3iatlas_check_dependencies()) {
+		\Starisian\Sparxstar3IAtlasDictionary::run();
+	}
+});
+
+// Check dependencies at admin_init to ensure all plugins are fully loaded
+add_action('admin_init', function (): void {
 	if (!function_exists('is_plugin_active')) {
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 	}
 	
-	if (sparxstar_3iatlas_check_dependencies()) {
-		\Starisian\Sparxstar3IAtlasDictionary::run();
-	}
+	// Trigger dependency check which will display admin notices if needed
+	sparxstar_3iatlas_check_dependencies();
 });

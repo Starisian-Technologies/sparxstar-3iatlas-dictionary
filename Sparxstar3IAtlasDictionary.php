@@ -161,20 +161,26 @@ final class Sparxstar3IAtlasDictionary
 	 */
 	public function enqueue_frontend_assets(): void
 	{
-		wp_enqueue_style(
-			'sparxstar-3iatlas-dictionary-styles',
-			$this->pluginUrl . 'src/css/style.css',
-			[],
-			$this->version
-		);
+		$css_path = $this->pluginPath . 'src/css/style.css';
+		if (file_exists($css_path)) {
+			wp_enqueue_style(
+				'sparxstar-3iatlas-dictionary-styles',
+				$this->pluginUrl . 'src/css/style.css',
+				[],
+				$this->version
+			);
+		}
 
-		wp_enqueue_script(
-			'sparxstar-3iatlas-dictionary-scripts',
-			$this->pluginUrl . 'src/js/main.js',
-			['jquery'],
-			$this->version,
-			true
-		);
+		$js_path = $this->pluginPath . 'src/js/main.js';
+		if (file_exists($js_path)) {
+			wp_enqueue_script(
+				'sparxstar-3iatlas-dictionary-scripts',
+				$this->pluginUrl . 'src/js/main.js',
+				['jquery'],
+				$this->version,
+				true
+			);
+		}
 	}
 
 	/**
@@ -182,19 +188,25 @@ final class Sparxstar3IAtlasDictionary
 	 */
 	public function enqueue_admin_assets(): void
 	{
-		wp_enqueue_style(
-			'sparxstar-3iatlas-dictionary-admin-styles',
-			$this->pluginUrl . 'src/css/admin.css',
-			[],
-			$this->version
-		);
+		$css_path = $this->pluginPath . 'src/css/admin.css';
+		if (file_exists($css_path)) {
+			wp_enqueue_style(
+				'sparxstar-3iatlas-dictionary-admin-styles',
+				$this->pluginUrl . 'src/css/admin.css',
+				[],
+				$this->version
+			);
+		}
 
-		wp_enqueue_script(
-			'sparxstar-3iatlas-dictionary-admin-scripts',
-			$this->pluginUrl . 'src/js/admin.js',
-			['jquery'],
-			$this->version,
-			true
-		);
+		$js_path = $this->pluginPath . 'src/js/admin.js';
+		if (file_exists($js_path)) {
+			wp_enqueue_script(
+				'sparxstar-3iatlas-dictionary-admin-scripts',
+				$this->pluginUrl . 'src/js/admin.js',
+				['jquery'],
+				$this->version,
+				true
+			);
+		}
 	}
 }

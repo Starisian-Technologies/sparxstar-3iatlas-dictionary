@@ -43,18 +43,10 @@
   "minimum-stability": "dev",
   "prefer-stable": true,
   "extra": {
-    "installer-name": "sparxstar-3iatlas-dictionary",
-    "wordpress-plugin-dependencies": {
-      "Smart Custom Fields (SCF)": {
-        "slug": "smart-custom-fields",
-        "required": true,
-        "uri": "https://wordpress.org/plugins/smart-custom-fields/"
-      },
-      "WPGraphQL": {
-        "slug": "wp-graphql",
-        "required": true,
-        "uri": "https://www.wpgraphql.com/"
-      }
-    }
+    "installer-name": "sparxstar-3iatlas-dictionary"
+  },
+  "suggest": {
+    "smart-custom-fields/smart-custom-fields": "Required for custom field management functionality",
+    "wp-graphql/wp-graphql": "Required for GraphQL API support"
   }
 }
