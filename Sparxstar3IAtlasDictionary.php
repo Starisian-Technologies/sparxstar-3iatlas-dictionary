@@ -113,9 +113,12 @@ final class Sparxstar3IAtlasDictionary
 		return [];
 	}
 
-	public function __call($name, $arguments): void
+	public function __call($name, $arguments)
 	{
 		_doing_it_wrong(__FUNCTION__, esc_html__('Calling undefined methods is not allowed.', 'sparxstar-3iatlas-dictionary'), self::VERSION);
+		throw new \BadMethodCallException(
+			sprintf('Call to undefined method %s::%s()', __CLASS__, $name)
+		);
 	}
 
 	public static function run(): void
