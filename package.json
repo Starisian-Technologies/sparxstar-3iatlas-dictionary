@@ -1,5 +1,5 @@
 {
-    "name": "sparxstar-starter",
+    "name": "sparxstar-3iatlas-dictionary",
     "private": true,
     "scripts": {
         "build": "npm run build:css",
@@ -29,7 +29,7 @@
         ]
     },
     "version": "1.0.0",
-    "description": "A template repository for building WordPress plugins that follow Starisian coding conventions and SPARXSTAR deployment needs.",
+    "description": "SPARXSTAR 3iAtlas Dictionary - A WordPress plugin for dictionary management with SCF and WPGraphQL integration.",
     "main": "commitlint.config.js",
     "directories": {
         "doc": "docs",
@@ -38,16 +38,16 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/Starisian-Technologies/sparxstar-starter.git"
+        "url": "git+https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary.git"
     },
     "keywords": [],
     "author": "",
     "license": "ISC",
     "type": "commonjs",
     "bugs": {
-        "url": "https://github.com/Starisian-Technologies/sparxstar-starter/issues"
+        "url": "https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/issues"
     },
-    "homepage": "https://github.com/Starisian-Technologies/sparxstar-starter#readme",
+    "homepage": "https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary#readme",
     "devDependencies": {
         "@eslint/js": "^9.39.2",
         "@wordpress/scripts": "^31.2.0",
