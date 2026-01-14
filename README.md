@@ -1,3 +1,6 @@
+
+<img width="1280" height="640" alt="3iatlas" src="https://github.com/user-attachments/assets/968c1c4c-6ee0-4883-9f02-596c4709b7e9" />
+
 # SPARXSTAR 3iAtlas Dictionary
 
 A WordPress plugin for dictionary management with Smart Custom Fields (SCF) and WPGraphQL integration.
