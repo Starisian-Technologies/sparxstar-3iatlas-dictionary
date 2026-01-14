@@ -84,11 +84,10 @@ function sparxstar_3iatlas_check_dependencies(): bool {
 			);
 			echo '</p></div>';
 		});
-		$checked = true;
-		return false;
 	}
-
-	return true;
+	
+	$checked = true;
+	return empty($missing_plugins);
 }
 
 // Hooks and initialization
@@ -96,6 +95,10 @@ register_activation_hook(__FILE__, ['Starisian\Sparxstar3IAtlasDictionary', 'act
 register_deactivation_hook(__FILE__, ['Starisian\Sparxstar3IAtlasDictionary', 'deactivate']);
 register_uninstall_hook(__FILE__, ['Starisian\Sparxstar3IAtlasDictionary', 'uninstall']);
 
+/**
+ * Initialize plugin at plugins_loaded
+ * Plugin runs if dependencies are met, regardless of admin context
+ */
 add_action('plugins_loaded', function (): void {
 	// Initialize plugin after all plugins are loaded
 	if (sparxstar_3iatlas_check_dependencies()) {
@@ -103,7 +106,11 @@ add_action('plugins_loaded', function (): void {
 	}
 });
 
-// Check dependencies at admin_init to ensure all plugins are fully loaded
+/**
+ * Validate dependencies at admin_init
+ * Ensures is_plugin_active() is available and admin notices display properly
+ * Static flag in check function prevents duplicate notices
+ */
 add_action('admin_init', function (): void {
 	if (!function_exists('is_plugin_active')) {
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
