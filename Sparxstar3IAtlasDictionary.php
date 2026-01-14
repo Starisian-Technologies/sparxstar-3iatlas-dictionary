@@ -94,7 +94,11 @@ final class Sparxstar3IAtlasDictionary
 
 	private function load_textdomain(): void
 	{
-		load_plugin_textdomain('sparxstar-3iatlas-dictionary', false, dirname(plugin_basename(__FILE__)) . '/languages');
+		load_plugin_textdomain(
+			'sparxstar-3iatlas-dictionary',
+			false,
+			dirname(plugin_basename($this->pluginPath)) . '/languages'
+		);
 	}
 
 	private function __clone(): void
