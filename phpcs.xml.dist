@@ -23,6 +23,9 @@
   <!-- Parallel processing -->
   <arg name="parallel" value="8"/>
 
+  <!-- Only scan PHP files -->
+  <arg name="extensions" value="php"/>
+
   <!-- Coding standard rules -->
   <rule ref="WordPress-Extra">
     <exclude name="Generic.WhiteSpace.DisallowSpaceIndent"/>
@@ -72,6 +75,6 @@
 
   <!-- PHPCompatibility checks -->
   <config name="testVersion" value="8.2-"/>
-  <rule ref="PHPCompatibilityWP"/>
+  <rule ref="PHPCompatibility"/>
 
 </ruleset>

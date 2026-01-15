@@ -1,20 +1,146 @@
-permissions:
-  contents: read
-name: Release
+name: Release Code Quality Final Review
+
 on:
   push:
-    tags:
-      - 'v*'
+    tags: ['v*']
+
+permissions:
+  contents: write
+
 jobs:
-  publish:
+  build-and-release:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Build changelog
-        run: echo "Generate changelog" 
-      - name: Package
-        run: zip -r artifact.zip .
-      - uses: actions/upload-artifact@v3
+      # Step 1: Check out the repository's code.
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          name: plugin
-          path: artifact.zip
+          fetch-depth: 0
+
+      # Step 2: Set up Git for local operations only
+      - name: Set up Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          echo "🔧 Git configured for local operations (no push to protected branch)"
+
+      # Step 3: Get the version number from the tag.
+      - name: Get the version from the tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+
+      # Step 4: Update version numbers in all files.
+      - name: Update version numbers
+        run: |
+          # Update package.json version
+          sed -i -E 's/("version":\s*").*(")/\1'${{ env.VERSION }}'\2/' package.json
+          # Update plugin header version
+          sed -i -E "s/^(\s*\* Version:\s*).*/\1${{ env.VERSION }}/" sparxstar-3iatlas-dictionary.php
+          sed -i "s/define( 'SPARX_3IATLAS_VERSION', '[^']*' );/define( 'SPARX_3IATLAS_VERSION', '${{ env.VERSION }}' );/" sparxstar-3iatlas-dictionary.php
+          # Update @version tags in source PHP files only
+          find src/ -type f -name "*.php" -print0 | xargs -0 sed -i "s/@version\s\+[0-9.]\+/@version ${{ env.VERSION }}/g"
+
+      # Step 5: Prepare version changes (no commit to protected branch)
+      - name: Prepare version changes for release build
+        run: |
+          echo "📝 Version changes prepared for release build:"
+          git diff --stat || echo "No version changes detected"
+          echo "⚠️  Version changes are applied only to the build artifacts"
+          echo "🔒 Protected branch prevents automatic version commits"
+          echo "💡 Consider updating versions manually before tagging releases"
+
+      # Step 6: Verify plugin entrypoint exists.
+      - name: Verify plugin entrypoint
+        run: |
+          test -f sparxstar-3iatlas-dictionary.php || { echo "Missing sparxstar-3iatlas-dictionary.php"; exit 1; }
+          grep -q "Plugin Name:" sparxstar-3iatlas-dictionary.php || { echo "No plugin header found"; exit 1; }
+
+      # Step 7: Set up PHP and install Composer dependencies.
+      - name: Set up PHP
+        uses: shivammathur/setup-php@44454db4f0199b8b9685a5d763dc37cbf79108e1
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+          coverage: none
+      - name: Install PHP dependencies (no-dev)
+        run: composer install --no-dev --prefer-dist --no-progress --no-interaction --optimize-autoloader
+
+      # Step 8: Set up Node.js and build frontend assets.
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Build Assets
+        run: npm run build
+      - name: Verify build output
+        run: |
+          test -f assets/js/admin.min.js || { echo "Missing admin JS"; exit 1; }
+          test -f assets/css/admin-style.min.css || { echo "Missing admin CSS"; exit 1; }
+          test -f assets/js/app.min.js || { echo "Missing app JS"; exit 1; }
+          test -f assets/css/app.min.css || { echo "Missing app CSS"; exit 1; }
+          test -f assets/js/sparxstar-iatlas-dictionary-form.min.js || { echo "Missing form JS"; exit 1; }
+          test -f assets/css/form-style.min.css || { echo "Missing form CSS"; exit 1; }
+          echo "✅ All required build artifacts present"
+
+      # Step 9: Build the distributable plugin ZIP file.
+      - name: Ensure .distignore exists
+        run: test -f .distignore || { echo ".distignore is missing"; exit 1; }
+
+      - name: Verify production files are ready
+        run: |
+          echo "🔍 Verifying production-ready files..."
+          test -d src/ || { echo "❌ Missing src/ directory"; exit 1; }
+          test -f sparxstar-3iatlas-dictionary.php || { echo "❌ Missing plugin main file"; exit 1; }
+          test -f assets/js/admin.min.js || { echo "❌ Missing admin JS"; exit 1; }
+          test -f vendor/autoload.php || { echo "❌ Missing Composer autoloader"; exit 1; }
+          echo "✅ All production files verified"
+
+      - name: Build plugin ZIP
+        run: |
+          SLUG="sparxstar-3iatlas-dictionary"
+          VERSION=${{ env.VERSION }}
+          echo "🏗️ Building release ZIP with version $VERSION"
+
+          # Verify version was applied to files
+          echo "📋 Verifying version numbers in key files:"
+          grep -n "Version:" sparxstar-3iatlas-dictionary.php || { echo "❌ Plugin header version not found"; exit 1; }
+          grep -n "SPARX_3IATLAS_VERSION" sparxstar-3iatlas-dictionary.php || { echo "❌ Version constant not found"; exit 1; }
+          grep -n "\"version\"" package.json || { echo "❌ Package version not found"; exit 1; }
+
+          rm -rf build
+          mkdir -p build
+          rsync -a --exclude-from=.distignore ./ build/${SLUG}/
+          (cd build && zip -r "../${SLUG}-${VERSION}.zip" "${SLUG}")
+
+          echo "📦 Release ZIP created: ${SLUG}-${VERSION}.zip"
+
+      # NEW STEP: Ensure vendor exists and is packaged
+      - name: Ensure vendor directory is preserved for ZIP
+        run: |
+          if [ ! -d "vendor" ]; then
+            echo "Vendor directory missing — Composer install did not create it."
+            exit 1
+          fi
+          echo "Vendor directory found."
+
+      # Step 10: Generate checksums for the ZIP file.
+      - name: Generate checksums
+        run: |
+          ZIP_FILE="sparxstar-3iatlas-dictionary-${{ env.VERSION }}.zip"
+          sha256sum "$ZIP_FILE" > "$ZIP_FILE.sha256"
+          sha1sum   "$ZIP_FILE" > "$ZIP_FILE.sha1"
+
+      # Step 11: Create GitHub Release
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b
+        with:
+          files: |
+            sparxstar-3iatlas-dictionary-${{ env.VERSION }}.zip
+            sparxstar-3iatlas-dictionary-${{ env.VERSION }}.zip.sha256
+            sparxstar-3iatlas-dictionary-${{ env.VERSION }}.zip.sha1

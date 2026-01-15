@@ -1,0 +1,27 @@
+{
+    "source": {
+        "include": [
+            "src/js"
+        ],
+        "includePattern": ".+\\.jsx?$",
+        "excludePattern": "(^|\\/|\\\\)_"
+    },
+    "opts": {
+        "destination": "./docs/js",
+        "recurse": true,
+        "readme": "README.md",
+        "template": "node_modules/clean-jsdoc-theme"
+    },
+    "plugins": [
+        "plugins/markdown"
+    ],
+    "templates": {
+        "default": {
+            "includeDate": true
+        },
+        "clean-jsdoc-theme": {
+            "title": "SPARXSTAR 3iAtlas Dictionary Frontend API",
+            "darkMode": true
+        }
+    }
+}

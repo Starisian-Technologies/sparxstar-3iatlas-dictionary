@@ -4,11 +4,11 @@ namespace Starisian\Sparxstar\IAtlas;
 /**
  * SPARXSTAR 3IAtlas Dictionary
  * 
- * @file		     sparxstar-3iatlas-dictionary.php
- * @package 	     Starisian\Sparxstar\IAtlas
+ * @file             sparxstar-3iatlas-dictionary.php
+ * @package          Starisian\Sparxstar\IAtlas
  * @author           Starisian Technologies (Max Barrett) <support@starisian.com>
- * @license	         Starisian Technologies Proprietary License (STPL)
- * @copyright	     Copyright (c) 2024 Starisian Technologies. All rights reserved.
+ * @license          Starisian Technologies Proprietary License (STPL)
+ * @copyright        Copyright (c) 2024 Starisian Technologies. All rights reserved.
  * 
  * @wordpress-plugin
  * Plugin Name:       SPARXSTAR 3IAtlas Dictionary
@@ -27,60 +27,67 @@ namespace Starisian\Sparxstar\IAtlas;
  * Domain Path:       /languages
  */
 
-if (!defined('ABSPATH')) {
-	exit;
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
 }
 
 // 1. Define Constants
-if (!defined('SPARX_IATLAS_PATH')) {
-	define('SPARX_IATLAS_PATH', plugin_dir_path(__FILE__));
+if ( ! defined( 'SPARX_3IATLAS_PATH' ) ) {
+    define( 'SPARX_3IATLAS_PATH', plugin_dir_path( __FILE__ ) );
 }
-if (!defined('SPARX_IATLAS_URL')) {
-	define('SPARX_IATLAS_URL', plugin_dir_url(__FILE__));
+if ( ! defined( 'SPARX_3IATLAS_URL' ) ) {
+    define( 'SPARX_3IATLAS_URL', plugin_dir_url( __FILE__ ) );
 }
-if (!defined('SPARX_IATLAS_VERSION')) {
-	define('SPARX_IATLAS_VERSION', '1.0.0');
+if ( ! defined( 'SPARX_3IATLAS_VERSION' ) ) {
+    define( 'SPARX_3IATLAS_VERSION', '1.0.0' );
 }
-if (!defined('SPARX_IATLAS_NAMESPACE')) {
-	define('SPARX_IATLAS_NAMESPACE', 'Starisian\\Sparxstar\\IAtlas\\');
+if ( ! defined( 'SPARX_3IATLAS_NAMESPACE' ) ) {
+    define( 'SPARX_3IATLAS_NAMESPACE', 'Starisian\\Sparxstar\\IAtlas\\' );
 }
 
 // 2. Compatibility Checks (Bootloader level)
-if (version_compare(PHP_VERSION, '8.2', '<') || version_compare($GLOBALS['wp_version'], '6.4', '<')) {
-    add_action('admin_notices', function() {
-        echo '<div class="notice notice-error"><p>' . esc_html__('Sparxstar 3IAtlas Dictionary requires PHP 8.2+ and WordPress 6.4+.', 'SparxstarIAtlasDictionary') . '</p></div>';
-    });
+if ( version_compare( PHP_VERSION, '8.2', '<' ) || version_compare( $GLOBALS['wp_version'], '6.4', '<' ) ) {
+    add_action(
+        'admin_notices',
+        function () {
+            echo '<div class="notice notice-error"><p>' . esc_html__( 'Sparxstar 3IAtlas Dictionary requires PHP 8.2+ and WordPress 6.4+.', 'SparxstarIAtlasDictionary' ) . '</p></div>';
+        }
+    );
     return;
 }
 
 // 3. Autoloader Setup
-if (file_exists(SPARX_IATLAS_PATH . 'vendor/autoload.php')) {
-	require_once SPARX_IATLAS_PATH . 'vendor/autoload.php';
-} elseif (file_exists(SPARX_IATLAS_PATH . 'src/includes/Autoloader.php')) {
-	require_once SPARX_IATLAS_PATH . 'src/includes/Autoloader.php';
-	
-	if (!defined('STARISIAN_NAMESPACE')) define('STARISIAN_NAMESPACE', 'Starisian\\Sparxstar\\IAtlas\\');
-	if (!defined('STARISIAN_PATH')) define('STARISIAN_PATH', SPARX_IATLAS_PATH);
-	
-	// Register the Autoloder
-	if (class_exists('Starisian\Sparxstar\IAtlas\Includes\Autoloader')) {
-		\Starisian\Sparxstar\IAtlas\Includes\Autoloader::sparxIAtlas_register();
-	}
+if ( file_exists( SPARX_3IATLAS_PATH . 'vendor/autoload.php' ) ) {
+    require_once SPARX_3IATLAS_PATH . 'vendor/autoload.php';
+} elseif ( file_exists( SPARX_3IATLAS_PATH . 'src/includes/Autoloader.php' ) ) {
+    require_once SPARX_3IATLAS_PATH . 'src/includes/Autoloader.php';
+    
+    if ( ! defined( 'STARISIAN_NAMESPACE' ) ) {
+        define( 'STARISIAN_NAMESPACE', 'Starisian\\Sparxstar\\IAtlas\\' );
+    }
+    if ( ! defined( 'STARISIAN_PATH' ) ) {
+        define( 'STARISIAN_PATH', SPARX_3IATLAS_PATH );
+    }
+    
+    // Register the Autoloder
+    if ( class_exists( 'Starisian\Sparxstar\IAtlas\Includes\Autoloader' ) ) {
+        \Starisian\Sparxstar\IAtlas\Includes\Autoloader::sparxIAtlas_register();
+    }
 }
 
-use Starisian\Sparxstar\IAtlas\Core\SparxstarIAtlasOrchestrator;
-use Starisian\Sparxstar\IAtlas\Includes\SparxstarIAtlasPostTypes;
+use Starisian\Sparxstar\IAtlas\Core\Sparxstar3IAtlasOrchestrator;
+use Starisian\Sparxstar\IAtlas\Includes\Sparxstar3IAtlasPostTypes;
 
 // 4. Activation / Deactivation Hooks
-register_activation_hook(__FILE__, 'Starisian\Sparxstar\IAtlas\sparxIAtlas_activate_plugin');
-register_deactivation_hook(__FILE__, 'Starisian\Sparxstar\IAtlas\sparxIAtlas_deactivate_plugin');
-register_uninstall_hook(__FILE__, 'Starisian\Sparxstar\IAtlas\sparxIAtlas_uninstall_plugin');
+register_activation_hook( __FILE__, 'Starisian\Sparxstar\IAtlas\sparxIAtlas_activate_plugin' );
+register_deactivation_hook( __FILE__, 'Starisian\Sparxstar\IAtlas\sparxIAtlas_deactivate_plugin' );
+register_uninstall_hook( __FILE__, 'Starisian\Sparxstar\IAtlas\sparxIAtlas_uninstall_plugin' );
 
 function sparxIAtlas_activate_plugin() {
     // Trigger CPT registration to verify rewrite rules
-    if (class_exists(SparxstarIAtlasPostTypes::class)) {
-        $pt = new SparxstarIAtlasPostTypes();
-        if(method_exists($pt, 'sparxIAtlas_register_dictionary_cpt')) {
+    if ( class_exists( Sparxstar3IAtlasPostTypes::class ) ) {
+        $pt = new Sparxstar3IAtlasPostTypes();
+        if ( method_exists( $pt, 'sparxIAtlas_register_dictionary_cpt' ) ) {
             $pt->sparxIAtlas_register_dictionary_cpt();
         }
     }
@@ -96,8 +103,11 @@ function sparxIAtlas_uninstall_plugin() {
 }
 
 // 5. Run the Plugin (Orchestration)
-add_action('plugins_loaded', function() {
-    if (class_exists(SparxstarIAtlasOrchestrator::class)) {
-        SparxstarIAtlasOrchestrator::sparxIAtlas_get_instance();
+add_action(
+    'plugins_loaded',
+    function () {
+        if ( class_exists( Sparxstar3IAtlasOrchestrator::class ) ) {
+            SparxstarIAtlasOrchestrator::sparxIAtlas_get_instance();
+        }
     }
-});
+);

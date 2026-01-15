@@ -1,7 +1,7 @@
 <?php
 namespace Starisian\Sparxstar\IAtlas\Includes;
 
-if (!defined('ABSPATH')) {
+if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
@@ -17,14 +17,14 @@ class Autoloader {
      * Register this autoloader with SPL.
      */
     public static function sparxIAtlas_register(): void {
-        spl_autoload_register( [ __CLASS__, 'sparxIAtlas_loadClass' ] );
+        spl_autoload_register( array( __CLASS__, 'sparxIAtlas_loadClass' ) );
     }
 
     /**
      * Unregister this autoloader.
      */
     public static function sparxIAtlas_unregister(): void {
-        spl_autoload_unregister( [ __CLASS__, 'sparxIAtlas_loadClass' ] );
+        spl_autoload_unregister( array( __CLASS__, 'sparxIAtlas_loadClass' ) );
     }
 
     /**
@@ -34,8 +34,8 @@ class Autoloader {
      */
     public static function sparxIAtlas_loadClass( string $className ): void {
         // Ensure required constants are defined
-        if (!defined('STARISIAN_NAMESPACE') || !defined('STARISIAN_PATH')) {
-            error_log('Autoloader error: STARISIAN_NAMESPACE or STARISIAN_PATH is not defined.');
+        if ( ! defined( 'STARISIAN_NAMESPACE' ) || ! defined( 'STARISIAN_PATH' ) ) {
+            error_log( 'Autoloader error: STARISIAN_NAMESPACE or STARISIAN_PATH is not defined.' );
             return;
         }
 
@@ -48,10 +48,10 @@ class Autoloader {
         }
 
         $relativeClass = substr( $className, $len );
-        $file = $baseDir . str_replace( '\\', '/', $relativeClass ) . '.php';
+        $file          = $baseDir . str_replace( '\\', '/', $relativeClass ) . '.php';
 
         if ( file_exists( $file ) ) {
             require_once $file;
         }
+    }
 }
-
