@@ -5,6 +5,10 @@
 
 A comprehensive WordPress plugin for managing dictionary entries with full WPGraphQL and SCF (Secure Custom Fields) integration. This plugin provides a dynamic React-based frontend dictionary interface and a robust backend management system.
 
+[![CodeQL](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/actions/workflows/github-code-scanning/codeql) [![Copilot code review](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/actions/workflows/copilot-pull-request-reviewer/copilot-pull-request-reviewer/badge.svg)](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/actions/workflows/copilot-pull-request-reviewer/copilot-pull-request-reviewer) [![Copilot coding agent](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/actions/workflows/copilot-swe-agent/copilot/badge.svg)](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/actions/workflows/copilot-swe-agent/copilot) [![Dependabot Updates](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/actions/workflows/dependabot/dependabot-updates) 
+
+[![Release Code Quality Final Review](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/actions/workflows/release.yml/badge.svg)](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/actions/workflows/release.yml) [![Security Checks](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/actions/workflows/security.yml/badge.svg)](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/actions/workflows/security.yml)
+
 ## 🚀 Features
 
 *   **Dictionary Management**: Custom Post Type (`aiwa_cpt_dictionary`) for managing word entries.
