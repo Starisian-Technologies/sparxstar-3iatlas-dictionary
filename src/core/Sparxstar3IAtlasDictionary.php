@@ -128,6 +128,10 @@ final class Sparxstar3IAtlasDictionary {
      * @return string The rendered shortcode content.
      */
     public function sparxIAtlas_render_app( $atts = array() ): string {
+        $graphql_url = \site_url( SPARX_3IATLAS_GRAPHQL_SLUG );
+        if ( empty( $graphql_url ) || filepath( $graphql_url ) === false ) {
+            return '<p>' . esc_html__( 'Dictionary endpoint is not available.', 'sparxstar-3iatlas-dictionary' ) . '</p>';
+        }
         $atts = shortcode_atts(
             array(
                 'title' => 'Dictionary',
@@ -137,20 +141,19 @@ final class Sparxstar3IAtlasDictionary {
         );
 
         // Ensure assets are enqueued (in case they weren't caught by the global check, e.g., in a widget)
-        if ( is_singular() && has_shortcode( get_post()->post_content, 'sparxstar_dictionary' ) ) {
-            wp_enqueue_script( 'sparxstar-dictionary-app' );
-            wp_enqueue_style( 'sparxstar-dictionary-style' );
+        wp_enqueue_script( 'sparxstar-dictionary-app' );
+        wp_enqueue_style( 'sparxstar-dictionary-style' );
 
-            // Pass attributes to the frontend
-            wp_localize_script(
-                'sparxstar-dictionary-app',
-                'sparxStarDictionarySettings',
-                array(
-                    'title'   => $atts['title'],
-                    'root_id' => 'sparxstar-dictionary-root',
-                )
-            );
-        }
+        // Pass attributes to the frontend
+        wp_localize_script(
+            'sparxstar-dictionary-app',
+            'sparxStarDictionarySettings',
+            array(
+                'title'      => $atts['title'],
+                'root_id'    => 'sparxstar-dictionary-root',
+                'graphqlUrl' => $graphql_url,
+            )
+        );
 
         return '<div id="sparxstar-dictionary-root" data-title="' . esc_attr( $atts['title'] ) . '"></div>';
     }

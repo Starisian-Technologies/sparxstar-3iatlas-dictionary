@@ -44,6 +44,10 @@ if ( ! defined( 'SPARX_3IATLAS_VERSION' ) ) {
 if ( ! defined( 'SPARX_3IATLAS_NAMESPACE' ) ) {
     define( 'SPARX_3IATLAS_NAMESPACE', 'Starisian\\Sparxstar\\IAtlas\\' );
 }
+if ( ! defined( 'SPARX_3IATLAS_GRAPHQL_SLUG' ) ) {
+    define( 'SPARX_3IATLAS_GRAPHQL_SLUG', '\graphql' );
+}
+
 
 // 2. Compatibility Checks (Bootloader level)
 if ( version_compare( PHP_VERSION, '8.2', '<' ) || version_compare( $GLOBALS['wp_version'], '6.4', '<' ) ) {

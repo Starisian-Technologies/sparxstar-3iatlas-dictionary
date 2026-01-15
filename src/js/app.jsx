@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
+import { createRoot } from 'react-dom/client';
 import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
 import { Virtuoso } from 'react-virtuoso';
@@ -6,8 +7,8 @@ import { Search, Volume2, X, Globe, BookOpen, Image as ImageIcon } from 'lucide-
 import '../css/sparxstar-iatlas-dictionary-form.css';
 
 // --- CONFIGURATION ---
-// Replace with your actual WordPress GraphQL endpoint
-const GRAPHQL_ENDPOINT = 'https://your-wordpress-site.com/graphql';
+// Get the endpoint from the localized script settings
+const GRAPHQL_ENDPOINT = window.sparxStarDictionarySettings?.graphqlUrl || '/graphql';
 
 const GET_ENTRIES = gql`
     query GetAllEntries {
@@ -345,3 +346,14 @@ export default function DictionaryApp() {
         </div>
     );
 }
+
+// Mount the app
+document.addEventListener('DOMContentLoaded', () => {
+    const rootId = window.sparxStarDictionarySettings?.root_id || 'sparxstar-dictionary-root';
+    const container = document.getElementById(rootId);
+
+    if (container) {
+        const root = createRoot(container);
+        root.render(<DictionaryApp />);
+    }
+});
