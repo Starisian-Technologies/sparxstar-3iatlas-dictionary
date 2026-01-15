@@ -1,4 +1,3 @@
-/* global document */
 var accordionLocalStorageKey = 'accordion-id';
 var themeLocalStorageKey = 'theme';
 var fontSizeLocalStorageKey = 'font-size';

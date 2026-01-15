@@ -54,7 +54,7 @@
       "phpstan/extension-installer": true
     }
   },
-  "minimum-stability": "dev",
+  "minimum-stability": "stable",
   "prefer-stable": true,
   "extra": {
     "installer-name": "sparxstar-3iatlas-dictionary"

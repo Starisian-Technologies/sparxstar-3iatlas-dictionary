@@ -17,7 +17,7 @@ final class Sparxstar3IAtlasDictionaryCore {
 
     private static ?Sparxstar3IAtlasDictionaryCore $instance = null;
 
-    public static function sparxIAtlas_get_instance(): Sparxstar3IAtlasDictionaryCore{
+    public static function sparxIAtlas_get_instance(): Sparxstar3IAtlasDictionaryCore {
         if ( self::$instance === null ) {
             self::$instance = new self();
         }
@@ -65,7 +65,7 @@ final class Sparxstar3IAtlasDictionaryCore {
     }
 
 
-    public function sparxIAtlas_sync_dictionary_search_index(int $post_id ): void {
+    public function sparxIAtlas_sync_dictionary_search_index( int $post_id ): void {
             // Only run for our Dictionary CPT
         if ( get_post_type( $post_id ) !== 'aiwa_cpt_dictionary' ) {
                 return;
@@ -88,23 +88,15 @@ final class Sparxstar3IAtlasDictionaryCore {
             );
     }
 
-     // Prevent cloning and unserializing
+    // Prevent cloning and unserializing
     private function __clone(): never { 
-         _doing_it_wrong(
+        _doing_it_wrong(
             __FUNCTION__,
             'Cloning this object is forbidden.',
             SPARX_3IATLAS_VERSION
         );
     }
     public function __wakeup(): never { 
-        _doing_it_wrong(
-            __FUNCTION__,
-            'Serializing this object is forbidden.',
-            SPARX_3IATLAS_VERSION
-        );
-    }
-
-   public function __serialize(): never {
         _doing_it_wrong(
             __FUNCTION__,
             'Serializing this object is forbidden.',

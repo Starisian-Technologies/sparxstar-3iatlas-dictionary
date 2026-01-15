@@ -14,7 +14,7 @@ namespace Starisian\Sparxstar\IAtlas;
  * Plugin Name:       SPARXSTAR 3IAtlas Dictionary
  * Plugin URI:        https://starisian.com/sparxstar/sparxstar-3iatlas-dictionary/
  * Description:       A WordPress plugin for 3iAtlas Dictionary management with SCF and WPGraphQL integration.
- * Version:           1.0.0
+ * Version:           0.6.0
  * Author:            Starisian Technologies
  * Author URI:        https://www.starisian.com/
  * Contributor:       Max Barrett
@@ -39,7 +39,7 @@ if ( ! defined( 'SPARX_3IATLAS_URL' ) ) {
     define( 'SPARX_3IATLAS_URL', plugin_dir_url( __FILE__ ) );
 }
 if ( ! defined( 'SPARX_3IATLAS_VERSION' ) ) {
-    define( 'SPARX_3IATLAS_VERSION', '1.0.0' );
+    define( 'SPARX_3IATLAS_VERSION', '0.6.0' );
 }
 if ( ! defined( 'SPARX_3IATLAS_NAMESPACE' ) ) {
     define( 'SPARX_3IATLAS_NAMESPACE', 'Starisian\\Sparxstar\\IAtlas\\' );
@@ -62,21 +62,21 @@ if ( file_exists( SPARX_3IATLAS_PATH . 'vendor/autoload.php' ) ) {
 } elseif ( file_exists( SPARX_3IATLAS_PATH . 'src/includes/Autoloader.php' ) ) {
     require_once SPARX_3IATLAS_PATH . 'src/includes/Autoloader.php';
     
-    if ( ! defined( 'STARISIAN_NAMESPACE' ) ) {
-        define( 'STARISIAN_NAMESPACE', 'Starisian\\Sparxstar\\IAtlas\\' );
+    if ( ! defined( 'SPARX_3IATLAS_NAMESPACE' ) ) {
+        define( 'SPARX_3IATLAS_NAMESPACE', 'Starisian\\Sparxstar\\IAtlas\\' );
     }
-    if ( ! defined( 'STARISIAN_PATH' ) ) {
-        define( 'STARISIAN_PATH', SPARX_3IATLAS_PATH );
+    if ( ! defined( 'SPARX_3IATLAS_PATH' ) ) {
+        define( 'SPARX_3IATLAS_PATH', SPARX_3IATLAS_PATH );
     }
     
     // Register the Autoloder
-    if ( class_exists( 'Starisian\Sparxstar\IAtlas\Includes\Autoloader' ) ) {
-        \Starisian\Sparxstar\IAtlas\Includes\Autoloader::sparxIAtlas_register();
+    if ( class_exists( 'Starisian\Sparxstar\IAtlas\includes\Autoloader' ) ) {
+        \Starisian\Sparxstar\IAtlas\includes\Autoloader::sparxIAtlas_register();
     }
 }
 
-use Starisian\Sparxstar\IAtlas\Core\Sparxstar3IAtlasOrchestrator;
-use Starisian\Sparxstar\IAtlas\Includes\Sparxstar3IAtlasPostTypes;
+use Starisian\Sparxstar\IAtlas\core\Sparxstar3IAtlasOrchestrator;
+use Starisian\Sparxstar\IAtlas\includes\Sparxstar3IAtlasPostTypes;
 
 // 4. Activation / Deactivation Hooks
 register_activation_hook( __FILE__, 'Starisian\Sparxstar\IAtlas\sparxIAtlas_activate_plugin' );

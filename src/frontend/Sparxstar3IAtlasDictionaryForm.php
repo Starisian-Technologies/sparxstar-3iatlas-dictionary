@@ -147,7 +147,7 @@ final class Sparxstar3IAtlasDictionaryForm {
             <?php endif; ?>
         </div>
         
-        <form id="aiwa-dict-form" class="aiwa-dict-form" data-entry-id="<?php echo esc_attr( $entry_id ); ?>">
+        <form id="aiwa-dict-form" class="aiwa-dict-form" data-entry-id="<?php echo esc_attr( strval( $entry_id ) ); ?>">
             
             <!-- Basic Information Section -->
             <div class="aiwa-form-section">
@@ -476,7 +476,7 @@ final class Sparxstar3IAtlasDictionaryForm {
      * AJAX handler for synonym search
      */
     public function aiwa_dict_search_synonyms(): void {
-         // Verify nonce
+        // Verify nonce
         if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'aiwa_dict_form_nonce' ) ) {
             wp_send_json_error( array( 'message' => 'Security check failed.' ) );
         }
