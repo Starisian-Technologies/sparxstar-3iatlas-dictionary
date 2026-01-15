@@ -45,6 +45,13 @@ module.exports = [
         },
     },
     {
-        ignores: ['node_modules/', 'dist/', 'vendor/', 'assets/', 'docs/js/scripts/third-party/'],
+        ignores: [
+            'node_modules/',
+            'dist/',
+            'vendor/',
+            'assets/',
+            'docs/js/scripts/third-party/',
+            '**/*.min.js',
+        ],
     },
 ];
