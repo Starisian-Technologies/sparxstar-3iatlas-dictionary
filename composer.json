@@ -35,7 +35,7 @@
     "lint:php": "phpcs -q",
     "fix:php": "phpcbf",
     "analyze:php": "phpstan analyse -c phpstan.neon.dist --no-progress",
-    "docs:php": "phpdoc",
+    "docs:php": "docker run --rm -v $(pwd):/data phpdoc/phpdoc:3",
     "test:php": "phpunit",
     "post-install-cmd": [
       "@composer dump-autoload"
