@@ -4,6 +4,31 @@
         "title": "Dictionary Entry Details",
         "fields": [
             {
+                "key": "field_69697a7e1194b",
+                "label": "Entry UUID",
+                "name": "aiwa_entry_uuid",
+                "aria-label": "",
+                "type": "text",
+                "instructions": "System created UUID for the header word Entry.",
+                "required": 1,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "default_value": "",
+                "maxlength": 36,
+                "allow_in_bindings": 0,
+                "placeholder": "",
+                "prepend": "",
+                "append": "",
+                "show_in_graphql": 1,
+                "graphql_description": "",
+                "graphql_field_name": "entryUuid",
+                "graphql_non_null": 0
+            },
+            {
                 "key": "aiwa_field_1",
                 "label": "Translation",
                 "name": "aiwa_translation",
@@ -182,6 +207,31 @@
                 "append": ""
             },
             {
+                "key": "field_6969745e11941",
+                "label": "Phonetic Prounciation",
+                "name": "aiwa_phonetic",
+                "aria-label": "",
+                "type": "text",
+                "instructions": "",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "default_value": "",
+                "maxlength": "",
+                "allow_in_bindings": 1,
+                "placeholder": "",
+                "prepend": "",
+                "append": "",
+                "show_in_graphql": 1,
+                "graphql_description": "",
+                "graphql_field_name": "phoneticProunciation",
+                "graphql_non_null": 0
+            },
+            {
                 "key": "aiwa_field_3",
                 "label": "Audio Recording",
                 "name": "aiwa_audio_file",
@@ -253,20 +303,130 @@
                 "aria-label": "",
                 "type": "repeater",
                 "instructions": "Show how this word is used in real sentences. Add 2-3 example sentences with translations. This helps people understand how to use the word correctly.",
-                "required": false,
-                "conditional_logic": false,
+                "required": 0,
+                "conditional_logic": 0,
                 "wrapper": {
                     "width": "",
                     "class": "",
                     "id": ""
                 },
-                "collapsed": "",
+                "layout": "block",
+                "pagination": 0,
                 "min": 0,
                 "max": 0,
-                "layout": "table",
+                "collapsed": "field_696974c111942",
                 "button_label": "Add Sentence",
+                "show_in_graphql": 1,
+                "graphql_description": "",
+                "graphql_field_name": "aiwaExampleSentences",
+                "graphql_non_null": 0,
                 "rows_per_page": 20,
-                "sub_fields": []
+                "sub_fields": [
+                    {
+                        "key": "field_696974c111942",
+                        "label": "Sentence Example",
+                        "name": "aiwa_sentence_example",
+                        "aria-label": "",
+                        "type": "text",
+                        "instructions": "Use the word in a complete sentence.",
+                        "required": 0,
+                        "conditional_logic": 0,
+                        "wrapper": {
+                            "width": "",
+                            "class": "",
+                            "id": ""
+                        },
+                        "default_value": "",
+                        "maxlength": "",
+                        "allow_in_bindings": 1,
+                        "placeholder": "",
+                        "prepend": "",
+                        "append": "",
+                        "show_in_graphql": 1,
+                        "graphql_description": "",
+                        "graphql_field_name": "sentenceExample",
+                        "graphql_non_null": 0,
+                        "parent_repeater": "aiwa_field_6"
+                    },
+                    {
+                        "key": "field_696975ad11943",
+                        "label": "Sentence Phonetic Pronunciation",
+                        "name": "aiwa_sentence_phonetic",
+                        "aria-label": "",
+                        "type": "text",
+                        "instructions": "The phonetic pronunciation of the complete example sentence.",
+                        "required": 0,
+                        "conditional_logic": 0,
+                        "wrapper": {
+                            "width": "",
+                            "class": "",
+                            "id": ""
+                        },
+                        "default_value": "",
+                        "maxlength": "",
+                        "allow_in_bindings": 1,
+                        "placeholder": "",
+                        "prepend": "",
+                        "append": "",
+                        "show_in_graphql": 1,
+                        "graphql_description": "",
+                        "graphql_field_name": "sentencePhoneticPronunciation",
+                        "graphql_non_null": 0,
+                        "parent_repeater": "aiwa_field_6"
+                    },
+                    {
+                        "key": "field_6969761311944",
+                        "label": "Sentence English Translation",
+                        "name": "aiwa_sentence_english",
+                        "aria-label": "",
+                        "type": "text",
+                        "instructions": "The English translation of the example sentence.",
+                        "required": 0,
+                        "conditional_logic": 0,
+                        "wrapper": {
+                            "width": "",
+                            "class": "",
+                            "id": ""
+                        },
+                        "default_value": "",
+                        "maxlength": "",
+                        "allow_in_bindings": 0,
+                        "placeholder": "",
+                        "prepend": "",
+                        "append": "",
+                        "show_in_graphql": 1,
+                        "graphql_description": "",
+                        "graphql_field_name": "sentenceEnglishTranslation",
+                        "graphql_non_null": 0,
+                        "parent_repeater": "aiwa_field_6"
+                    },
+                    {
+                        "key": "field_6969766611945",
+                        "label": "Sentence French Translation",
+                        "name": "aiwa_sentence_french",
+                        "aria-label": "",
+                        "type": "text",
+                        "instructions": "The French translation of the example sentence.",
+                        "required": 0,
+                        "conditional_logic": 0,
+                        "wrapper": {
+                            "width": "",
+                            "class": "",
+                            "id": ""
+                        },
+                        "default_value": "",
+                        "maxlength": "",
+                        "allow_in_bindings": 1,
+                        "placeholder": "",
+                        "prepend": "",
+                        "append": "",
+                        "show_in_graphql": 1,
+                        "graphql_description": "",
+                        "graphql_field_name": "sentenceFrenchTranslation",
+                        "graphql_non_null": 0,
+                        "parent_repeater": "aiwa_field_6"
+                    }
+                ]
             },
             {
                 "key": "aiwa_field_7",
@@ -287,35 +447,6 @@
                 "rows": 3,
                 "placeholder": "",
                 "new_lines": ""
-            },
-            {
-                "key": "aiwa_field_8",
-                "label": "Synonyms",
-                "name": "aiwa_synonyms",
-                "aria-label": "",
-                "type": "relationship",
-                "instructions": "Other words in the dictionary that have similar meanings or are related to this word. Connect this word to other entries so people can discover related vocabulary.",
-                "required": false,
-                "conditional_logic": false,
-                "wrapper": {
-                    "width": "",
-                    "class": "",
-                    "id": ""
-                },
-                "post_type": [
-                    "aiwa_cpt_dictionary"
-                ],
-                "post_status": [],
-                "taxonomy": [],
-                "filters": [
-                    "search"
-                ],
-                "return_format": "object",
-                "min": "",
-                "max": "",
-                "elements": "",
-                "bidirectional": 0,
-                "bidirectional_target": []
             },
             {
                 "key": "aiwa_field_qc_1",
@@ -347,6 +478,85 @@
                 "placeholder": "",
                 "create_options": 0,
                 "save_options": 0
+            },
+            {
+                "key": "aiwa_field_8",
+                "label": "Synonyms",
+                "name": "aiwa_synonyms",
+                "aria-label": "",
+                "type": "relationship",
+                "instructions": "Other words in the dictionary that have similar meanings or are related to this word. Connect this word to other entries so people can discover related vocabulary.",
+                "required": false,
+                "conditional_logic": false,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "post_type": [
+                    "aiwa_cpt_dictionary"
+                ],
+                "post_status": [],
+                "taxonomy": [],
+                "filters": [
+                    "search"
+                ],
+                "return_format": "object",
+                "min": "",
+                "max": "",
+                "elements": "",
+                "bidirectional": 0,
+                "bidirectional_target": []
+            },
+            {
+                "key": "field_6969778611949",
+                "label": "Antonyms",
+                "name": "aiwa_antonyms",
+                "aria-label": "",
+                "type": "text",
+                "instructions": "",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "default_value": "",
+                "maxlength": "",
+                "allow_in_bindings": 0,
+                "placeholder": "",
+                "prepend": "",
+                "append": "",
+                "show_in_graphql": 1,
+                "graphql_description": "",
+                "graphql_field_name": "antonyms",
+                "graphql_non_null": 0
+            },
+            {
+                "key": "field_696977991194a",
+                "label": "Homonyms",
+                "name": "aiwa_homonyms",
+                "aria-label": "",
+                "type": "text",
+                "instructions": "",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "default_value": "",
+                "maxlength": "",
+                "allow_in_bindings": 0,
+                "placeholder": "",
+                "prepend": "",
+                "append": "",
+                "show_in_graphql": 1,
+                "graphql_description": "",
+                "graphql_field_name": "homonyms",
+                "graphql_non_null": 0
             },
             {
                 "key": "aiwa_field_qc_2",
