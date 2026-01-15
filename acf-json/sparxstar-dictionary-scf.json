@@ -512,7 +512,7 @@
         "active": true,
         "taxonomy": "aiwa-alpha-letter",
         "object_type": [
-            "aiwa-dictionary"
+            "sparx-dictionary"
         ],
         "advanced_configuration": 1,
         "import_source": "",

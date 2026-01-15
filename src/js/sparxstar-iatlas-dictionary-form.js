@@ -180,7 +180,7 @@ jQuery(document).ready(function ($) {
     }
 
     // Form submission
-    $('#aiwa-dict-form').on('submit', function (e) {
+    $('#sparx-dict-form').on('submit', function (e) {
         e.preventDefault();
 
         const form = $(this);

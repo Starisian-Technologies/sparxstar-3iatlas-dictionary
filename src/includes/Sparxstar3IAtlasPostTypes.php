@@ -16,6 +16,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Handles the registration of Custom Post Types and ACF fields.
  *
  * @package Starisian\Sparxstar\IAtlas\includes
+ * @author Starisian Technologies (Max Barrett) <support@starisian.com>
+ * @version 0.6.5
+ * @since 0.1.0
+ * @license Starisian Technologies Proprietary License (STPL)
+ * @copyright Copyright (c) 2024 Starisian Technologies. All rights reserved.
  */
 class Sparxstar3IAtlasPostTypes {
 

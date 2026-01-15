@@ -40,6 +40,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Handles the frontend form submission and rendering.
  *
  * @package Starisian\Sparxstar\IAtlas\frontend
+ * @author Starisian Technologies (Max Barrett) <support@starisian.com>
+ * @version 0.6.5
+ * @since 0.1.0
+ * @license Starisian Technologies Proprietary License (STPL)
+ * @copyright Copyright (c) 2024 Starisian Technologies. All rights reserved.
  */
 final class Sparxstar3IAtlasDictionaryForm {
 
@@ -58,9 +63,9 @@ final class Sparxstar3IAtlasDictionaryForm {
      * @return void
      */
     public function sparxIAtlas_register_hooks(): void {
-        add_action( 'wp_enqueue_scripts', array( $this, 'aiwa_dict_form_enqueue_scripts' ) );
-        add_action( 'wp_ajax_aiwa_dict_form_submit', array( $this, 'aiwa_dict_submit_form' ) );
-        add_action( 'wp_ajax_aiwa_dict_search_synonyms', array( $this, 'aiwa_dict_search_synonyms' ) );
+        add_action( 'wp_enqueue_scripts', array( $this, 'sparxIAtlas_dict_form_enqueue_scripts' ) );
+        add_action( 'wp_ajax_sparxIAtlas_dict_form_submit', array( $this, 'sparxIAtlas_dict_submit_form' ) );
+        add_action( 'wp_ajax_sparxIAtlas_dict_search_synonyms', array( $this, 'sparxIAtlas_dict_search_synonyms' ) );
     }
 
     /**
@@ -69,30 +74,30 @@ final class Sparxstar3IAtlasDictionaryForm {
      * @return void
      */
     public function sparxIAtlas_register_shortcodes(): void {
-        add_shortcode( 'aiwa_dictionary_form', array( $this, 'aiwa_dictionary_render_form' ) );
+        add_shortcode( 'sparxstar_dictionary_form', array( $this, 'sparxIAtlas_dictionary_render_form' ) );
     }
 
     /**
      * Enqueue scripts and styles
      */
-    public function aiwa_dict_form_enqueue_scripts(): void {
-        if ( is_page() && has_shortcode( get_post()->post_content, 'aiwa_dictionary_form' ) ) {
+    public function sparxIAtlas_dict_form_enqueue_scripts(): void {
+        if ( is_page() && has_shortcode( get_post()->post_content, 'sparxstar_dictionary_form' ) ) {
             wp_enqueue_media();
             if ( defined( 'SPARX_3IATLAS_URL' ) ) {
-                wp_enqueue_style( 'aiwa-dict-form-style', SPARX_3IATLAS_URL . 'assets/css/sparxstar-3iatlas-dictionary-form-style.min.css', array(), '1.0' );
-                wp_enqueue_script( 'aiwa-dict-form-script', SPARX_3IATLAS_URL . 'assets/js/sparxstar-3iatlas-dictionary-form.min.js', array( 'jquery' ), '1.0', true );
+                wp_enqueue_style( 'sparx-dict-form-style', SPARX_3IATLAS_URL . 'assets/css/sparxstar-3iatlas-dictionary-form-style.min.css', array(), '1.0' );
+                wp_enqueue_script( 'sparx-dict-form-script', SPARX_3IATLAS_URL . 'assets/js/sparxstar-3iatlas-dictionary-form.min.js', array( 'jquery' ), '1.0', true );
             } else {
                 // Fallback if constant not defined (e.g. during standalone testing)
-                wp_enqueue_style( 'aiwa-dict-form-style', plugin_dir_url( dirname( __DIR__ ) ) . 'assets/css/sparxstar-3iatlas-dictionary-form-style.min.css', array(), '1.0' );
-                wp_enqueue_script( 'aiwa-dict-form-script', plugin_dir_url( dirname( __DIR__ ) ) . 'assets/js/sparxstar-3iatlas-dictionary-form.min.js', array( 'jquery' ), '1.0', true );
+                wp_enqueue_style( 'sparx-dict-form-style', plugin_dir_url( dirname( __DIR__ ) ) . 'assets/css/sparxstar-3iatlas-dictionary-form-style.min.css', array(), '1.0' );
+                wp_enqueue_script( 'sparx-dict-form-script', plugin_dir_url( dirname( __DIR__ ) ) . 'assets/js/sparxstar-3iatlas-dictionary-form.min.js', array( 'jquery' ), '1.0', true );
             }
         
             wp_localize_script(
-                'aiwa-dict-form-script',
-                'aiwaDict',
+                'sparxstar-dict-form-script',
+                'sparxstarDict',
                 array(
                     'ajaxurl' => admin_url( 'admin-ajax.php' ),
-                    'nonce'   => wp_create_nonce( 'aiwa_dict_form_nonce' ),
+                    'nonce'   => wp_create_nonce( 'sparxstar_dict_form_nonce' ),
                 )
             );
         }
@@ -100,15 +105,15 @@ final class Sparxstar3IAtlasDictionaryForm {
 
     /**
      * Shortcode to display the form
-     * Usage: [aiwa_dictionary_form] or [aiwa_dictionary_form entry_id="123"]
+     * Usage: [sparxstar_dictionary_form] or [sparxstar_dictionary_form entry_id="123"]
      * 
      * @param array $atts Shortcode attributes.
      * @return string rendered HTML of the form.
      */
-    public function aiwa_dictionary_render_form( array $atts ): string {
+    public function sparxIAtlas_dictionary_render_form( array $atts ): string {
         // Check if user is logged in
         if ( ! is_user_logged_in() ) {
-            return '<div class="aiwa-dict-notice error">You must be logged in to access this form.</div>';
+            return '<div class="sparx-dict-notice error">You must be logged in to access this form.</div>';
         }
     
         $atts = shortcode_atts(
@@ -125,11 +130,11 @@ final class Sparxstar3IAtlasDictionaryForm {
     
         // Check permissions
         if ( $entry_id && ! $is_editor ) {
-            return '<div class="aiwa-dict-notice error">Only editors can edit existing entries.</div>';
+            return '<div class="sparx-dict-notice error">Only editors can edit existing entries.</div>';
         }
     
         if ( ! $is_contributor && ! $is_editor ) {
-            return '<div class="aiwa-dict-notice error">You do not have permission to add dictionary entries.</div>';
+            return '<div class="sparx-dict-notice error">You do not have permission to add dictionary entries.</div>';
         }
     
         // Get existing entry data if editing
@@ -137,7 +142,7 @@ final class Sparxstar3IAtlasDictionaryForm {
         if ( $entry_id ) {
             $post = get_post( $entry_id );
             if ( ! $post || $post->post_type !== 'aiwa_cpt_dictionary' ) {
-                return '<div class="aiwa-dict-notice error">Invalid entry ID.</div>';
+                return '<div class="sparx-dict-notice error">Invalid entry ID.</div>';
             }
         
             $entry_data = array(
@@ -162,15 +167,15 @@ final class Sparxstar3IAtlasDictionaryForm {
         ob_start();
         ?>
     
-    <div class="aiwa-dict-form-container">
-        <div class="aiwa-dict-form-header">
+    <div class="sparx-dict-form-container">
+        <div class="sparx-dict-form-header">
             <h2><?php echo $entry_id ? 'Edit Dictionary Entry' : 'Add New Dictionary Entry'; ?></h2>
             <?php if ( $entry_id ) : ?>
-                <p class="aiwa-dict-notice info">Editing will create a new draft version without modifying the original entry.</p>
+                <p class="sparx-dict-notice info">Editing will create a new draft version without modifying the original entry.</p>
             <?php endif; ?>
         </div>
         
-        <form id="aiwa-dict-form" class="aiwa-dict-form" data-entry-id="<?php echo esc_attr( strval( $entry_id ) ); ?>">
+        <form id="sparx-dict-form" class="sparx-dict-form" data-entry-id="<?php echo esc_attr( strval( $entry_id ) ); ?>">
             
             <!-- Basic Information Section -->
             <div class="aiwa-form-section">
@@ -390,7 +395,7 @@ final class Sparxstar3IAtlasDictionaryForm {
     /**
      * AJAX handler for form submission
      */
-    public function aiwa_dict_submit_form(): void {
+    public function sparxIAtlas_dict_submit_form(): void {
         // Verify nonce
         if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'aiwa_dict_form_nonce' ) ) {
             wp_send_json_error( array( 'message' => 'Security check failed.' ) );
@@ -498,7 +503,7 @@ final class Sparxstar3IAtlasDictionaryForm {
     /**
      * AJAX handler for synonym search
      */
-    public function aiwa_dict_search_synonyms(): void {
+    public function sparxIAtlas_dict_search_synonyms(): void {
         // Verify nonce
         if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'aiwa_dict_form_nonce' ) ) {
             wp_send_json_error( array( 'message' => 'Security check failed.' ) );

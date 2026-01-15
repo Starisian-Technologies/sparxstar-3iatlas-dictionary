@@ -3,6 +3,11 @@
  * Main plugin orchestrator file.
  *
  * @package Starisian\Sparxstar\IAtlas\core
+ * @author Starisian Technologies (Max Barrett) <support@starisian.com>
+ * @version 0.6.5
+ * @since 0.1.0
+ * @license Starisian Technologies Proprietary License (STPL)
+ * @copyright Copyright (c) 2024 Starisian Technologies. All rights reserved.
  */
 namespace Starisian\Sparxstar\IAtlas\core;
 
@@ -52,23 +57,25 @@ final class Sparxstar3IAtlasDictionary {
      */
     private function sparxIAtlas_register_hooks(): void {
         add_shortcode( 'sparxstar_dictionary', array( $this, 'sparxIAtlas_render_app' ) );
+        add_action( 'wp_enqueue_scripts', array( $this, 'sparxIAtlas_enqueue_assets' ) );
     }
 
     /**
-     * Shortcode callback to render the dictionary app.
-     * Usage: [sparxstar_dictionary]
+     * Enqueues the assets for the dictionary app.
+     * Checks if the shortcode is present in the post content to load assets conditionally.
      * 
-     * @param array $atts Shortcode attributes.
-     * @return string The rendered shortcode content.
+     * @return void
      */
-    public function sparxIAtlas_render_app( $atts = array() ): string {
-        // Enqueue assets only when shortcode is used
-        if ( ! is_admin() ) {
+    public function sparxIAtlas_enqueue_assets(): void {
+        global $post;
+
+        // Check if we are on a post/page and the shortcode is present
+        if ( is_a( $post, 'WP_Post' ) && has_shortcode( $post->post_content, 'sparxstar_dictionary' ) ) {
             wp_enqueue_script(
                 'sparxstar-dictionary-app',
                 SPARX_3IATLAS_URL . 'assets/js/sparxstar-3iatlas-dictionary-app.min.js',
                 array(),
-                '1.0.0',
+                SPARX_3IATLAS_VERSION,
                 true
             );
 
@@ -76,11 +83,44 @@ final class Sparxstar3IAtlasDictionary {
                 'sparxstar-dictionary-style',
                 SPARX_3IATLAS_URL . 'assets/css/sparxstar-3iatlas-dictionary-app.min.css',
                 array(),
-                '1.0.0'
+                SPARX_3IATLAS_VERSION
+            );
+        }
+    }
+
+    /**
+     * Shortcode callback to render the dictionary app.
+     * Usage: [sparxstar_dictionary title="My Dictionary"]
+     * 
+     * @param array|string $atts Shortcode attributes.
+     * @return string The rendered shortcode content.
+     */
+    public function sparxIAtlas_render_app( $atts = array() ): string {
+        $atts = shortcode_atts(
+            array(
+                'title' => 'Dictionary',
+            ),
+            $atts,
+            'sparxstar_dictionary'
+        );
+
+        // Ensure assets are enqueued (in case they weren't caught by the global check, e.g., in a widget)
+        if ( ! is_admin() ) {
+            wp_enqueue_script( 'sparxstar-dictionary-app' );
+            wp_enqueue_style( 'sparxstar-dictionary-style' );
+
+            // Pass attributes to the frontend
+            wp_localize_script(
+                'sparxstar-dictionary-app',
+                'sparxStarDictionarySettings',
+                array(
+                    'title'   => $atts['title'],
+                    'root_id' => 'sparxstar-dictionary-root',
+                )
             );
         }
 
-        return '<div id="sparxstar-dictionary-root"></div>';
+        return '<div id="sparxstar-dictionary-root" data-title="' . esc_attr( $atts['title'] ) . '"></div>';
     }
 
     /**

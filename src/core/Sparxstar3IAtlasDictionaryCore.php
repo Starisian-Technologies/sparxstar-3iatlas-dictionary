@@ -3,6 +3,11 @@
  * Core functionality file.
  *
  * @package Starisian\Sparxstar\IAtlas\core
+ * @author Starisian Technologies (Max Barrett) <support@starisian.com>
+ * @version 0.6.5
+ * @since 0.1.0
+ * @license Starisian Technologies Proprietary License (STPL)
+ * @copyright Copyright (c) 2024 Starisian Technologies. All rights reserved.
  */
 namespace Starisian\Sparxstar\IAtlas\core;
 
