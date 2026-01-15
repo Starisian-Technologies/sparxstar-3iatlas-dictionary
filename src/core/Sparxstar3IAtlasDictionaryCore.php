@@ -1,4 +1,9 @@
 <?php
+/**
+ * Core functionality file.
+ *
+ * @package Starisian\Sparxstar\IAtlas\core
+ */
 namespace Starisian\Sparxstar\IAtlas\core;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -15,8 +20,18 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class Sparxstar3IAtlasDictionaryCore {
 
+    /**
+     * Singleton instance of the class.
+     *
+     * @var Sparxstar3IAtlasDictionaryCore|null
+     */
     private static ?Sparxstar3IAtlasDictionaryCore $instance = null;
 
+    /**
+     * Gets the singleton instance of the class.
+     *
+     * @return Sparxstar3IAtlasDictionaryCore The singleton instance.
+     */
     public static function sparxIAtlas_get_instance(): Sparxstar3IAtlasDictionaryCore {
         if ( self::$instance === null ) {
             self::$instance = new self();
@@ -31,6 +46,11 @@ final class Sparxstar3IAtlasDictionaryCore {
             $this->sparxIAtlas_register_hooks();
     }
 
+    /**
+     * Registers the necessary actions and filters.
+     *
+     * @return void
+     */
     private function sparxIAtlas_register_hooks(): void {
             // Hook into ACF save post to sync search index
             add_action( 'acf/save_post', array( $this, 'sparxIAtlas_sync_dictionary_search_index' ), 20 );
@@ -65,6 +85,14 @@ final class Sparxstar3IAtlasDictionaryCore {
     }
 
 
+    /**
+     * Syncs the dictionary search index when a post is saved.
+     *
+     * Combines the foreign word and translation into a single searchable string.
+     *
+     * @param int $post_id The ID of the post being saved.
+     * @return void
+     */
     public function sparxIAtlas_sync_dictionary_search_index( int $post_id ): void {
             // Only run for our Dictionary CPT
         if ( get_post_type( $post_id ) !== 'aiwa_cpt_dictionary' ) {
@@ -89,6 +117,11 @@ final class Sparxstar3IAtlasDictionaryCore {
     }
 
     // Prevent cloning and unserializing
+    /**
+     * Prevents cloning of the singleton instance.
+     *
+     * @return never
+     */
     private function __clone(): never { 
         _doing_it_wrong(
             __FUNCTION__,
@@ -96,6 +129,11 @@ final class Sparxstar3IAtlasDictionaryCore {
             SPARX_3IATLAS_VERSION
         );
     }
+    /**
+     * Prevents unserializing of the singleton instance.
+     *
+     * @return never
+     */
     public function __wakeup(): never { 
         _doing_it_wrong(
             __FUNCTION__,

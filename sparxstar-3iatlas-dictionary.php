@@ -83,6 +83,11 @@ register_activation_hook( __FILE__, 'Starisian\Sparxstar\IAtlas\sparxIAtlas_acti
 register_deactivation_hook( __FILE__, 'Starisian\Sparxstar\IAtlas\sparxIAtlas_deactivate_plugin' );
 register_uninstall_hook( __FILE__, 'Starisian\Sparxstar\IAtlas\sparxIAtlas_uninstall_plugin' );
 
+/**
+ * Activates the plugin and registers Custom Post Types to flush rewrite rules.
+ *
+ * @return void
+ */
 function sparxIAtlas_activate_plugin() {
     // Trigger CPT registration to verify rewrite rules
     if ( class_exists( Sparxstar3IAtlasPostTypes::class ) ) {
@@ -94,10 +99,20 @@ function sparxIAtlas_activate_plugin() {
     flush_rewrite_rules();
 }
 
+/**
+ * Deactivates the plugin and flushes rewrite rules.
+ *
+ * @return void
+ */
 function sparxIAtlas_deactivate_plugin() {
     flush_rewrite_rules();
 }
 
+/**
+ * Handles plugin uninstallation.
+ *
+ * @return void
+ */
 function sparxIAtlas_uninstall_plugin() {
     // Clean up options or data if needed
 }

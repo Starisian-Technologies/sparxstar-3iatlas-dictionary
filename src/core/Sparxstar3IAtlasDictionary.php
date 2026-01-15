@@ -1,4 +1,9 @@
 <?php
+/**
+ * Main plugin orchestrator file.
+ *
+ * @package Starisian\Sparxstar\IAtlas\core
+ */
 namespace Starisian\Sparxstar\IAtlas\core;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -15,6 +20,11 @@ use Starisian\Sparxstar\IAtlas\core\Sparxstar3IAtlasDictionaryCore;
  * Main orchestrator for the plugin. Initializes dependencies, hooks, and components.
  */
 final class Sparxstar3IAtlasDictionary {
+    /**
+     * Singleton instance of the class.
+     *
+     * @var Sparxstar3IAtlasDictionary|null
+     */
     private static ?Sparxstar3IAtlasDictionary $instance = null;
 
     private function __construct() {
@@ -23,6 +33,11 @@ final class Sparxstar3IAtlasDictionary {
         $this->sparxIAtlas_register_hooks();
     }
 
+    /**
+     * Gets the singleton instance of the class.
+     *
+     * @return Sparxstar3IAtlasDictionary The singleton instance.
+     */
     public static function sparxIAtlas_get_instance(): Sparxstar3IAtlasDictionary {
         if ( self::$instance === null ) {
             self::$instance = new self();
@@ -30,6 +45,11 @@ final class Sparxstar3IAtlasDictionary {
         return self::$instance;
     }
 
+    /**
+     * Registers the necessary actions and filters.
+     *
+     * @return void
+     */
     private function sparxIAtlas_register_hooks(): void {
         add_shortcode( 'sparxstar_dictionary', array( $this, 'sparxIAtlas_render_app' ) );
     }
@@ -37,6 +57,9 @@ final class Sparxstar3IAtlasDictionary {
     /**
      * Shortcode callback to render the dictionary app.
      * Usage: [sparxstar_dictionary]
+     * 
+     * @param array $atts Shortcode attributes.
+     * @return string The rendered shortcode content.
      */
     public function sparxIAtlas_render_app( $atts = array() ): string {
         // Enqueue assets only when shortcode is used
@@ -60,6 +83,11 @@ final class Sparxstar3IAtlasDictionary {
         return '<div id="sparxstar-dictionary-root"></div>';
     }
 
+    /**
+     * Loads the plugin dependencies and initializes core components.
+     *
+     * @return void
+     */
     private function sparxIAtlas_load_dependencies(): void {
         // Instantiate Post Types on init (handled by class constructor hook)
         if ( class_exists( Sparxstar3IAtlasPostTypes::class ) ) {
@@ -82,11 +110,21 @@ final class Sparxstar3IAtlasDictionary {
         }
     }
 
+    /**
+     * Loads the plugin textdomain for translation.
+     *
+     * @return void
+     */
     private function sparxIAtlas_load_textdomain(): void {
         load_plugin_textdomain( 'sparxstar-3iatlas-dictionary', false, dirname( plugin_basename( SPARX_3IATLAS_PATH ) ) . '/languages' );
     }
 
     // Prevent cloning and unserializing
+    /**
+     * Prevents cloning of the singleton instance.
+     *
+     * @return never
+     */
     private function __clone(): never { 
         _doing_it_wrong(
             __FUNCTION__,
@@ -94,6 +132,11 @@ final class Sparxstar3IAtlasDictionary {
             SPARX_3IATLAS_VERSION
         );
     }
+    /**
+     * Prevents unserializing of the singleton instance.
+     *
+     * @return never
+     */
     public function __wakeup(): never { 
         _doing_it_wrong(
             __FUNCTION__,

@@ -1,17 +1,37 @@
 <?php
+/**
+ * Post Types registration file.
+ *
+ * @package Starisian\Sparxstar\IAtlas\includes
+ */
 namespace Starisian\Sparxstar\IAtlas\includes;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
+/**
+ * Class Sparxstar3IAtlasPostTypes
+ * 
+ * Handles the registration of Custom Post Types and ACF fields.
+ *
+ * @package Starisian\Sparxstar\IAtlas\includes
+ */
 class Sparxstar3IAtlasPostTypes {
 
+    /**
+     * Initializes the class and registers hooks.
+     */
     public function __construct() {
         add_action( 'init', array( $this, 'sparxIAtlas_register_dictionary_cpt' ) );
         add_action( 'acf/include_fields', array( $this, 'sparxIAtlas_register_acf_fields' ) );
     }
 
+    /**
+     * Registers ACF field groups programmatically.
+     * 
+     * @return void
+     */
     public function sparxIAtlas_register_acf_fields(): void {
         if ( ! function_exists( 'acf_add_local_field_group' ) ) {
             return;
@@ -527,6 +547,11 @@ class Sparxstar3IAtlasPostTypes {
         );
     }
 
+    /**
+     * Registers the Dictionary Custom Post Type and its Taxonomies.
+     * 
+     * @return void
+     */
     public function sparxIAtlas_register_dictionary_cpt() {
         
         // Register Taxonomies

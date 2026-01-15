@@ -34,20 +34,40 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 
+/**
+ * Class Sparxstar3IAtlasDictionaryForm
+ * 
+ * Handles the frontend form submission and rendering.
+ *
+ * @package Starisian\Sparxstar\IAtlas\frontend
+ */
 final class Sparxstar3IAtlasDictionaryForm {
 
 
+    /**
+     * Initializes the class and registers hooks.
+     */
     public function __construct() {
         $this->sparxIAtlas_register_hooks();
         $this->sparxIAtlas_register_shortcodes();
     }
 
+    /**
+     * Register action hooks for the frontend form.
+     * 
+     * @return void
+     */
     public function sparxIAtlas_register_hooks(): void {
         add_action( 'wp_enqueue_scripts', array( $this, 'aiwa_dict_form_enqueue_scripts' ) );
         add_action( 'wp_ajax_aiwa_dict_form_submit', array( $this, 'aiwa_dict_submit_form' ) );
         add_action( 'wp_ajax_aiwa_dict_search_synonyms', array( $this, 'aiwa_dict_search_synonyms' ) );
     }
 
+    /**
+     * Registers the shortcode for the form.
+     * 
+     * @return void
+     */
     public function sparxIAtlas_register_shortcodes(): void {
         add_shortcode( 'aiwa_dictionary_form', array( $this, 'aiwa_dictionary_render_form' ) );
     }
@@ -81,6 +101,9 @@ final class Sparxstar3IAtlasDictionaryForm {
     /**
      * Shortcode to display the form
      * Usage: [aiwa_dictionary_form] or [aiwa_dictionary_form entry_id="123"]
+     * 
+     * @param array $atts Shortcode attributes.
+     * @return string rendered HTML of the form.
      */
     public function aiwa_dictionary_render_form( array $atts ): string {
         // Check if user is logged in
