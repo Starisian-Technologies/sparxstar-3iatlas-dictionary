@@ -7,13 +7,11 @@ declare(strict_types=1);
  */
 namespace Starisian\Sparxstar\IAtlas\includes;
 
-use ACF;
-use function add_action;
-use function register_post_type;
-use function register_taxonomy;
-use function acf_add_local_field_group;
 use function defined;
-
+use function acf_add_local_field_group;
+use function register_taxonomy;
+use function add_action;
+use function function_exists;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;

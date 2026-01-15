@@ -26,7 +26,7 @@ use function _doing_it_wrong;
 use function add_shortcode;
 use function add_action;
 use function has_shortcode;
-use function is_singular
+use function is_singular;
 use function load_plugin_textdomain;
 use function plugin_basename;
 use function wp_enqueue_script;
@@ -218,7 +218,6 @@ final class Sparxstar3IAtlasDictionary {
             SPARX_3IATLAS_VERSION
         );
         throw new \RuntimeException( 'Serializing is not allowed.' );
-
     }
 
     public function __unserialize( array $data ): never {

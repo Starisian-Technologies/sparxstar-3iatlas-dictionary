@@ -9,23 +9,23 @@ jQuery(document).ready(function ($) {
             <div class="sentence-row" data-index="${index}">
                 <div class="sentence-fields">
                     <div class="form-group">
-                        <label>Sentence</label>
-                        <input type="text" name="sentences[${index}][aiwa_sentence]">
+                        <label for="sentence_${index}_text">Sentence</label>
+                        <input type="text" id="sentence_${index}_text" name="sentences[${index}][aiwa_sentence]">
                     </div>
                     <div class="form-group">
-                        <label>Translation</label>
-                        <input type="text" name="sentences[${index}][aiwa_s_translation]">
+                        <label for="sentence_${index}_trans">Translation</label>
+                        <input type="text" id="sentence_${index}_trans" name="sentences[${index}][aiwa_s_translation]">
                     </div>
                     <div class="form-group">
-                        <label>Translation (English)</label>
-                        <input type="text" name="sentences[${index}][aiwa_s_translation_english]">
+                        <label for="sentence_${index}_trans_en">Translation (English)</label>
+                        <input type="text" id="sentence_${index}_trans_en" name="sentences[${index}][aiwa_s_translation_english]">
                     </div>
                     <div class="form-group">
-                        <label>Translation (French)</label>
-                        <input type="text" name="sentences[${index}][aiwa_s_translation_french]">
+                        <label for="sentence_${index}_trans_fr">Translation (French)</label>
+                        <input type="text" id="sentence_${index}_trans_fr" name="sentences[${index}][aiwa_s_translation_french]">
                     </div>
                 </div>
-                <button type="button" class="btn-text remove-sentence-btn">Remove</button>
+                <button type="button" class="btn-text remove-sentence-btn" aria-label="Remove sentence">Remove</button>
             </div>
         `;
         $('#example-sentences-container').append(template);
@@ -75,8 +75,10 @@ jQuery(document).ready(function ($) {
                 container
                     .find('.image-preview-container')
                     .html('<img src="' + attachment.url + '" alt="Preview">');
+                container.find('.remove-media-btn').attr('aria-label', 'Remove image');
             } else {
                 container.find('.media-filename').text(attachment.filename);
+                container.find('.remove-media-btn').attr('aria-label', 'Remove audio file');
             }
 
             container.find('.remove-media-btn').show();
@@ -136,12 +138,19 @@ jQuery(document).ready(function ($) {
         }
 
         results.forEach(function (result) {
-            const resultItem = $('<div class="synonym-result-item">')
+            const resultItem = $('<div class="synonym-result-item" role="option">')
                 .text(result.title)
                 .data('id', result.id)
                 .on('click', function () {
                     addSynonym(result.id, result.title);
-                });
+                })
+                .on('keydown', function (e) {
+                     if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        addSynonym(result.id, result.title);
+                     }
+                })
+                .attr('tabindex', '0');
             container.append(resultItem);
         });
     }
@@ -153,9 +162,9 @@ jQuery(document).ready(function ($) {
             return;
         }
 
-        const tag = $('<span class="synonym-tag">')
+        const tag = $('<span class="synonym-tag" role="listitem">')
             .attr('data-id', id)
-            .html(title + ' <button type="button" class="remove-synonym">×</button>');
+            .html(title + ' <button type="button" class="remove-synonym" aria-label="Remove synonym ' + title + '">×</button>');
 
         $('#selected-synonyms').append(tag);
         updateSynonymField();

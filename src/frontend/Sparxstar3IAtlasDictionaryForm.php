@@ -1,4 +1,5 @@
 <?php
+declare( strict_types=1 );
 /**
  * Plugin Name: AIWA Dictionary Form
  * Description: Frontend form for adding/editing dictionary entries
@@ -8,23 +9,27 @@
 namespace Starisian\Sparxstar\IAtlas\frontend;
 
 use WP_Query;
-use WP_User;
-use WP_Post;
-use WP_Error;
-use Throwable;
-use Exception;
-use stdClass;
-use DateTime;
-use DateTimeZone;
-use WP_REST_Request;
-use WP_REST_Response;
-use WP_REST_Server;
-use WP_REST_Controller;
-use WP_REST_API;
-use WP_Term;
-use WP_Term_Query;
-use WP_Taxonomy;
-use WP_Error as WPError;
+use function defined;
+use function exit;
+use function add_action;
+use function is_page;
+use function has_shortcode;
+use function get_post;
+use function wp_enqueue_media;
+use function wp_enqueue_style;
+use function wp_enqueue_script;
+use function wp_localize_script;
+use function admin_url;
+use function wp_create_nonce;
+use function is_user_logged_in;
+use function wp_get_current_user;
+use function current_user_can;
+use function sanitize_text_field;
+use function wp_unslash;
+use function intval;
+use function is_wp_error;
+use function wp_insert_post;
+use function update_post_meta; 
 
 
 
@@ -47,7 +52,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @copyright Copyright (c) 2024 Starisian Technologies. All rights reserved.
  */
 final class Sparxstar3IAtlasDictionaryForm {
-
 
     /**
      * Initializes the class and registers hooks.
@@ -93,8 +97,8 @@ final class Sparxstar3IAtlasDictionaryForm {
                 wp_enqueue_script( 'sparx-dict-form-script', SPARX_3IATLAS_URL . 'assets/js/sparxstar-3iatlas-dictionary-form.min.js', array( 'jquery' ), '1.0', true );
             } else {
                 // Fallback if constant not defined (e.g. during standalone testing)
-                wp_enqueue_style( 'sparx-dict-form-style', plugin_dir_url( dirname( __DIR__ ) ) . 'assets/css/sparxstar-3iatlas-dictionary-form-style.min.css', array(), '1.0' );
-                wp_enqueue_script( 'sparx-dict-form-script', plugin_dir_url( dirname( __DIR__ ) ) . 'assets/js/sparxstar-3iatlas-dictionary-form.min.js', array( 'jquery' ), '1.0', true );
+                wp_enqueue_style( 'sparx-dict-form-style', SPARX_3IATLAS_URL . 'assets/css/sparxstar-3iatlas-dictionary-form-style.min.css', array(), '1.0' );
+                wp_enqueue_script( 'sparx-dict-form-script', SPARX_3IATLAS_URL . 'assets/js/sparxstar-3iatlas-dictionary-form.min.js', array( 'jquery' ), '1.0', true );
             }
         
             wp_localize_script(
@@ -118,7 +122,7 @@ final class Sparxstar3IAtlasDictionaryForm {
     public function sparxIAtlas_dictionary_render_form( array $atts ): string {
         // Check if user is logged in
         if ( ! is_user_logged_in() ) {
-            return '<div class="sparx-dict-notice error">You must be logged in to access this form.</div>';
+            return '<div class="sparx-dict-notice error" role="alert">You must be logged in to access this form.</div>';
         }
     
         $atts = shortcode_atts(
@@ -135,11 +139,11 @@ final class Sparxstar3IAtlasDictionaryForm {
     
         // Check permissions
         if ( $entry_id && ! $is_editor ) {
-            return '<div class="sparx-dict-notice error">Only editors can edit existing entries.</div>';
+            return '<div class="sparx-dict-notice error" role="alert">Only editors can edit existing entries.</div>';
         }
     
         if ( ! $is_contributor && ! $is_editor ) {
-            return '<div class="sparx-dict-notice error">You do not have permission to add dictionary entries.</div>';
+            return '<div class="sparx-dict-notice error" role="alert">You do not have permission to add dictionary entries.</div>';
         }
     
         // Get existing entry data if editing
@@ -147,8 +151,9 @@ final class Sparxstar3IAtlasDictionaryForm {
         if ( $entry_id ) {
             $post = get_post( $entry_id );
             if ( ! $post || $post->post_type !== 'aiwa_cpt_dictionary' ) {
-                return '<div class="sparx-dict-notice error">Invalid entry ID.</div>';
+                return '<div class="sparx-dict-notice error" role="alert">Invalid entry ID.</div>';
             }
+
         
             $entry_data = array(
                 'title'                 => $post->post_title,
@@ -176,7 +181,7 @@ final class Sparxstar3IAtlasDictionaryForm {
         <div class="sparx-dict-form-header">
             <h2><?php echo $entry_id ? 'Edit Dictionary Entry' : 'Add New Dictionary Entry'; ?></h2>
             <?php if ( $entry_id ) : ?>
-                <p class="sparx-dict-notice info">Editing will create a new draft version without modifying the original entry.</p>
+                <p class="sparx-dict-notice info" role="status">Editing will create a new draft version without modifying the original entry.</p>
             <?php endif; ?>
         </div>
         
@@ -188,7 +193,7 @@ final class Sparxstar3IAtlasDictionaryForm {
                 
                 <div class="form-group">
                     <label for="aiwa_title">Word / Term *</label>
-                    <input type="text" id="aiwa_title" name="aiwa_title" required value="<?php echo esc_attr( $entry_data['title'] ?? '' ); ?>">
+                    <input type="text" id="aiwa_title" name="aiwa_title" required aria-required="true" value="<?php echo esc_attr( $entry_data['title'] ?? '' ); ?>">
                 </div>
                 
                 <div class="form-row">
@@ -238,14 +243,14 @@ final class Sparxstar3IAtlasDictionaryForm {
                 <div class="form-row">
                     <div class="form-group">
                         <label for="aiwa_search_string_english">Search String (English)</label>
-                        <input type="text" id="aiwa_search_string_english" name="aiwa_search_string_english" value="<?php echo esc_attr( $entry_data['search_string_english'] ?? '' ); ?>">
-                        <small>Combination of word + English translation for search indexing</small>
+                        <input type="text" id="aiwa_search_string_english" name="aiwa_search_string_english" aria-describedby="desc_aiwa_search_string_english" value="<?php echo esc_attr( $entry_data['search_string_english'] ?? '' ); ?>">
+                        <small id="desc_aiwa_search_string_english">Combination of word + English translation for search indexing</small>
                     </div>
                     
                     <div class="form-group">
                         <label for="aiwa_search_string_french">Search String (French)</label>
-                        <input type="text" id="aiwa_search_string_french" name="aiwa_search_string_french" value="<?php echo esc_attr( $entry_data['search_string_french'] ?? '' ); ?>">
-                        <small>Combination of word + French translation for search indexing</small>
+                        <input type="text" id="aiwa_search_string_french" name="aiwa_search_string_french" aria-describedby="desc_aiwa_search_string_french" value="<?php echo esc_attr( $entry_data['search_string_french'] ?? '' ); ?>">
+                        <small id="desc_aiwa_search_string_french">Combination of word + French translation for search indexing</small>
                     </div>
                 </div>
                 
@@ -257,8 +262,8 @@ final class Sparxstar3IAtlasDictionaryForm {
                     
                     <div class="form-group">
                         <label for="aiwa_rating_average">Rating Average</label>
-                        <input type="number" id="aiwa_rating_average" name="aiwa_rating_average" min="1" max="5" step="0.01" value="<?php echo esc_attr( $entry_data['rating_average'] ?? '' ); ?>">
-                        <small>Average rating (1-5)</small>
+                        <input type="number" id="aiwa_rating_average" name="aiwa_rating_average" min="1" max="5" step="0.01" aria-describedby="desc_aiwa_rating_average" value="<?php echo esc_attr( $entry_data['rating_average'] ?? '' ); ?>">
+                        <small id="desc_aiwa_rating_average">Average rating (1-5)</small>
                     </div>
                 </div>
             </div>
@@ -275,7 +280,7 @@ final class Sparxstar3IAtlasDictionaryForm {
                             Choose Audio File
                         </button>
                         <span class="media-filename"></span>
-                        <button type="button" class="btn-text remove-media-btn" style="display:none;">Remove</button>
+                        <button type="button" class="btn-text remove-media-btn" style="display:none;" aria-label="Remove audio file">Remove</button>
                     </div>
                 </div>
                 
@@ -298,7 +303,7 @@ final class Sparxstar3IAtlasDictionaryForm {
                                 endif;
                             ?>
                         </div>
-                        <button type="button" class="btn-text remove-media-btn" style="display:none;">Remove</button>
+                        <button type="button" class="btn-text remove-media-btn" style="display:none;" aria-label="Remove image">Remove</button>
                     </div>
                 </div>
             </div>
@@ -331,23 +336,23 @@ final class Sparxstar3IAtlasDictionaryForm {
                             <div class="sentence-row" data-index="<?php echo esc_attr( $index ); ?>">
                                 <div class="sentence-fields">
                                     <div class="form-group">
-                                        <label>Sentence</label>
-                                        <input type="text" name="sentences[<?php echo esc_attr( $index ); ?>][aiwa_sentence]" value="<?php echo esc_attr( $sentence['aiwa_sentence'] ?? '' ); ?>">
+                                        <label for="sentence_<?php echo esc_attr( $index ); ?>_text">Sentence</label>
+                                        <input type="text" id="sentence_<?php echo esc_attr( $index ); ?>_text" name="sentences[<?php echo esc_attr( $index ); ?>][aiwa_sentence]" value="<?php echo esc_attr( $sentence['aiwa_sentence'] ?? '' ); ?>">
                                     </div>
                                     <div class="form-group">
-                                        <label>Translation</label>
-                                        <input type="text" name="sentences[<?php echo esc_attr( $index ); ?>][aiwa_s_translation]" value="<?php echo esc_attr( $sentence['aiwa_s_translation'] ?? '' ); ?>">
+                                        <label for="sentence_<?php echo esc_attr( $index ); ?>_trans">Translation</label>
+                                        <input type="text" id="sentence_<?php echo esc_attr( $index ); ?>_trans" name="sentences[<?php echo esc_attr( $index ); ?>][aiwa_s_translation]" value="<?php echo esc_attr( $sentence['aiwa_s_translation'] ?? '' ); ?>">
                                     </div>
                                     <div class="form-group">
-                                        <label>Translation (English)</label>
-                                        <input type="text" name="sentences[<?php echo esc_attr( $index ); ?>][aiwa_s_translation_english]" value="<?php echo esc_attr( $sentence['aiwa_s_translation_english'] ?? '' ); ?>">
+                                        <label for="sentence_<?php echo esc_attr( $index ); ?>_trans_en">Translation (English)</label>
+                                        <input type="text" id="sentence_<?php echo esc_attr( $index ); ?>_trans_en" name="sentences[<?php echo esc_attr( $index ); ?>][aiwa_s_translation_english]" value="<?php echo esc_attr( $sentence['aiwa_s_translation_english'] ?? '' ); ?>">
                                     </div>
                                     <div class="form-group">
-                                        <label>Translation (French)</label>
-                                        <input type="text" name="sentences[<?php echo esc_attr( $index ); ?>][aiwa_s_translation_french]" value="<?php echo esc_attr( $sentence['aiwa_s_translation_french'] ?? '' ); ?>">
+                                        <label for="sentence_<?php echo esc_attr( $index ); ?>_trans_fr">Translation (French)</label>
+                                        <input type="text" id="sentence_<?php echo esc_attr( $index ); ?>_trans_fr" name="sentences[<?php echo esc_attr( $index ); ?>][aiwa_s_translation_french]" value="<?php echo esc_attr( $sentence['aiwa_s_translation_french'] ?? '' ); ?>">
                                     </div>
                                 </div>
-                                <button type="button" class="btn-text remove-sentence-btn">Remove</button>
+                                <button type="button" class="btn-text remove-sentence-btn" aria-label="Remove sentence">Remove</button>
                             </div>
                                 <?php
                             }
@@ -363,16 +368,16 @@ final class Sparxstar3IAtlasDictionaryForm {
                 <h3 class="section-title">Synonyms</h3>
                 
                 <div class="form-group">
-                    <label for="aiwa_synonyms">Related Words</label>
-                    <input type="text" id="aiwa_synonyms_search" placeholder="Search for synonyms...">
-                    <div id="synonym-results" class="synonym-results"></div>
-                    <div id="selected-synonyms" class="selected-synonyms">
+                    <label for="aiwa_synonyms_search">Related Words</label>
+                    <input type="text" id="aiwa_synonyms_search" aria-label="Search for synonyms" placeholder="Search for synonyms...">
+                    <div id="synonym-results" class="synonym-results" role="listbox"></div>
+                    <div id="selected-synonyms" class="selected-synonyms" role="list">
                         <?php 
                         if ( ! empty( $entry_data['synonyms'] ) && is_array( $entry_data['synonyms'] ) ) {
                             foreach ( $entry_data['synonyms'] as $syn_id ) {
                                 $syn_post = get_post( $syn_id );
                                 if ( $syn_post ) {
-                                    echo '<span class="synonym-tag" data-id="' . esc_attr( $syn_id ) . '">' . esc_html( $syn_post->post_title ) . ' <button type="button" class="remove-synonym">×</button></span>';
+                                    echo '<span class="synonym-tag" data-id="' . esc_attr( $syn_id ) . '" role="listitem">' . esc_html( $syn_post->post_title ) . ' <button type="button" class="remove-synonym" aria-label="Remove synonym ' . esc_attr( $syn_post->post_title ) . '">×</button></span>';
                                 }
                             }
                         }
