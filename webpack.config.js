@@ -7,12 +7,12 @@ module.exports = {
     mode: 'production',
     entry: {
         // Main App
-        app: './src/js/app.jsx',
+        'sparxstar-3iatlas-dictionary-app': './src/js/app.jsx',
         // Independent Assets
-        admin: './src/js/admin.js',
-        'sparxstar-iatlas-dictionary-form': './src/js/sparxstar-iatlas-dictionary-form.js',
-        'admin-style': './src/css/admin.css', // Will be extracted
-        'form-style': './src/css/sparxstar-iatlas-dictionary-form.css', // Will be extracted
+        'sparxstar-3iatlas-dictionary-admin': './src/js/admin.js',
+        'sparxstar-3iatlas-dictionary-form': './src/js/sparxstar-iatlas-dictionary-form.js',
+        'sparxstar-3iatlas-dictionary-admin-style': './src/css/admin.css', // Will be extracted
+        'sparxstar-3iatlas-dictionary-form-style': './src/css/sparxstar-iatlas-dictionary-form.css', // Will be extracted
     },
     output: {
         path: path.resolve(__dirname, 'assets'),

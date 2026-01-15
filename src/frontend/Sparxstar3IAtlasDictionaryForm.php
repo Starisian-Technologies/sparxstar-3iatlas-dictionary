@@ -59,12 +59,12 @@ final class Sparxstar3IAtlasDictionaryForm {
         if ( is_page() && has_shortcode( get_post()->post_content, 'aiwa_dictionary_form' ) ) {
             wp_enqueue_media();
             if ( defined( 'SPARX_3IATLAS_URL' ) ) {
-                wp_enqueue_style( 'aiwa-dict-form-style', SPARX_3IATLAS_URL . 'assets/css/form-style.min.css', array(), '1.0' );
-                wp_enqueue_script( 'aiwa-dict-form-script', SPARX_3IATLAS_URL . 'assets/js/sparxstar-iatlas-dictionary-form.min.js', array( 'jquery' ), '1.0', true );
+                wp_enqueue_style( 'aiwa-dict-form-style', SPARX_3IATLAS_URL . 'assets/css/sparxstar-3iatlas-dictionary-form-style.min.css', array(), '1.0' );
+                wp_enqueue_script( 'aiwa-dict-form-script', SPARX_3IATLAS_URL . 'assets/js/sparxstar-3iatlas-dictionary-form.min.js', array( 'jquery' ), '1.0', true );
             } else {
                 // Fallback if constant not defined (e.g. during standalone testing)
-                wp_enqueue_style( 'aiwa-dict-form-style', plugin_dir_url( dirname( __DIR__ ) ) . 'assets/css/form-style.min.css', array(), '1.0' );
-                wp_enqueue_script( 'aiwa-dict-form-script', plugin_dir_url( dirname( __DIR__ ) ) . 'assets/js/sparxstar-iatlas-dictionary-form.min.js', array( 'jquery' ), '1.0', true );
+                wp_enqueue_style( 'aiwa-dict-form-style', plugin_dir_url( dirname( __DIR__ ) ) . 'assets/css/sparxstar-3iatlas-dictionary-form-style.min.css', array(), '1.0' );
+                wp_enqueue_script( 'aiwa-dict-form-script', plugin_dir_url( dirname( __DIR__ ) ) . 'assets/js/sparxstar-3iatlas-dictionary-form.min.js', array( 'jquery' ), '1.0', true );
             }
         
             wp_localize_script(
