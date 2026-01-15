@@ -121,6 +121,7 @@ final class Sparxstar3IAtlasDictionaryCore {
             );
     }
 
+
     // Prevent cloning and unserializing
     /**
      * Prevents cloning of the singleton instance.
@@ -133,6 +134,7 @@ final class Sparxstar3IAtlasDictionaryCore {
             'Cloning this object is forbidden.',
             SPARX_3IATLAS_VERSION
         );
+        throw new \RuntimeException( 'Cloning is not allowed.' );
     }
     /**
      * Prevents unserializing of the singleton instance.
@@ -145,6 +147,7 @@ final class Sparxstar3IAtlasDictionaryCore {
             'Serializing this object is forbidden.',
             SPARX_3IATLAS_VERSION
         );
+        throw new \RuntimeException( 'Serializing is not allowed.' );
     }
 
     public function __unserialize( array $data ): never {
@@ -153,5 +156,6 @@ final class Sparxstar3IAtlasDictionaryCore {
             'Unserializing this object is forbidden.',
             SPARX_3IATLAS_VERSION
         );
+        throw new \RuntimeException( 'Unserializing is not allowed.' );
     }
 }

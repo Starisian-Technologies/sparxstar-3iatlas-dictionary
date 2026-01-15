@@ -1,4 +1,5 @@
 <?php
+declare( strict_types=1 );
 /**
  * Main plugin orchestrator file.
  *
@@ -11,13 +12,32 @@
  */
 namespace Starisian\Sparxstar\IAtlas\core;
 
-if ( ! defined( 'ABSPATH' ) ) {
-    exit;
-}
-
 use Starisian\Sparxstar\IAtlas\frontend\Sparxstar3IAtlasDictionaryForm;
 use Starisian\Sparxstar\IAtlas\includes\Sparxstar3IAtlasPostTypes;
 use Starisian\Sparxstar\IAtlas\core\Sparxstar3IAtlasDictionaryCore;
+use Throwable;
+use RuntimeException;
+use function defined;
+use function shortcode_atts;
+use function esc_attr;
+use function get_post;
+use function is_user_logged_in;
+use function _doing_it_wrong;
+use function add_shortcode;
+use function add_action;
+use function has_shortcode;
+use function is_singular
+use function load_plugin_textdomain;
+use function plugin_basename;
+use function wp_enqueue_script;
+use function wp_enqueue_style;
+use function wp_localize_script;
+use function wp_register_script;
+use function wp_register_style;
+
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
 
 /**
  * Class Sparxstar3IAtlasDictionary 
@@ -56,35 +76,47 @@ final class Sparxstar3IAtlasDictionary {
      * @return void
      */
     private function sparxIAtlas_register_hooks(): void {
-        add_shortcode( 'sparxstar_dictionary', array( $this, 'sparxIAtlas_render_app' ) );
-        add_action( 'wp_enqueue_scripts', array( $this, 'sparxIAtlas_enqueue_assets' ) );
+        add_action( 'init', array( $this, 'sparxIAtlas_register_shortcodes' ) );
+        add_action( 'wp_enqueue_scripts', array( $this, 'sparxIAtlas_register_assets' ) );
     }
 
     /**
-     * Enqueues the assets for the dictionary app.
-     * Checks if the shortcode is present in the post content to load assets conditionally.
+     * Registers the shortcode for the dictionary app.
      * 
      * @return void
      */
-    public function sparxIAtlas_enqueue_assets(): void {
+    public function sparxIAtlas_register_shortcodes(): void {
+        add_shortcode( 'sparxstar_dictionary', array( $this, 'sparxIAtlas_render_app' ) );
+    }
+
+    /**
+     * Registers and conditionally enqueues the assets for the dictionary app.
+     * 
+     * @return void
+     */
+    public function sparxIAtlas_register_assets(): void {
+        // Register assets first so they can be enqueued later via shortcode or logic
+        wp_register_script(
+            'sparxstar-dictionary-app',
+            SPARX_3IATLAS_URL . 'assets/js/sparxstar-3iatlas-dictionary-app.min.js',
+            array(),
+            SPARX_3IATLAS_VERSION,
+            true
+        );
+
+        wp_register_style(
+            'sparxstar-dictionary-style',
+            SPARX_3IATLAS_URL . 'assets/css/sparxstar-3iatlas-dictionary-app.min.css',
+            array(),
+            SPARX_3IATLAS_VERSION
+        );
+
         global $post;
 
         // Check if we are on a post/page and the shortcode is present
-        if ( is_a( $post, 'WP_Post' ) && has_shortcode( $post->post_content, 'sparxstar_dictionary' ) ) {
-            wp_enqueue_script(
-                'sparxstar-dictionary-app',
-                SPARX_3IATLAS_URL . 'assets/js/sparxstar-3iatlas-dictionary-app.min.js',
-                array(),
-                SPARX_3IATLAS_VERSION,
-                true
-            );
-
-            wp_enqueue_style(
-                'sparxstar-dictionary-style',
-                SPARX_3IATLAS_URL . 'assets/css/sparxstar-3iatlas-dictionary-app.min.css',
-                array(),
-                SPARX_3IATLAS_VERSION
-            );
+        if ( is_singular() && has_shortcode( $post->post_content, 'sparxstar_dictionary' ) ) {
+            wp_enqueue_script( 'sparxstar-dictionary-app' );
+            wp_enqueue_style( 'sparxstar-dictionary-style' );
         }
     }
 
@@ -105,7 +137,7 @@ final class Sparxstar3IAtlasDictionary {
         );
 
         // Ensure assets are enqueued (in case they weren't caught by the global check, e.g., in a widget)
-        if ( ! is_admin() ) {
+        if ( is_singular() && has_shortcode( get_post()->post_content, 'sparxstar_dictionary' ) ) {
             wp_enqueue_script( 'sparxstar-dictionary-app' );
             wp_enqueue_style( 'sparxstar-dictionary-style' );
 
@@ -129,23 +161,24 @@ final class Sparxstar3IAtlasDictionary {
      * @return void
      */
     private function sparxIAtlas_load_dependencies(): void {
-        // Instantiate Post Types on init (handled by class constructor hook)
-        if ( class_exists( Sparxstar3IAtlasPostTypes::class ) ) {
-            new Sparxstar3IAtlasPostTypes();
-        }
+        try {
+            // Instantiate Post Types on init (handled by class constructor hook)
+            if ( class_exists( Sparxstar3IAtlasPostTypes::class ) ) {
+                new Sparxstar3IAtlasPostTypes();
+            }
 
-        // Instantiate Core logic
-        if ( class_exists( Sparxstar3IAtlasDictionaryCore::class ) ) {
-            Sparxstar3IAtlasDictionaryCore::sparxIAtlas_get_instance();
-        }
-        
-        // Instantiate Form if needed
-        if ( class_exists( Sparxstar3IAtlasDictionaryForm::class ) && is_user_logged_in() ) {
-            new Sparxstar3IAtlasDictionaryForm(); 
-        } else {
-            // If debugging is on and class is missing
-            if ( defined( 'WP_DEBUG' ) && WP_DEBUG && ! class_exists( Sparxstar3IAtlasDictionaryForm::class ) ) {
-                error_log( '[Starisian IAtlas Dictionary]: Main class Sparxstar3IAtlasDictionaryForm not found.' );
+            // Instantiate Core logic
+            if ( class_exists( Sparxstar3IAtlasDictionaryCore::class ) ) {
+                Sparxstar3IAtlasDictionaryCore::sparxIAtlas_get_instance();
+            }
+            
+            // Instantiate Form if needed
+            if ( class_exists( Sparxstar3IAtlasDictionaryForm::class ) && \is_user_logged_in() ) {
+                new Sparxstar3IAtlasDictionaryForm(); 
+            } 
+        } catch ( \Throwable $throwable ) {
+            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                error_log( '[Starisian 3IAtlas Dictionary]: Error loading dependencies - ' . $throwable->getMessage() );
             }
         }
     }
@@ -171,6 +204,7 @@ final class Sparxstar3IAtlasDictionary {
             'Cloning this object is forbidden.',
             SPARX_3IATLAS_VERSION
         );
+        throw new \RuntimeException( 'Cloning is not allowed.' );
     }
     /**
      * Prevents unserializing of the singleton instance.
@@ -183,6 +217,8 @@ final class Sparxstar3IAtlasDictionary {
             'Serializing this object is forbidden.',
             SPARX_3IATLAS_VERSION
         );
+        throw new \RuntimeException( 'Serializing is not allowed.' );
+
     }
 
     public function __unserialize( array $data ): never {
@@ -191,5 +227,6 @@ final class Sparxstar3IAtlasDictionary {
             'Unserializing this object is forbidden.',
             SPARX_3IATLAS_VERSION
         );
+        throw new \RuntimeException( 'Unserializing is not allowed.' );
     }
 }

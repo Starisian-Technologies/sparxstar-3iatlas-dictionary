@@ -75,7 +75,7 @@ if ( file_exists( SPARX_3IATLAS_PATH . 'vendor/autoload.php' ) ) {
     }
 }
 
-use Starisian\Sparxstar\IAtlas\core\Sparxstar3IAtlasOrchestrator;
+use Starisian\Sparxstar\IAtlas\core\Sparxstar3IAtlasDictionary;
 use Starisian\Sparxstar\IAtlas\includes\Sparxstar3IAtlasPostTypes;
 
 // 4. Activation / Deactivation Hooks
@@ -92,9 +92,6 @@ function sparxIAtlas_activate_plugin() {
     // Trigger CPT registration to verify rewrite rules
     if ( class_exists( Sparxstar3IAtlasPostTypes::class ) ) {
         $pt = new Sparxstar3IAtlasPostTypes();
-        if ( method_exists( $pt, 'sparxIAtlas_register_dictionary_cpt' ) ) {
-            $pt->sparxIAtlas_register_dictionary_cpt();
-        }
     }
     flush_rewrite_rules();
 }
@@ -121,8 +118,8 @@ function sparxIAtlas_uninstall_plugin() {
 add_action(
     'plugins_loaded',
     function () {
-        if ( class_exists( Sparxstar3IAtlasOrchestrator::class ) ) {
-            SparxstarIAtlasOrchestrator::sparxIAtlas_get_instance();
+        if ( class_exists( Sparxstar3IAtlasDictionary::class ) ) {
+            Sparxstar3IAtlasDictionary::sparxIAtlas_get_instance();
         }
     }
 );

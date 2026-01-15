@@ -54,7 +54,6 @@ final class Sparxstar3IAtlasDictionaryForm {
      */
     public function __construct() {
         $this->sparxIAtlas_register_hooks();
-        $this->sparxIAtlas_register_shortcodes();
     }
 
     /**
@@ -66,6 +65,12 @@ final class Sparxstar3IAtlasDictionaryForm {
         add_action( 'wp_enqueue_scripts', array( $this, 'sparxIAtlas_dict_form_enqueue_scripts' ) );
         add_action( 'wp_ajax_sparxIAtlas_dict_form_submit', array( $this, 'sparxIAtlas_dict_submit_form' ) );
         add_action( 'wp_ajax_sparxIAtlas_dict_search_synonyms', array( $this, 'sparxIAtlas_dict_search_synonyms' ) );
+        add_action( 'wp_ajax_nopriv_sparxIAtlas_dict_search_synonyms', array( $this, 'sparxIAtlas_dict_search_synonyms' ) );
+        add_action( 'wp_ajax_sparxIAtlas_dict_get_synonym_details', array( $this, 'sparxIAtlas_dict_get_synonym_details' ) );
+        add_action( 'wp_ajax_nopriv_sparxIAtlas_dict_get_synonym_details', array( $this, 'sparxIAtlas_dict_get_synonym_details' ) );
+        add_action( 'wp_ajax_sparxIAtlas_dict_get_entry_details', array( $this, 'sparxIAtlas_dict_get_entry_details' ) );
+        add_action( 'wp_ajax_nopriv_sparxIAtlas_dict_get_entry_details', array( $this, 'sparxIAtlas_dict_get_entry_details' ) );
+        add_action( 'init', array( $this, 'sparxIAtlas_register_shortcodes' ) );
     }
 
     /**
@@ -542,5 +547,73 @@ final class Sparxstar3IAtlasDictionaryForm {
         wp_reset_postdata();
     
         wp_send_json_success( array( 'results' => $results ) );
+    }
+    /**
+     * AJAX handler to get synonym details
+     *
+     * @return void
+     */
+    public function sparxIAtlas_dict_get_synonym_details(): void {
+        // Verify nonce
+        if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'aiwa_dict_form_nonce' ) ) {
+            wp_send_json_error( array( 'message' => 'Security check failed.' ) );
+        }
+    
+        if ( ! is_user_logged_in() ) {
+            wp_send_json_error( array( 'message' => 'You must be logged in.' ) );
+        }
+    
+        $syn_id = intval( $_POST['syn_id'] ?? 0 );
+    
+        if ( ! $syn_id ) {
+            wp_send_json_error( array( 'message' => 'Invalid synonym ID.' ) );
+        }
+    
+        $post = get_post( $syn_id );
+    
+        if ( ! $post || $post->post_type !== 'aiwa_cpt_dictionary' ) {
+            wp_send_json_error( array( 'message' => 'Synonym not found.' ) );
+        }
+    
+        $details = array(
+            'id'    => $post->ID,
+            'title' => $post->post_title,
+        );
+    
+        wp_send_json_success( array( 'details' => $details ) );
+    }
+    /**
+     * AJAX handler to get entry details
+     *
+     * @return void
+     */
+    public function sparxIAtlas_dict_get_entry_details(): void {
+        // Verify nonce
+        if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'aiwa_dict_form_nonce' ) ) {
+            wp_send_json_error( array( 'message' => 'Security check failed.' ) );
+        }
+    
+        if ( ! is_user_logged_in() ) {
+            wp_send_json_error( array( 'message' => 'You must be logged in.' ) );
+        }
+    
+        $entry_id = intval( $_POST['entry_id'] ?? 0 );
+    
+        if ( ! $entry_id ) {
+            wp_send_json_error( array( 'message' => 'Invalid entry ID.' ) );
+        }
+    
+        $post = get_post( $entry_id );
+    
+        if ( ! $post || $post->post_type !== 'aiwa_cpt_dictionary' ) {
+            wp_send_json_error( array( 'message' => 'Entry not found.' ) );
+        }
+    
+        $details = array(
+            'id'    => $post->ID,
+            'title' => $post->post_title,
+        );
+    
+        wp_send_json_success( array( 'details' => $details ) );
     }
 }

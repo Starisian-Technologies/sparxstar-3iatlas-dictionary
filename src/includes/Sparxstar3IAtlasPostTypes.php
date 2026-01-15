@@ -7,6 +7,7 @@ declare(strict_types=1);
  */
 namespace Starisian\Sparxstar\IAtlas\includes;
 
+use ACF;
 use function add_action;
 use function register_post_type;
 use function register_taxonomy;
