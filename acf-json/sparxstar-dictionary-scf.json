@@ -125,7 +125,7 @@
                 "name": "aiwa_search_string_french",
                 "aria-label": "",
                 "type": "text",
-                "instructions": "A combination of the word plus its French meaning. This helps people find this word when they search in French. Example: 'teranga hospitalit\u00e9 accueil'.",
+                "instructions": "A combination of the word plus its French meaning. This helps people find this word when they search in French. Example: 'teranga hospitalité accueil'.",
                 "required": false,
                 "conditional_logic": false,
                 "wrapper": {
@@ -167,7 +167,7 @@
                 "name": "aiwa_ipa_pronunciation",
                 "aria-label": "",
                 "type": "text",
-                "instructions": "How to say this word using special pronunciation symbols (IPA). These symbols show exactly how the word sounds. Example: /t\u025b\u0279\u0251\u014b\u0261\u0251/. Leave blank if you don't know.",
+                "instructions": "How to say this word using special pronunciation symbols (IPA). These symbols show exactly how the word sounds. Example: \/tɛɹɑŋɡɑ\/. Leave blank if you don't know.",
                 "required": false,
                 "conditional_logic": false,
                 "wrapper": {
@@ -266,92 +266,7 @@
                 "layout": "table",
                 "button_label": "Add Sentence",
                 "rows_per_page": 20,
-                "sub_fields": [
-                    {
-                        "key": "aiwa_field_6_1",
-                        "label": "Sentence",
-                        "name": "aiwa_sentence",
-                        "aria-label": "",
-                        "type": "text",
-                        "instructions": "",
-                        "required": false,
-                        "conditional_logic": false,
-                        "wrapper": {
-                            "width": "",
-                            "class": "",
-                            "id": ""
-                        },
-                        "default_value": "",
-                        "maxlength": "",
-                        "placeholder": "",
-                        "prepend": "",
-                        "append": "",
-                        "parent_repeater": "aiwa_field_6"
-                    },
-                    {
-                        "key": "aiwa_field_6_2",
-                        "label": "Translation",
-                        "name": "aiwa_s_translation",
-                        "aria-label": "",
-                        "type": "text",
-                        "instructions": "",
-                        "required": false,
-                        "conditional_logic": false,
-                        "wrapper": {
-                            "width": "",
-                            "class": "",
-                            "id": ""
-                        },
-                        "default_value": "",
-                        "maxlength": "",
-                        "placeholder": "",
-                        "prepend": "",
-                        "append": "",
-                        "parent_repeater": "aiwa_field_6"
-                    },
-                    {
-                        "key": "aiwa_field_6_2a",
-                        "label": "Translation (English)",
-                        "name": "aiwa_s_translation_english",
-                        "aria-label": "",
-                        "type": "text",
-                        "instructions": "",
-                        "required": false,
-                        "conditional_logic": false,
-                        "wrapper": {
-                            "width": "",
-                            "class": "",
-                            "id": ""
-                        },
-                        "default_value": "",
-                        "maxlength": "",
-                        "placeholder": "",
-                        "prepend": "",
-                        "append": "",
-                        "parent_repeater": "aiwa_field_6"
-                    },
-                    {
-                        "key": "aiwa_field_6_2b",
-                        "label": "Translation (French)",
-                        "name": "aiwa_s_translation_french",
-                        "aria-label": "",
-                        "type": "text",
-                        "instructions": "",
-                        "required": false,
-                        "conditional_logic": false,
-                        "wrapper": {
-                            "width": "",
-                            "class": "",
-                            "id": ""
-                        },
-                        "default_value": "",
-                        "maxlength": "",
-                        "placeholder": "",
-                        "prepend": "",
-                        "append": "",
-                        "parent_repeater": "aiwa_field_6"
-                    }
-                ]
+                "sub_fields": []
             },
             {
                 "key": "aiwa_field_7",
@@ -488,7 +403,7 @@
                 {
                     "param": "post_type",
                     "operator": "==",
-                    "value": "aiwa_cpt_dictionary"
+                    "value": "aiwa-cpt-dictionary"
                 }
             ]
         ],
@@ -499,11 +414,13 @@
         "instruction_placement": "label",
         "hide_on_screen": "",
         "active": true,
-        "description": "",
+        "description": "Dictionary header word details and metadata.",
         "show_in_rest": 1,
-        "display_title": "",
+        "display_title": "Header Word Entry",
         "show_in_graphql": 1,
-        "graphql_field_name": "dictionaryEntryDetails"
+        "graphql_field_name": "dictionaryEntryDetails",
+        "map_graphql_types_from_location_rules": 0,
+        "graphql_types": ""
     },
     {
         "key": "taxonomy_69654d67a2def",
@@ -540,7 +457,7 @@
             "desc_field_description": "",
             "items_list_navigation": "Alpha-Letters list navigation",
             "items_list": "Alpha-Letters list",
-            "back_to_items": "\u2190 Go to alpha-letters",
+            "back_to_items": "← Go to alpha-letters",
             "item_link": "Alpha-Letter Link",
             "item_link_description": "A link to a alpha-letter"
         },
@@ -559,7 +476,7 @@
         "show_in_nav_menus": 1,
         "show_in_rest": 1,
         "rest_base": "",
-        "rest_namespace": "wp/v2",
+        "rest_namespace": "wp\/v2",
         "rest_controller_class": "WP_REST_Terms_Controller",
         "show_tagcloud": 1,
         "show_in_quick_edit": 1,
@@ -616,7 +533,7 @@
         "show_in_nav_menus": true,
         "show_in_rest": true,
         "rest_base": "",
-        "rest_namespace": "wp/v2",
+        "rest_namespace": "wp\/v2",
         "rest_controller_class": "WP_REST_Terms_Controller",
         "show_tagcloud": false,
         "show_in_quick_edit": true,
@@ -637,6 +554,83 @@
         "show_in_graphql": 1,
         "graphql_single_name": "Dialect",
         "graphql_plural_name": "Dialects"
+    },
+    {
+        "key": "taxonomy_69680bab2945c",
+        "title": "Domains",
+        "menu_order": 0,
+        "active": true,
+        "taxonomy": "aiwa_domain",
+        "object_type": [
+            "aiwa-cpt-dictionary"
+        ],
+        "advanced_configuration": 1,
+        "import_source": "",
+        "import_date": "",
+        "labels": {
+            "name": "Domains",
+            "singular_name": "Domain",
+            "menu_name": "Domains",
+            "all_items": "All Domains",
+            "edit_item": "Edit Domain",
+            "view_item": "View Domain",
+            "update_item": "Update Domain",
+            "add_new_item": "Add New Domain",
+            "new_item_name": "New Domain Name",
+            "parent_item": "Parent Domain",
+            "parent_item_colon": "Parent Domain:",
+            "search_items": "Search Domains",
+            "most_used": "",
+            "not_found": "No domains found",
+            "no_terms": "No domains",
+            "name_field_description": "",
+            "slug_field_description": "",
+            "parent_field_description": "",
+            "desc_field_description": "",
+            "filter_by_item": "Filter by domain",
+            "items_list_navigation": "Domains list navigation",
+            "items_list": "Domains list",
+            "back_to_items": "← Go to domains",
+            "item_link": "Domain Link",
+            "item_link_description": "A link to a domain"
+        },
+        "description": "Semantic domain that connects to the entity.",
+        "capabilities": {
+            "manage_terms": "manage_categories",
+            "edit_terms": "manage_categories",
+            "delete_terms": "manage_categories",
+            "assign_terms": "edit_posts"
+        },
+        "public": 1,
+        "publicly_queryable": 1,
+        "hierarchical": 1,
+        "show_ui": 1,
+        "show_in_menu": 1,
+        "show_in_nav_menus": 1,
+        "show_in_rest": 1,
+        "rest_base": "",
+        "rest_namespace": "wp\/v2",
+        "rest_controller_class": "WP_REST_Terms_Controller",
+        "show_tagcloud": 1,
+        "show_in_quick_edit": 1,
+        "show_admin_column": 0,
+        "rewrite": {
+            "permalink_rewrite": "taxonomy_key",
+            "with_front": "1",
+            "rewrite_hierarchical": "0"
+        },
+        "query_var": "post_type_key",
+        "query_var_name": "",
+        "default_term": {
+            "default_term_enabled": "0"
+        },
+        "sort": 1,
+        "meta_box": "default",
+        "meta_box_cb": "",
+        "meta_box_sanitize_cb": "",
+        "show_in_graphql": 1,
+        "graphql_single_name": "domain",
+        "graphql_plural_name": "domains"
     },
     {
         "key": "taxonomy_starmus_tax_language",
@@ -672,7 +666,7 @@
         "show_in_nav_menus": true,
         "show_in_rest": true,
         "rest_base": "",
-        "rest_namespace": "wp/v2",
+        "rest_namespace": "wp\/v2",
         "rest_controller_class": "WP_REST_Terms_Controller",
         "show_tagcloud": false,
         "show_in_quick_edit": true,
@@ -726,7 +720,7 @@
         "show_in_nav_menus": true,
         "show_in_rest": true,
         "rest_base": "",
-        "rest_namespace": "wp/v2",
+        "rest_namespace": "wp\/v2",
         "rest_controller_class": "WP_REST_Terms_Controller",
         "show_tagcloud": false,
         "show_in_quick_edit": true,
@@ -792,7 +786,7 @@
             "item_link": "Dictionary Link",
             "item_link_description": "A link to a dictionary."
         },
-        "description": "Public word entries for Ai West Africa dictionaries.",
+        "description": "Public word entries for dictionaries.",
         "public": true,
         "hierarchical": false,
         "exclude_from_search": false,
@@ -804,7 +798,7 @@
         "show_in_nav_menus": true,
         "show_in_rest": true,
         "rest_base": "",
-        "rest_namespace": "wp/v2",
+        "rest_namespace": "wp\/v2",
         "rest_controller_class": "WP_REST_Posts_Controller",
         "menu_position": "",
         "menu_icon": {
@@ -829,7 +823,9 @@
         "taxonomies": [
             "starmus_part_of_speech",
             "starmus_tax_language",
-            "starmus_tax_dialect"
+            "starmus_tax_dialect",
+            "aiwa_domain",
+            "aiwa-alpha-letter"
         ],
         "has_archive": false,
         "has_archive_slug": "",
@@ -846,7 +842,7 @@
         "register_meta_box_cb": "",
         "enter_title_here": "",
         "show_in_graphql": 1,
-        "graphql_single_name": "Dictionary",
-        "graphql_plural_name": "Dictionaries"
+        "graphql_single_name": "dictionary",
+        "graphql_plural_name": "dictionaries"
     }
 ]
