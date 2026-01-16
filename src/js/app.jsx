@@ -7,9 +7,9 @@ import { Search, Volume2, X, Globe, BookOpen, Image as ImageIcon } from 'lucide-
 import '../css/sparxstar-iatlas-dictionary-form.css';
 
 // --- CONFIGURATION ---
-// Get the endpoint from the localized script settings
 const GRAPHQL_ENDPOINT = window.sparxStarDictionarySettings?.graphqlUrl || '/graphql';
 
+// UPDATED QUERY TO MATCH NEW JSON SCHEMA
 const GET_ENTRIES = gql`
     query GetAllEntries {
         dictionaries(first: 10000, where: { orderby: { field: TITLE, order: ASC } }) {
@@ -17,11 +17,14 @@ const GET_ENTRIES = gql`
                 node {
                     id
                     title
-                    aiwaWordDetails {
+                    # Updated Group Name from JSON "graphql_field_name": "dictionaryEntryDetails"
+                    dictionaryEntryDetails {
+                        entryUuid
                         aiwaTranslationEnglish
                         aiwaTranslationFrench
                         aiwaPartOfSpeech
                         aiwaIpaPronunciation
+                        phoneticProunciation
                         aiwaOrigin
                         aiwaExtract
                         aiwaAudioFile {
@@ -34,10 +37,12 @@ const GET_ENTRIES = gql`
                                 sourceUrl
                             }
                         }
+                        # Updated Repeater Structure
                         aiwaExampleSentences {
-                            aiwaSentence
-                            aiwaSTranslationEnglish
-                            aiwaSTranslationFrench
+                            sentenceExample
+                            sentencePhoneticPronunciation
+                            sentenceEnglishTranslation
+                            sentenceFrenchTranslation
                         }
                         aiwaSearchStringEnglish
                         aiwaSearchStringFrench
@@ -102,7 +107,8 @@ const AlphaIndex = ({ onSelectLetter }) => {
 const WordDetail = ({ word, language, onClose }) => {
     if (!word) return null;
 
-    const d = word.aiwaWordDetails;
+    // Updated variable to match new schema group name
+    const d = word.dictionaryEntryDetails;
 
     // Dynamic Translation based on toggle
     const translation = language === 'en' ? d.aiwaTranslationEnglish : d.aiwaTranslationFrench;
@@ -138,13 +144,20 @@ const WordDetail = ({ word, language, onClose }) => {
                                 <AudioButton url={d.aiwaAudioFile.node.mediaItemUrl} />
                             )}
                         </div>
-                        <div className="flex items-center gap-2 mt-2 text-gray-600">
+                        <div className="flex flex-wrap items-center gap-2 mt-2 text-gray-600">
                             <span className="italic font-serif text-lg text-gray-500">
                                 {d.aiwaPartOfSpeech}
                             </span>
+                            {/* IPA Pronunciation */}
                             {d.aiwaIpaPronunciation && (
                                 <span className="bg-gray-100 px-2 py-0.5 rounded text-sm font-mono text-gray-700">
                                     /{d.aiwaIpaPronunciation}/
+                                </span>
+                            )}
+                            {/* New Phonetic Field */}
+                            {d.phoneticProunciation && (
+                                <span className="bg-gray-50 border border-gray-200 px-2 py-0.5 rounded text-sm text-gray-600">
+                                    [{d.phoneticProunciation}]
                                 </span>
                             )}
                         </div>
@@ -176,7 +189,7 @@ const WordDetail = ({ word, language, onClose }) => {
                         </div>
                     )}
 
-                    {/* Example Sentences */}
+                    {/* Example Sentences - UPDATED MAPPING */}
                     {d.aiwaExampleSentences && d.aiwaExampleSentences.length > 0 && (
                         <div>
                             <h3 className="font-bold text-gray-900 mb-3">Examples</h3>
@@ -184,12 +197,20 @@ const WordDetail = ({ word, language, onClose }) => {
                                 {d.aiwaExampleSentences.map((ex, idx) => (
                                     <div key={idx} className="pl-4 border-l-4 border-gray-200">
                                         <p className="text-lg text-gray-900 mb-1">
-                                            {ex.aiwaSentence}
+                                            {/* Updated Field Name */}
+                                            {ex.sentenceExample}
                                         </p>
+                                        {/* Optional Sentence Phonetic */}
+                                        {ex.sentencePhoneticPronunciation && (
+                                            <p className="text-xs text-gray-400 font-mono mb-1">
+                                                {ex.sentencePhoneticPronunciation}
+                                            </p>
+                                        )}
                                         <p className="text-gray-500 italic">
+                                            {/* Updated Field Names based on Language */}
                                             {language === 'en'
-                                                ? ex.aiwaSTranslationEnglish
-                                                : ex.aiwaSTranslationFrench}
+                                                ? ex.sentenceEnglishTranslation
+                                                : ex.sentenceFrenchTranslation}
                                         </p>
                                     </div>
                                 ))}
@@ -229,8 +250,8 @@ export default function DictionaryApp() {
         if (searchTerm) {
             const lowerSearch = searchTerm.toLowerCase();
             entries = entries.filter((item) => {
-                // Search Logic: Checks Title + Concatenated Search Strings provided in ACF
-                const details = item.aiwaWordDetails;
+                // Update: accessing dictionaryEntryDetails instead of aiwaWordDetails
+                const details = item.dictionaryEntryDetails;
                 return (
                     item.title.toLowerCase().includes(lowerSearch) ||
                     details.aiwaSearchStringEnglish?.toLowerCase().includes(lowerSearch) ||
@@ -313,17 +334,18 @@ export default function DictionaryApp() {
                                         {word.title}
                                     </h3>
                                     <p className="text-gray-500 text-sm mt-0.5 line-clamp-1">
+                                        {/* Updated Access Path */}
                                         {language === 'en'
-                                            ? word.aiwaWordDetails.aiwaTranslationEnglish
-                                            : word.aiwaWordDetails.aiwaTranslationFrench}
+                                            ? word.dictionaryEntryDetails.aiwaTranslationEnglish
+                                            : word.dictionaryEntryDetails.aiwaTranslationFrench}
                                     </p>
                                 </div>
                                 <div className="flex gap-2">
-                                    {word.aiwaWordDetails.aiwaWordPhoto?.node && (
+                                    {word.dictionaryEntryDetails.aiwaWordPhoto?.node && (
                                         <ImageIcon size={16} className="text-gray-300" />
                                     )}
                                     <span className="text-xs font-semibold text-gray-400 px-2 py-1 bg-gray-100 rounded">
-                                        {word.aiwaWordDetails.aiwaPartOfSpeech?.substring(0, 3)}
+                                        {word.dictionaryEntryDetails.aiwaPartOfSpeech?.substring(0, 3)}
                                     </span>
                                 </div>
                             </div>
