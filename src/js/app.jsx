@@ -209,8 +209,8 @@ const WordDetail = ({ word, language, onClose }) => {
                                         <p className="text-gray-500 italic">
                                             {/* Updated Field Names based on Language */}
                                             {language === 'en'
-                                                ? ex.sentenceEnglishTranslation
-                                                : ex.sentenceFrenchTranslation}
+                                                ? ex.sentenceEnglishTranslation || ''
+                                                : ex.sentenceFrenchTranslation || ''}
                                         </p>
                                     </div>
                                 ))}
@@ -345,7 +345,10 @@ export default function DictionaryApp() {
                                         <ImageIcon size={16} className="text-gray-300" />
                                     )}
                                     <span className="text-xs font-semibold text-gray-400 px-2 py-1 bg-gray-100 rounded">
-                                        {word.dictionaryEntryDetails.aiwaPartOfSpeech?.substring(0, 3)}
+                                        {word.dictionaryEntryDetails.aiwaPartOfSpeech?.substring(
+                                            0,
+                                            3
+                                        )}
                                     </span>
                                 </div>
                             </div>

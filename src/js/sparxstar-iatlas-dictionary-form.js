@@ -145,10 +145,10 @@ jQuery(document).ready(function ($) {
                     addSynonym(result.id, result.title);
                 })
                 .on('keydown', function (e) {
-                     if (e.key === 'Enter' || e.key === ' ') {
+                    if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
                         addSynonym(result.id, result.title);
-                     }
+                    }
                 })
                 .attr('tabindex', '0');
             container.append(resultItem);
@@ -164,7 +164,12 @@ jQuery(document).ready(function ($) {
 
         const tag = $('<span class="synonym-tag" role="listitem">')
             .attr('data-id', id)
-            .html(title + ' <button type="button" class="remove-synonym" aria-label="Remove synonym ' + title + '">×</button>');
+            .html(
+                title +
+                    ' <button type="button" class="remove-synonym" aria-label="Remove synonym ' +
+                    title +
+                    '">×</button>'
+            );
 
         $('#selected-synonyms').append(tag);
         updateSynonymField();
