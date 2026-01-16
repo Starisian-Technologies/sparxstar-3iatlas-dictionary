@@ -52,6 +52,8 @@ module.exports = [
             'assets/',
             'docs/js/scripts/third-party/',
             '**/*.min.js',
+            'dest_test/',
+            'build_test/',
         ],
     },
 ];

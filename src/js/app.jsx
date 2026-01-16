@@ -4,7 +4,7 @@ import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
 import { Virtuoso } from 'react-virtuoso';
 import { Search, Volume2, X, Globe, BookOpen, Image as ImageIcon } from 'lucide-react';
-import '../css/sparxstar-3iatlas-dictionary-form.css';
+import '../css/sparxstar-iatlas-dictionary-form.css';
 
 // --- CONFIGURATION ---
 const GRAPHQL_ENDPOINT = window.sparxStarDictionarySettings?.graphqlUrl || '/graphql';
