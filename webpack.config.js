@@ -12,7 +12,7 @@ module.exports = {
         'sparxstar-3iatlas-dictionary-admin': './src/js/admin.js',
         'sparxstar-3iatlas-dictionary-form': './src/js/sparxstar-iatlas-dictionary-form.js',
         'sparxstar-3iatlas-dictionary-admin-style': './src/css/admin.css', // Will be extracted
-        'sparxstar-3iatlas-dictionary-form-style': './src/css/sparxstar-iatlas-dictionary-form.css', // Will be extracted
+        'sparxstar-3iatlas-dictionary-form-style': './src/css/sparxstar-3iatlas-dictionary-form.css', // Will be extracted
     },
     output: {
         path: path.resolve(__dirname, 'assets'),
