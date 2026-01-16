@@ -114,7 +114,7 @@ final class Sparxstar3IAtlasDictionary {
         global $post;
 
         // Check if we are on a post/page and the shortcode is present
-        if ( is_singular() && has_shortcode( $post->post_content, 'sparxstar_dictionary' ) ) {
+        if ( is_singular() && $post instanceof \WP_Post && has_shortcode( $post->post_content, 'sparxstar_dictionary' ) ) {
             wp_enqueue_script( 'sparxstar-dictionary-app' );
             wp_enqueue_style( 'sparxstar-dictionary-style' );
         }
@@ -129,7 +129,7 @@ final class Sparxstar3IAtlasDictionary {
      */
     public function sparxIAtlas_render_app( $atts = array() ): string {
         $graphql_url = \site_url( SPARX_3IATLAS_GRAPHQL_SLUG );
-        if ( empty( $graphql_url ) || filepath( $graphql_url ) === false ) {
+        if ( empty( $graphql_url ) || filter_var( $graphql_url, FILTER_VALIDATE_URL ) === false ) {
             return '<p>' . esc_html__( 'Dictionary endpoint is not available.', 'sparxstar-3iatlas-dictionary' ) . '</p>';
         }
         $atts = shortcode_atts(
@@ -149,7 +149,6 @@ final class Sparxstar3IAtlasDictionary {
             'sparxstar-dictionary-app',
             'sparxStarDictionarySettings',
             array(
-                'title'      => $atts['title'],
                 'root_id'    => 'sparxstar-dictionary-root',
                 'graphqlUrl' => $graphql_url,
             )
@@ -192,7 +191,7 @@ final class Sparxstar3IAtlasDictionary {
      * @return void
      */
     private function sparxIAtlas_load_textdomain(): void {
-        load_plugin_textdomain( 'sparxstar-3iatlas-dictionary', false, dirname( plugin_basename( SPARX_3IATLAS_PATH ) ) . '/languages' );
+        load_plugin_textdomain( 'sparxstar-3iatlas-dictionary', false, dirname( plugin_basename( SPARX_3IATLAS_PATH . 'sparxstar-3iatlas-dictionary.php' ) ) . '/languages' );
     }
 
     // Prevent cloning and unserializing

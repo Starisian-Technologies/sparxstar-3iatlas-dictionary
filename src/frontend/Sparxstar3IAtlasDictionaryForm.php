@@ -10,9 +10,7 @@ namespace Starisian\Sparxstar\IAtlas\frontend;
 
 use WP_Query;
 use function defined;
-use function exit;
 use function add_action;
-use function is_page;
 use function has_shortcode;
 use function get_post;
 use function wp_enqueue_media;
@@ -35,7 +33,7 @@ use function update_post_meta;
 
 // Prevent direct access
 if ( ! defined( 'ABSPATH' ) ) {
-    exit;
+    exit();
 }
 
 
@@ -90,17 +88,13 @@ final class Sparxstar3IAtlasDictionaryForm {
      * Enqueue scripts and styles
      */
     public function sparxIAtlas_dict_form_enqueue_scripts(): void {
-        if ( is_page() && has_shortcode( get_post()->post_content, 'sparxstar_dictionary_form' ) ) {
+        global $post;
+        if ( is_singular() && $post instanceof \WP_Post && has_shortcode( $post->post_content, 'sparxstar_dictionary_form' ) ) {
             wp_enqueue_media();
             if ( defined( 'SPARX_3IATLAS_URL' ) ) {
-                wp_enqueue_style( 'sparx-dict-form-style', SPARX_3IATLAS_URL . 'assets/css/sparxstar-3iatlas-dictionary-form-style.min.css', array(), '1.0' );
-                wp_enqueue_script( 'sparx-dict-form-script', SPARX_3IATLAS_URL . 'assets/js/sparxstar-3iatlas-dictionary-form.min.js', array( 'jquery' ), '1.0', true );
-            } else {
-                // Fallback if constant not defined (e.g. during standalone testing)
-                wp_enqueue_style( 'sparx-dict-form-style', SPARX_3IATLAS_URL . 'assets/css/sparxstar-3iatlas-dictionary-form-style.min.css', array(), '1.0' );
-                wp_enqueue_script( 'sparx-dict-form-script', SPARX_3IATLAS_URL . 'assets/js/sparxstar-3iatlas-dictionary-form.min.js', array( 'jquery' ), '1.0', true );
-            }
-        
+                wp_enqueue_style( 'sparxstar-dict-form-style', SPARX_3IATLAS_URL . 'assets/css/sparxstar-3iatlas-dictionary-form-style.min.css', array(), '1.0' );
+                wp_enqueue_script( 'sparxstar-dict-form-script', SPARX_3IATLAS_URL . 'assets/js/sparxstar-3iatlas-dictionary-form.min.js', array( 'jquery' ), '1.0', true );
+            } 
             wp_localize_script(
                 'sparxstar-dict-form-script',
                 'sparxstarDict',
@@ -122,7 +116,7 @@ final class Sparxstar3IAtlasDictionaryForm {
     public function sparxIAtlas_dictionary_render_form( array $atts ): string {
         // Check if user is logged in
         if ( ! is_user_logged_in() ) {
-            return '<div class="sparx-dict-notice error" role="alert">You must be logged in to access this form.</div>';
+            return '<div class="sparxstar-dict-notice error" role="alert">You must be logged in to access this form.</div>';
         }
     
         $atts = shortcode_atts(
@@ -139,11 +133,11 @@ final class Sparxstar3IAtlasDictionaryForm {
     
         // Check permissions
         if ( $entry_id && ! $is_editor ) {
-            return '<div class="sparx-dict-notice error" role="alert">Only editors can edit existing entries.</div>';
+            return '<div class="sparxstar-dict-notice error" role="alert">Only editors can edit existing entries.</div>';
         }
     
         if ( ! $is_contributor && ! $is_editor ) {
-            return '<div class="sparx-dict-notice error" role="alert">You do not have permission to add dictionary entries.</div>';
+            return '<div class="sparxstar-dict-notice error" role="alert">You do not have permission to add dictionary entries.</div>';
         }
     
         // Get existing entry data if editing
@@ -151,7 +145,7 @@ final class Sparxstar3IAtlasDictionaryForm {
         if ( $entry_id ) {
             $post = get_post( $entry_id );
             if ( ! $post || $post->post_type !== 'aiwa_cpt_dictionary' ) {
-                return '<div class="sparx-dict-notice error" role="alert">Invalid entry ID.</div>';
+                return '<div class="sparxstar-dict-notice error" role="alert">Invalid entry ID.</div>';
             }
 
         
@@ -407,7 +401,7 @@ final class Sparxstar3IAtlasDictionaryForm {
      */
     public function sparxIAtlas_dict_submit_form(): void {
         // Verify nonce
-        if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'aiwa_dict_form_nonce' ) ) {
+        if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'sparxstar_dict_form_nonce' ) ) {
             wp_send_json_error( array( 'message' => 'Security check failed.' ) );
         }
     
@@ -515,7 +509,7 @@ final class Sparxstar3IAtlasDictionaryForm {
      */
     public function sparxIAtlas_dict_search_synonyms(): void {
         // Verify nonce
-        if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'aiwa_dict_form_nonce' ) ) {
+        if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'sparxstar_dict_form_nonce' ) ) {
             wp_send_json_error( array( 'message' => 'Security check failed.' ) );
         }
     
@@ -560,7 +554,7 @@ final class Sparxstar3IAtlasDictionaryForm {
      */
     public function sparxIAtlas_dict_get_synonym_details(): void {
         // Verify nonce
-        if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'aiwa_dict_form_nonce' ) ) {
+        if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'sparxstar_dict_form_nonce' ) ) {
             wp_send_json_error( array( 'message' => 'Security check failed.' ) );
         }
     
@@ -594,7 +588,7 @@ final class Sparxstar3IAtlasDictionaryForm {
      */
     public function sparxIAtlas_dict_get_entry_details(): void {
         // Verify nonce
-        if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'aiwa_dict_form_nonce' ) ) {
+        if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'sparxstar_dict_form_nonce' ) ) {
             wp_send_json_error( array( 'message' => 'Security check failed.' ) );
         }
     

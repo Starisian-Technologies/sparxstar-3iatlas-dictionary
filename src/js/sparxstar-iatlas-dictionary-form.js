@@ -1,6 +1,7 @@
 jQuery(document).ready(function ($) {
     // Sentence counter for new rows
     let sentenceCounter = $('#example-sentences-container .sentence-row').length;
+    let sparxstarDict = window.sparxstarDict || {};
 
     // Add sentence button
     $('#add-sentence-btn').on('click', function () {
@@ -111,11 +112,11 @@ jQuery(document).ready(function ($) {
 
         synonymSearchTimeout = setTimeout(function () {
             $.ajax({
-                url: aiwaDict.ajaxurl,
+                url: sparxstarDict.ajaxurl,
                 type: 'POST',
                 data: {
                     action: 'aiwa_dict_search_synonyms',
-                    nonce: aiwaDict.nonce,
+                    nonce: sparxstarDict.nonce,
                     search: searchTerm,
                 },
                 success: function (response) {
@@ -145,10 +146,10 @@ jQuery(document).ready(function ($) {
                     addSynonym(result.id, result.title);
                 })
                 .on('keydown', function (e) {
-                     if (e.key === 'Enter' || e.key === ' ') {
+                    if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
                         addSynonym(result.id, result.title);
-                     }
+                    }
                 })
                 .attr('tabindex', '0');
             container.append(resultItem);
@@ -164,7 +165,12 @@ jQuery(document).ready(function ($) {
 
         const tag = $('<span class="synonym-tag" role="listitem">')
             .attr('data-id', id)
-            .html(title + ' <button type="button" class="remove-synonym" aria-label="Remove synonym ' + title + '">×</button>');
+            .html(
+                title +
+                    ' <button type="button" class="remove-synonym" aria-label="Remove synonym ' +
+                    title +
+                    '">×</button>'
+            );
 
         $('#selected-synonyms').append(tag);
         updateSynonymField();
@@ -205,12 +211,12 @@ jQuery(document).ready(function ($) {
         const entryId = form.data('entry-id');
 
         $.ajax({
-            url: aiwaDict.ajaxurl,
+            url: sparxstarDict.ajaxurl,
             type: 'POST',
             data:
                 formData +
                 '&action=aiwa_dict_form_submit&nonce=' +
-                aiwaDict.nonce +
+                sparxstarDict.nonce +
                 '&entry_id=' +
                 entryId,
             success: function (response) {
