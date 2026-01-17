@@ -108,12 +108,6 @@ const GET_SINGLE_WORD_DETAILS = gql`
     }
 `;
 
-        <button
-            onClick={playAudio}
-            className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
-            aria-label="Play audio"
-        >
-
 const AudioButton = ({ url }) => {
     const playAudio = (e) => {
         e.stopPropagation();
