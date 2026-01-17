@@ -58,11 +58,8 @@ const GET_ALL_WORDS_INDEX = gql`
                         aiwaPartOfSpeech
                         aiwaSearchStringEnglish
                         aiwaSearchStringFrench
-                        aiwaWordPhoto {
-                            node {
-                                sourceUrl
-                            }
-                        }
+                        imageUrl
+                        photoUrl
                     }
                 }
             }
@@ -195,15 +192,7 @@ const AudioButton = ({ url }) => {
     return (
         <button
             onClick={playAudio}
-            disabled={isPlaying}
-            className={`p-2 rounded-full transition-colors ${
-                hasError
-                    ? 'bg-red-100 text-red-600 hover:bg-red-200'
-                    : isPlaying
-                      ? 'bg-blue-200 text-blue-700 cursor-not-allowed'
-                      : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
-            }`}
-            title={hasError ? 'Audio failed to load' : isPlaying ? 'Playing...' : 'Play audio'}
+            className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
         >
             <Volume2 size={20} />
         </button>
@@ -577,15 +566,6 @@ const DictionaryApp = () => {
                     {filteredWords.length} {filteredWords.length === 1 ? 'word' : 'words'} found
                 </div>
             </header>
-            onClick={() => handleWordClick(word)}
-            onKeyDown=
-            {(event) => {
-                if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
-                    event.preventDefault();
-                    handleWordClick(word);
-                }
-            }}
-            role="button" tabIndex={0}
             <div className="flex-1 max-w-3xl mx-auto w-full relative">
                 <Virtuoso
                     style={{ height: 'calc(100vh - 220px)' }}
