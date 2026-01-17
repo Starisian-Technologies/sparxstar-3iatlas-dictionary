@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ApolloClient, InMemoryCache, ApolloProvider, gql, useQuery } from '@apollo/client';
 import { Virtuoso } from 'react-virtuoso';
@@ -11,16 +11,37 @@ const GRAPHQL_ENDPOINT = window.sparxStarDictionarySettings?.graphqlUrl || '/gra
 const client = new ApolloClient({
     uri: GRAPHQL_ENDPOINT,
     cache: new InMemoryCache(),
+    defaultOptions: {
+        query: {
+            fetchPolicy: 'cache-first',
+            nextFetchPolicy: 'cache-first',
+        },
+        watchQuery: {
+            fetchPolicy: 'cache-first',
+            nextFetchPolicy: 'cache-first',
+        },
+    },
 });
 
 // --- QUERY 1: LIGHTWEIGHT INDEX (For the List) ---
 const GET_ALL_WORDS_INDEX = gql`
-    query GetWordIndex {
-        dictionaries(first: 100000, where: { orderby: { field: TITLE, order: ASC } }) {
+    query GetWordIndex($first: Int = 500, $after: String) {
+        dictionaries(
+            first: $first
+            after: $after
+            where: { orderby: { field: TITLE, order: ASC } }
+        ) {
+            pageInfo {
+                hasNextPage
+                endCursor
+            }
             edges {
                 node {
                     id
                     title
+                    // NOTE: slug is not displayed in the list itself but is required for navigation
+                    // to the detail view (GET_SINGLE_WORD_DETAILS uses slug). We include it here
+                    // so clicking a word can immediately use its slug without an extra lookup.
                     slug
                     dictionaryEntryDetails {
                         aiwaTranslationEnglish
@@ -28,6 +49,11 @@ const GET_ALL_WORDS_INDEX = gql`
                         aiwaPartOfSpeech
                         aiwaSearchStringEnglish
                         aiwaSearchStringFrench
+                        aiwaWordPhoto {
+                            node {
+                                sourceUrl
+                            }
+                        }
                     }
                 }
             }
@@ -100,14 +126,6 @@ const GET_SINGLE_WORD_DETAILS = gql`
     }
 `;
 
-// --- HELPER COMPONENTS ---
-
-const AudioButton = ({ url }) => {
-    const playAudio = (e) => {
-        e.stopPropagation();
-        const audio = new Audio(url);
-        audio.play();
-    };
     if (!url) return null;
     return (
         <button
@@ -445,7 +463,10 @@ const DictionaryApp = () => {
                                             : word.details.aiwaTranslationFrench}
                                     </p>
                                 </div>
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 items-center">
+                                    {word.dictionaryEntryDetails.aiwaWordPhoto?.node?.sourceUrl && (
+                                        <ImageIcon size={16} className="text-gray-400" />
+                                    )}
                                     <span className="text-xs font-semibold text-gray-400 px-2 py-1 bg-gray-100 rounded">
                                         {word.details.aiwaPartOfSpeech?.substring(0, 3)}
                                     </span>
