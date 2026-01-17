@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ApolloClient, InMemoryCache, gql, useQuery } from '@apollo/client';
 import { Virtuoso } from 'react-virtuoso';
@@ -177,10 +177,19 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
         variables: { slug },
     });
 
-    // Extract word data outside of JSX for cleaner code
-    const word = data?.dictionaryBy;
-    const d = word?.dictionaryEntryDetails;
-    const translation = language === 'en' ? d?.aiwaTranslationEnglish : d?.aiwaTranslationFrench;
+    useEffect(() => {
+        const handleEscapeKey = (event) => {
+            if (event.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        document.addEventListener('keydown', handleEscapeKey);
+
+        return () => {
+            document.removeEventListener('keydown', handleEscapeKey);
+        };
+    }, [onClose]);
 
     return (
         <div className="fixed inset-0 z-50 flex justify-end md:justify-center items-end md:items-center pointer-events-none">
