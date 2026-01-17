@@ -382,6 +382,8 @@ export default function DictionaryApp() {
             </header>
                             onClick={() => handleWordClick(word)}
                             onKeyDown={(event) => {
+                                // Note: 'Spacebar' check retained for legacy browser support (user base in Africa/The Gambia)
+                                // Modern browsers use ' ' (space string), older browsers use 'Spacebar'
                                 if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
                                     event.preventDefault();
                                     handleWordClick(word);
