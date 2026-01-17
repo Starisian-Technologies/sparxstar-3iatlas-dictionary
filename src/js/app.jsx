@@ -11,6 +11,16 @@ const GRAPHQL_ENDPOINT = window.sparxStarDictionarySettings?.graphqlUrl || '/gra
 const client = new ApolloClient({
     uri: GRAPHQL_ENDPOINT,
     cache: new InMemoryCache(),
+    defaultOptions: {
+        query: {
+            fetchPolicy: 'cache-first',
+            nextFetchPolicy: 'cache-first',
+        },
+        watchQuery: {
+            fetchPolicy: 'cache-first',
+            nextFetchPolicy: 'cache-first',
+        },
+    },
 });
 
 // --- QUERY 1: LIGHTWEIGHT INDEX (For the List) ---
