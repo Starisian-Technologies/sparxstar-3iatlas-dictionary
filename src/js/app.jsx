@@ -209,8 +209,7 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                                 ? 'A network error occurred while loading word details. Please check your internet connection and try again.'
                                 : 'An unexpected error occurred while loading word details. Please try again or contact support if the problem persists.'}
                         </p>
-                        {(error.message ||
-                            (error.graphQLErrors && error.graphQLErrors.length > 0)) && (
+                        {(error.message || error.graphQLErrors?.[0]?.message) && (
                             <p className="text-xs mt-2 text-red-400 break-words">
                                 {error.message || error.graphQLErrors?.[0]?.message}
                             </p>
