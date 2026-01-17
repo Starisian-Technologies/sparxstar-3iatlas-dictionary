@@ -58,6 +58,11 @@ const GET_ALL_WORDS_INDEX = gql`
                         aiwaPartOfSpeech
                         aiwaSearchStringEnglish
                         aiwaSearchStringFrench
+                        aiwaWordPhoto {
+                            node {
+                                sourceUrl
+                            }
+                        }
                     }
                 }
             }
@@ -196,71 +201,34 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                     <div className="p-6 text-red-500 text-center">
                         <p className="font-bold">Error loading details</p>
                         <p className="text-sm mt-2">
-                            {error.networkError
-                                ? 'A network error occurred while loading word details. Please check your internet connection and try again.'
-                                : 'An unexpected error occurred while loading word details. Please try again or contact support if the problem persists.'}
+                            Unable to load word details. Please try again or contact support if the
+                            problem persists.
                         </p>
-                        {(error?.message || error?.graphQLErrors?.[0]?.message) && (
-                            <p className="text-xs mt-2 text-red-400 break-words">
-                                {error?.message || error?.graphQLErrors?.[0]?.message}
-                            </p>
-                        )}
-                    </div>
-                )}
-
-                {!loading && !error && data && !data.dictionaryBy && (
-                    <div className="p-6 text-center text-gray-600">
-                        <p className="font-bold text-gray-800">Word not found</p>
-                        <p className="text-sm mt-2">
-                            No details were found for <span className="font-semibold">{initialTitle}</span>. It may have been removed or is not yet in the dictionary.
-                        </p>
-                    </div>
-                )}
-
-                {!loading && !error && data && !data.dictionaryBy && (
-                    <div className="h-full flex flex-col items-center justify-center space-y-4 p-6">
-                        <div className="text-gray-400">
-                            <BookOpen size={64} />
-                        </div>
-                        <div className="text-center">
-                            <p className="text-xl font-bold text-gray-900">Word not found</p>
-                            <p className="text-gray-500 mt-2">
-                                The word &quot;{initialTitle}&quot; could not be found in the
-                                dictionary.
-                            </p>
-                        </div>
-                        <button
-                            onClick={onClose}
-                            className="mt-4 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-                        >
-                            Close
-                        </button>
                     </div>
                 )}
 
                 {!loading && !error && data?.dictionaryBy && (
                     <>
-                        {/* Header Image */}
-                        {d.aiwaWordPhoto?.node?.sourceUrl && (
-                            <div className="h-48 w-full relative bg-gray-100 shrink-0">
-                                <img
-                                    src={d.aiwaWordPhoto.node.sourceUrl}
-                                    alt={word.title}
-                                    className="w-full h-full object-cover"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                            </div>
-                        )}
+                        {(() => {
+                            const word = data.dictionaryBy;
+                            const d = word.dictionaryEntryDetails;
+                            const translation =
+                                language === 'en'
+                                    ? d.aiwaTranslationEnglish
+                                    : d.aiwaTranslationFrench;
 
-                        {/* Sticky Header */}
-                        <div className="p-6 border-b border-gray-100 flex justify-between items-start bg-white z-10">
-                            <div>
-                                <div className="flex items-center gap-3">
-                                    <h2 className="text-3xl font-bold text-gray-900">
-                                        {word.title}
-                                    </h2>
-                                    {d.aiwaAudioFile?.node?.mediaItemUrl && (
-                                        <AudioButton url={d.aiwaAudioFile.node.mediaItemUrl} />
+                            return (
+                                <>
+                                    {/* Header Image */}
+                                    {d.aiwaWordPhoto?.node?.sourceUrl && (
+                                        <div className="h-48 w-full relative bg-gray-100 shrink-0">
+                                            <img
+                                                src={d.aiwaWordPhoto.node.sourceUrl}
+                                                alt={word.title}
+                                                className="w-full h-full object-cover"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                                        </div>
                                     )}
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2 mt-2 text-gray-600">
@@ -287,65 +255,122 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                             </button>
                         </div>
 
-                        {/* Content Scroll */}
-                        <div className="overflow-y-auto p-6 space-y-6">
-                            <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                                <h3 className="text-sm uppercase tracking-wide text-blue-500 font-bold mb-1">
-                                    {language === 'en' ? 'English' : 'Français'}
-                                </h3>
-                                <p className="text-2xl text-blue-900 font-medium">
-                                    {translation || 'No translation available'}
-                                </p>
-                            </div>
-
-                            {d.aiwaExtract && (
-                                <div>
-                                    <h3 className="flex items-center gap-2 font-bold text-gray-900 mb-2">
-                                        <BookOpen size={18} /> Definition
-                                    </h3>
-                                    <p className="text-gray-700 leading-relaxed">{d.aiwaExtract}</p>
-                                </div>
-                            )}
-
-                            {/* Relationships */}
-                            <div className="border-t border-b border-gray-100 py-4">
-                                {(d.aiwaSynonyms?.nodes?.length > 0 ||
-                                    d.aiwaAntonyms?.nodes?.length > 0 ||
-                                    d.aiwaPhoneticVariants?.nodes?.length > 0) && (
-                                    <h3 className="flex items-center gap-2 font-bold text-gray-900 mb-2">
-                                        <LinkIcon size={18} /> Related
-                                    </h3>
-                                )}
-                                <RelatedList title="Synonyms" items={d.aiwaSynonyms} />
-                                <RelatedList title="Antonyms" items={d.aiwaAntonyms} />
-                                <RelatedList
-                                    title="Phonetic Variants"
-                                    items={d.aiwaPhoneticVariants}
-                                />
-                            </div>
-
-                            {d.aiwaExampleSentences && d.aiwaExampleSentences.length > 0 && (
-                                <div>
-                                    <h3 className="font-bold text-gray-900 mb-3">Examples</h3>
-                                    <div className="space-y-4">
-                                        {d.aiwaExampleSentences.map((ex, idx) => (
-                                            <div
-                                                key={idx}
-                                                className="pl-4 border-l-4 border-gray-200"
-                                            >
-                                                <p className="text-lg text-gray-900 mb-1">
-                                                    {ex.sentenceExample}
-                                                </p>
-                                                {ex.sentencePhoneticPronunciation && (
-                                                    <p className="text-xs text-gray-400 font-mono mb-1">
-                                                        {ex.sentencePhoneticPronunciation}
-                                                    </p>
+                                    {/* Sticky Header */}
+                                    <div className="p-6 border-b border-gray-100 flex justify-between items-start bg-white z-10">
+                                        <div>
+                                            <div className="flex items-center gap-3">
+                                                <h2 className="text-3xl font-bold text-gray-900">
+                                                    {word.title}
+                                                </h2>
+                                                {d.aiwaAudioFile?.node?.mediaItemUrl && (
+                                                    <AudioButton
+                                                        url={d.aiwaAudioFile.node.mediaItemUrl}
+                                                    />
                                                 )}
-                                                <p className="text-gray-500 italic">
-                                                    {language === 'en'
-                                                        ? ex.sentenceEnglishTranslation
-                                                        : ex.sentenceFrenchTranslation}
+                                            </div>
+                                            <div className="flex flex-wrap items-center gap-2 mt-2 text-gray-600">
+                                                <span className="italic font-serif text-lg text-gray-500">
+                                                    {d.aiwaPartOfSpeech}
+                                                </span>
+                                                {d.aiwaIpaPronunciation && (
+                                                    <span className="bg-gray-100 px-2 py-0.5 rounded text-sm font-mono text-gray-700">
+                                                        /{d.aiwaIpaPronunciation}/
+                                                    </span>
+                                                )}
+                                                {d.phoneticProunciation && (
+                                                    <span className="bg-gray-50 border border-gray-200 px-2 py-0.5 rounded text-sm text-gray-600">
+                                                        [{d.phoneticProunciation}]
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={onClose}
+                                            className="p-2 hover:bg-gray-100 rounded-full"
+                                            aria-label="Close word details"
+                                        >
+                                            <X size={24} />
+                                        </button>
+                                    </div>
+
+                                    {/* Content Scroll */}
+                                    <div className="overflow-y-auto p-6 space-y-6">
+                                        <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                                            <h3 className="text-sm uppercase tracking-wide text-blue-500 font-bold mb-1">
+                                                {language === 'en' ? 'English' : 'Français'}
+                                            </h3>
+                                            <p className="text-2xl text-blue-900 font-medium">
+                                                {translation || 'No translation available'}
+                                            </p>
+                                        </div>
+
+                                        {d.aiwaExtract && (
+                                            <div>
+                                                <h3 className="flex items-center gap-2 font-bold text-gray-900 mb-2">
+                                                    <BookOpen size={18} /> Definition
+                                                </h3>
+                                                <p className="text-gray-700 leading-relaxed">
+                                                    {d.aiwaExtract}
                                                 </p>
+                                            </div>
+                                        )}
+
+                                        {/* Relationships */}
+                                        <div className="border-t border-b border-gray-100 py-4">
+                                            {(d.aiwaSynonyms?.nodes?.length > 0 ||
+                                                d.aiwaAntonyms?.nodes?.length > 0 ||
+                                                d.aiwaPhoneticVariants?.nodes?.length > 0) && (
+                                                <h3 className="flex items-center gap-2 font-bold text-gray-900 mb-2">
+                                                    <LinkIcon size={18} /> Related
+                                                </h3>
+                                            )}
+                                            <RelatedList title="Synonyms" items={d.aiwaSynonyms} />
+                                            <RelatedList title="Antonyms" items={d.aiwaAntonyms} />
+                                            <RelatedList
+                                                title="Phonetic Variants"
+                                                items={d.aiwaPhoneticVariants}
+                                            />
+                                        </div>
+
+                                        {d.aiwaExampleSentences &&
+                                            d.aiwaExampleSentences.length > 0 && (
+                                                <div>
+                                                    <h3 className="font-bold text-gray-900 mb-3">
+                                                        Examples
+                                                    </h3>
+                                                    <div className="space-y-4">
+                                                        {d.aiwaExampleSentences.map((ex, idx) => (
+                                                            <div
+                                                                key={idx}
+                                                                className="pl-4 border-l-4 border-gray-200"
+                                                            >
+                                                                <p className="text-lg text-gray-900 mb-1">
+                                                                    {ex.sentenceExample}
+                                                                </p>
+                                                                {ex.sentencePhoneticPronunciation && (
+                                                                    <p className="text-xs text-gray-400 font-mono mb-1">
+                                                                        {
+                                                                            ex.sentencePhoneticPronunciation
+                                                                        }
+                                                                    </p>
+                                                                )}
+                                                                <p className="text-gray-500 italic">
+                                                                    {language === 'en'
+                                                                        ? ex.sentenceEnglishTranslation
+                                                                        : ex.sentenceFrenchTranslation}
+                                                                </p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                        {d.aiwaOrigin && (
+                                            <div className="text-sm text-gray-500 border-t pt-4 mt-4">
+                                                <span className="font-bold text-gray-700">
+                                                    Origin:
+                                                </span>{' '}
+                                                {d.aiwaOrigin}
                                             </div>
                                         ))}
                                     </div>
@@ -506,14 +531,8 @@ export default function DictionaryApp() {
                                     </p>
                                 </div>
                                 <div className="flex gap-2 items-center">
-                                    {(word.dictionaryEntryDetails &&
-                                        (word.dictionaryEntryDetails.imageUrl ||
-                                            word.dictionaryEntryDetails.photoUrl)) && (
-                                        <ImageIcon
-                                            className="text-blue-500"
-                                            size={16}
-                                            aria-label="Has image"
-                                        />
+                                    {word.dictionaryEntryDetails.aiwaWordPhoto?.node?.sourceUrl && (
+                                        <ImageIcon size={16} className="text-gray-400" />
                                     )}
                                     <span className="text-xs font-semibold text-gray-400 px-2 py-1 bg-gray-100 rounded">
                                         {word.dictionaryEntryDetails.aiwaPartOfSpeech?.substring(
