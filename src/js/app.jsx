@@ -241,10 +241,14 @@ const WordDetailModal = ({ slug, wordTitle, language, onClose }) => {
         variables: { slug },
     });
 
-    // Extract word data for easier access
+    // Extract variables from data when available
     const word = data?.dictionaryBy;
     const d = word?.dictionaryEntryDetails;
-    const translation = language === 'en' ? d?.aiwaTranslationEnglish : d?.aiwaTranslationFrench;
+    const translation = d
+        ? language === 'en'
+            ? d.aiwaTranslationEnglish
+            : d.aiwaTranslationFrench
+        : null;
 
     return (
         <div className="fixed inset-0 z-50 flex justify-end md:justify-center items-end md:items-center pointer-events-none">
@@ -268,10 +272,9 @@ const WordDetailModal = ({ slug, wordTitle, language, onClose }) => {
                             Unable to load word details. Please try again or contact support if the
                             problem persists.
                         </p>
-                        {(error.message ||
-                            (error.graphQLErrors && error.graphQLErrors.length > 0)) && (
+                        {(error.message || error.graphQLErrors?.[0]?.message) && (
                             <p className="text-xs mt-2 text-red-400 break-words">
-                                {error.message || (error.graphQLErrors?.[0]?.message)}
+                                {error.message || error.graphQLErrors?.[0]?.message}
                             </p>
                         )}
                     </div>
@@ -288,7 +291,7 @@ const WordDetailModal = ({ slug, wordTitle, language, onClose }) => {
                     </div>
                 )}
 
-                {!loading && !error && wordData && (
+                {!loading && !error && data && data.dictionaryBy && word && d && (
                     <>
                         {/* Header Image */}
                         {d.aiwaWordPhoto?.node?.sourceUrl && (
@@ -534,6 +537,7 @@ const DictionaryApp = () => {
                     {filteredWords.length} {filteredWords.length === 1 ? 'word' : 'words'} found
                 </div>
             </header>
+
             <div className="flex-1 max-w-3xl mx-auto w-full relative">
                 <Virtuoso
                     style={{ height: 'calc(100vh - 220px)' }}
