@@ -155,15 +155,15 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                     <>
                         {(() => {
                             const word = data.dictionaryBy;
-                            const d = word.dictionaryEntryDetails;
-                            const translation = language === 'en' ? d.aiwaTranslationEnglish : d.aiwaTranslationFrench;
+                            const details = word.dictionaryEntryDetails;
+                            const translation = language === 'en' ? details.aiwaTranslationEnglish : details.aiwaTranslationFrench;
 
                             return (
                                 <>
                                     {/* Header Image */}
-                                    {d.aiwaWordPhoto?.node?.sourceUrl && (
+                                    {details.aiwaWordPhoto?.node?.sourceUrl && (
                                         <div className="h-48 w-full relative bg-gray-100 shrink-0">
-                                            <img src={d.aiwaWordPhoto.node.sourceUrl} alt={word.title} className="w-full h-full object-cover" />
+                                            <img src={details.aiwaWordPhoto.node.sourceUrl} alt={word.title} className="w-full h-full object-cover" />
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                                         </div>
                                     )}
@@ -173,15 +173,15 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                                         <div>
                                             <div className="flex items-center gap-3">
                                                 <h2 className="text-3xl font-bold text-gray-900">{word.title}</h2>
-                                                {d.aiwaAudioFile?.node?.mediaItemUrl && <AudioButton url={d.aiwaAudioFile.node.mediaItemUrl} />}
+                                                {details.aiwaAudioFile?.node?.mediaItemUrl && <AudioButton url={details.aiwaAudioFile.node.mediaItemUrl} />}
                                             </div>
                                             <div className="flex flex-wrap items-center gap-2 mt-2 text-gray-600">
-                                                <span className="italic font-serif text-lg text-gray-500">{d.aiwaPartOfSpeech}</span>
-                                                {d.aiwaIpaPronunciation && (
-                                                    <span className="bg-gray-100 px-2 py-0.5 rounded text-sm font-mono text-gray-700">/{d.aiwaIpaPronunciation}/</span>
+                                                <span className="italic font-serif text-lg text-gray-500">{details.aiwaPartOfSpeech}</span>
+                                                {details.aiwaIpaPronunciation && (
+                                                    <span className="bg-gray-100 px-2 py-0.5 rounded text-sm font-mono text-gray-700">/{details.aiwaIpaPronunciation}/</span>
                                                 )}
-                                                {d.phoneticProunciation && (
-                                                    <span className="bg-gray-50 border border-gray-200 px-2 py-0.5 rounded text-sm text-gray-600">[{d.phoneticProunciation}]</span>
+                                                {details.phoneticProunciation && (
+                                                    <span className="bg-gray-50 border border-gray-200 px-2 py-0.5 rounded text-sm text-gray-600">[{details.phoneticProunciation}]</span>
                                                 )}
                                             </div>
                                         </div>
@@ -197,28 +197,28 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                                             <p className="text-2xl text-blue-900 font-medium">{translation || 'No translation available'}</p>
                                         </div>
 
-                                        {d.aiwaExtract && (
+                                        {details.aiwaExtract && (
                                             <div>
                                                 <h3 className="flex items-center gap-2 font-bold text-gray-900 mb-2"><BookOpen size={18} /> Definition</h3>
-                                                <p className="text-gray-700 leading-relaxed">{d.aiwaExtract}</p>
+                                                <p className="text-gray-700 leading-relaxed">{details.aiwaExtract}</p>
                                             </div>
                                         )}
 
                                         {/* Relationships */}
                                         <div className="border-t border-b border-gray-100 py-4">
-                                            {(d.aiwaSynonyms?.nodes?.length > 0 || d.aiwaAntonyms?.nodes?.length > 0 || d.aiwaPhoneticVariants?.nodes?.length > 0) && (
+                                            {(details.aiwaSynonyms?.nodes?.length > 0 || details.aiwaAntonyms?.nodes?.length > 0 || details.aiwaPhoneticVariants?.nodes?.length > 0) && (
                                                 <h3 className="flex items-center gap-2 font-bold text-gray-900 mb-2"><LinkIcon size={18} /> Related</h3>
                                             )}
-                                            <RelatedList title="Synonyms" items={d.aiwaSynonyms} />
-                                            <RelatedList title="Antonyms" items={d.aiwaAntonyms} />
-                                            <RelatedList title="Phonetic Variants" items={d.aiwaPhoneticVariants} />
+                                            <RelatedList title="Synonyms" items={details.aiwaSynonyms} />
+                                            <RelatedList title="Antonyms" items={details.aiwaAntonyms} />
+                                            <RelatedList title="Phonetic Variants" items={details.aiwaPhoneticVariants} />
                                         </div>
 
-                                        {d.aiwaExampleSentences && d.aiwaExampleSentences.length > 0 && (
+                                        {details.aiwaExampleSentences && details.aiwaExampleSentences.length > 0 && (
                                             <div>
                                                 <h3 className="font-bold text-gray-900 mb-3">Examples</h3>
                                                 <div className="space-y-4">
-                                                    {d.aiwaExampleSentences.map((ex, idx) => (
+                                                    {details.aiwaExampleSentences.map((ex, idx) => (
                                                         <div key={idx} className="pl-4 border-l-4 border-gray-200">
                                                             <p className="text-lg text-gray-900 mb-1">{ex.sentenceExample}</p>
                                                             {ex.sentencePhoneticPronunciation && (
@@ -233,9 +233,9 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                                             </div>
                                         )}
 
-                                        {d.aiwaOrigin && (
+                                        {details.aiwaOrigin && (
                                             <div className="text-sm text-gray-500 border-t pt-4 mt-4">
-                                                <span className="font-bold text-gray-700">Origin:</span> {d.aiwaOrigin}
+                                                <span className="font-bold text-gray-700">Origin:</span> {details.aiwaOrigin}
                                             </div>
                                         )}
                                     </div>
@@ -284,11 +284,11 @@ export default function DictionaryApp() {
         if (searchTerm) {
             const lowerSearch = searchTerm.toLowerCase();
             entries = entries.filter((item) => {
-                const d = item.dictionaryEntryDetails;
+                const details = item.dictionaryEntryDetails;
                 return (
                     item.title.toLowerCase().includes(lowerSearch) ||
-                    d.aiwaSearchStringEnglish?.toLowerCase().includes(lowerSearch) ||
-                    d.aiwaSearchStringFrench?.toLowerCase().includes(lowerSearch)
+                    details.aiwaSearchStringEnglish?.toLowerCase().includes(lowerSearch) ||
+                    details.aiwaSearchStringFrench?.toLowerCase().includes(lowerSearch)
                 );
             });
         }
