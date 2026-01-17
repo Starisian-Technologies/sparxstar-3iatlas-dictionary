@@ -155,6 +155,11 @@ class Sparxstar3IAtlasAutoLinker {
      * @return string
      */
     private function process_replacements( string $content, array $terms ): string {
+        // Safety check: If no terms, don't run regex
+        if ( empty( $terms ) ) {
+            return $content;
+        }
+
         // Prepare terms for Regex: Escape chars
         $escaped_terms = array_map(
             function ( $term ) {
@@ -170,14 +175,10 @@ class Sparxstar3IAtlasAutoLinker {
 
         // 2. Define the Regex Pattern
         // Group 1-4: Skip tags (A, H1-6, Script, Style)
-        // Group 5: The Match
-        // CHANGE: Replaced \b with (?<!\p{L}) and (?!\p{L})
-        // This ensures we only match if the term is NOT surrounded by other letters.
-        // We use the /u modifier for Unicode support.
-        
+        // Group 5: The Match (Unicode aware boundaries)
         $pattern = '/(<a\b[^>]*>.*?<\/a>)|(<h[1-6]\b[^>]*>.*?<\/h[1-6]>)|(<script\b[^>]*>.*?<\/script>)|(<style\b[^>]*>.*?<\/style>)|((?<!\p{L})(?:' . $term_group . ')(?!\p{L}))/isu';
 
-        return preg_replace_callback(
+        $ret = preg_replace_callback(
             $pattern,
             function ( $matches ) use ( $terms, $current_post_id ) {
                 // If groups 1-4 matched (Skip tags), return original text unchanged
@@ -194,7 +195,7 @@ class Sparxstar3IAtlasAutoLinker {
                     if ( mb_strtolower( $term, 'UTF-8' ) === mb_strtolower( $matched_word, 'UTF-8' ) ) {
                     
                         // Robust Self-Reference Check
-                        // Ignore domain, check if the linked Post ID is the current Post ID
+                        // Note: url_to_postid is heavy, but since this result is cached via transient, it is acceptable.
                         $linked_post_id = url_to_postid( $url );
 
                         if ( $linked_post_id === $current_post_id ) {
@@ -215,8 +216,17 @@ class Sparxstar3IAtlasAutoLinker {
             },
             $content 
         );
-    }
 
+        // 3. Error Handling
+        // If PCRE limit is hit or error occurs, return original content
+        if ( null === $ret ) {
+            // Optional: Log error if debugging
+            error_log( 'Auto-linker regex failed. Code: ' . preg_last_error() );
+            return $content; 
+        }
+
+        return $ret;
+    }
     public function clear_post_cache( int $post_id = 0 ): void {
         if ( $post_id > 0 ) {
             delete_transient( $this->get_post_cache_key( $post_id ) );
