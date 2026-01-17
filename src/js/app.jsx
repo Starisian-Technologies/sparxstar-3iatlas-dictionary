@@ -305,7 +305,7 @@ export default function DictionaryApp() {
     const handleWordClick = (word) => {
         setSelectedWordTitle(word.title);
         setSelectedWordSlug(word.slug);
-    }
+    };
 
     if (loading) return (
         <div className="flex h-screen items-center justify-center flex-col gap-4">
