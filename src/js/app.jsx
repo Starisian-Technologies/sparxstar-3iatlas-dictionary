@@ -361,7 +361,15 @@ export default function DictionaryApp() {
                     </div>
                 </div>
             </header>
-
+                            onClick={() => handleWordClick(word)}
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
+                                    event.preventDefault();
+                                    handleWordClick(word);
+                                }
+                            }}
+                            role="button"
+                            tabIndex={0}
             <div className="flex-1 max-w-3xl mx-auto w-full relative">
                 <Virtuoso
                     ref={virtuosoRef}
