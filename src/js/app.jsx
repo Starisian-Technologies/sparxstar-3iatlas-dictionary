@@ -153,13 +153,18 @@ const RelatedList = ({ title, items }) => {
 
     if (!list || list.length === 0) return null;
 
+    // Filter out items without a title to prevent rendering empty badges
+    const validItems = list.filter((item) => item?.title);
+
+    if (validItems.length === 0) return null;
+
     return (
         <div className="mt-3">
             <h4 className="text-xs font-bold uppercase text-gray-400 mb-1">{title}</h4>
             <div className="flex flex-wrap gap-2">
-                {list.map((item, i) => (
+                {validItems.map((item) => (
                     <span
-                        key={i}
+                        key={item.slug || item.title}
                         className="bg-gray-100 text-gray-700 text-sm px-2 py-1 rounded-md border border-gray-200"
                     >
                         {item.title}
