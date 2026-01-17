@@ -106,7 +106,14 @@ const AudioButton = ({ url }) => {
 // Updated to handle the 'nodes' structure or flat arrays safely
 const RelatedList = ({ title, items }) => {
     // Safety check: items might be a connection object (with nodes) or null
-    const list = items?.nodes ? items.nodes : items;
+    let list;
+    if (Array.isArray(items?.nodes)) {
+        list = items.nodes;
+    } else if (Array.isArray(items)) {
+        list = items;
+    } else {
+        list = [];
+    }
     
     if (!list || list.length === 0) return null;
     
