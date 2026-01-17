@@ -134,7 +134,7 @@ const RelatedList = ({ title, items }) => {
         list = [];
     }
     
-    if (!list || list.length === 0) return null;
+    if (list.length === 0) return null;
     
     return (
         <div className="mt-3">
