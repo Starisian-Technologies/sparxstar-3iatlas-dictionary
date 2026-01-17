@@ -115,7 +115,7 @@ const RelatedList = ({ title, items }) => {
             <h4 className="text-xs font-bold uppercase text-gray-400 mb-1">{title}</h4>
             <div className="flex flex-wrap gap-2">
                 {list.map((item, i) => (
-                    <span key={i} className="bg-gray-100 text-gray-700 text-sm px-2 py-1 rounded-md border border-gray-200">
+                    <span key={item.slug || item.title || i} className="bg-gray-100 text-gray-700 text-sm px-2 py-1 rounded-md border border-gray-200">
                         {item.title}
                     </span>
                 ))}
