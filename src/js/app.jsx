@@ -463,3 +463,16 @@ document.addEventListener('DOMContentLoaded', () => {
         root.render(<DictionaryApp />);
     }
 });
+// --- MOUNT APP WITH DATA-TITLE ---
+document.addEventListener('DOMContentLoaded', () => {
+    const rootId = window.sparxStarDictionarySettings?.root_id || 'sparxstar-dictionary-root';
+    const container = document.getElementById(rootId);
+    if (container) {
+        // Read the title from the PHP shortcode attribute
+        const appTitle = container.dataset.title || 'Dictionary';
+        
+        const root = createRoot(container);
+        // Pass it as a prop
+        root.render(<DictionaryApp appTitle={appTitle} />);
+    }
+});
