@@ -108,12 +108,6 @@ const GET_SINGLE_WORD_DETAILS = gql`
     }
 `;
 
-const AudioButton = ({ url }) => {
-    const playAudio = (e) => {
-        e.stopPropagation();
-        const audio = new Audio(url);
-        audio.play();
-    };
     if (!url) return null;
     return (
         <button onClick={playAudio} className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors" aria-label="Play pronunciation">
