@@ -15,7 +15,7 @@ updates:
     # JS/Node dependencies for asset builds (optional)
     - package-ecosystem: 'npm'
       directory: '/' # Or /assets/ if you separate frontend
-      schedule:
+      schedule: 
           interval: 'weekly'
       open-pull-requests-limit: 5
 
