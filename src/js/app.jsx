@@ -16,7 +16,7 @@ const client = new ApolloClient({
 // --- QUERY 1: LIGHTWEIGHT INDEX (For the List) ---
 const GET_ALL_WORDS_INDEX = gql`
     query GetWordIndex {
-        dictionaries(first: 100000, where: { orderby: { field: TITLE, order: ASC } }) {
+        dictionaries(first: 10000, where: { orderby: { field: TITLE, order: ASC } }) {
             edges {
                 node {
                     id
