@@ -107,7 +107,7 @@ const AudioButton = ({ url }) => {
     };
     if (!url) return null;
     return (
-        <button onClick={playAudio} className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors">
+        <button onClick={playAudio} className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors" aria-label="Play pronunciation">
             <Volume2 size={20} />
         </button>
     );
