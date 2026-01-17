@@ -185,7 +185,7 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                                                 )}
                                             </div>
                                         </div>
-                                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full"><X size={24} /></button>
+                                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full" aria-label="Close word details"><X size={24} /></button>
                                     </div>
 
                                     {/* Content Scroll */}
