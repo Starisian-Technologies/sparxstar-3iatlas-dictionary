@@ -162,8 +162,7 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
     // Extract word data outside of JSX for cleaner code
     const word = data?.dictionaryBy;
     const d = word?.dictionaryEntryDetails;
-    const translation =
-        d && language === 'en' ? d.aiwaTranslationEnglish : d?.aiwaTranslationFrench;
+    const translation = language === 'en' ? d?.aiwaTranslationEnglish : d?.aiwaTranslationFrench;
 
     return (
         <div className="fixed inset-0 z-50 flex justify-end md:justify-center items-end md:items-center pointer-events-none">
