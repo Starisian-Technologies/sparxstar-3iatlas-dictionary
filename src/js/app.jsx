@@ -278,6 +278,11 @@ const WordDetailModal = ({ slug, wordTitle, language, onClose }) => {
                             Unable to load word details. Please try again or contact support if the
                             problem persists.
                         </p>
+                        {(error.message || (error.graphQLErrors && error.graphQLErrors.length > 0)) && (
+                            <p className="text-xs mt-2 text-red-400 break-words">
+                                {error.message || (error.graphQLErrors?.[0]?.message)}
+                            </p>
+                        )}
                     </div>
                 )}
 
@@ -294,17 +299,40 @@ const WordDetailModal = ({ slug, wordTitle, language, onClose }) => {
 
                 {!loading && !error && wordData && (
                     <>
-                        {/* Header Image */}
-                        {wordData.d.aiwaWordPhoto?.node?.sourceUrl && (
-                            <div className="h-48 w-full relative bg-gray-100 shrink-0">
-                                <img
-                                    src={wordData.d.aiwaWordPhoto.node.sourceUrl}
-                                    alt={wordData.word.title}
-                                    className="w-full h-full object-cover"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                            </div>
-                        )}
+                        {(() => {
+                            const word = data.dictionaryBy;
+                            const d = word.dictionaryEntryDetails;
+                            const translation = language === 'en' ? d.aiwaTranslationEnglish : d.aiwaTranslationFrench;
+
+                            return (
+                                <>
+                                    {/* Header Image */}
+                                    {d.aiwaWordPhoto?.node?.sourceUrl && (
+                                        <div className="h-48 w-full relative bg-gray-100 shrink-0">
+                                            <img src={d.aiwaWordPhoto.node.sourceUrl} alt={word.title} className="w-full h-full object-cover" />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                                        </div>
+                                    )}
+
+                                    {/* Sticky Header */}
+                                    <div className="p-6 border-b border-gray-100 flex justify-between items-start bg-white z-10">
+                                        <div>
+                                            <div className="flex items-center gap-3">
+                                                <h2 className="text-3xl font-bold text-gray-900">{word.title}</h2>
+                                                {d.aiwaAudioFile?.node?.mediaItemUrl && <AudioButton url={d.aiwaAudioFile.node.mediaItemUrl} />}
+                                            </div>
+                                            <div className="flex flex-wrap items-center gap-2 mt-2 text-gray-600">
+                                                {d.aiwaPartOfSpeech && <span className="italic font-serif text-lg text-gray-500">{d.aiwaPartOfSpeech}</span>}
+                                                {d.aiwaIpaPronunciation && (
+                                                    <span className="bg-gray-100 px-2 py-0.5 rounded text-sm font-mono text-gray-700">/{d.aiwaIpaPronunciation}/</span>
+                                                )}
+                                                {d.phoneticProunciation && (
+                                                    <span className="bg-gray-50 border border-gray-200 px-2 py-0.5 rounded text-sm text-gray-600">[{d.phoneticProunciation}]</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full" aria-label="Close word details"><X size={24} /></button>
+                                    </div>
 
                         {/* Sticky Header */}
                         <div className="p-6 border-b border-gray-100 flex justify-between items-start bg-white z-10">
