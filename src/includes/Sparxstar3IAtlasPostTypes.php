@@ -46,7 +46,7 @@ class Sparxstar3IAtlasPostTypes {
      */
     public function sparxIAtlas_register_hooks(): void {
            // ACF field group registration code goes here.
-          add_action( 'acf/include_fields', function() {
+         add_action( 'acf/include_fields', function() {
         	if ( ! function_exists( 'acf_add_local_field_group' ) ) {
         		return;
         	}
@@ -604,12 +604,12 @@ class Sparxstar3IAtlasPostTypes {
         			),
         		),
         		array(
-        			'key' => 'field_696977991194a',
-        			'label' => 'Homonyms',
-        			'name' => 'aiwa_homonyms',
+        			'key' => 'field_696b19f2bf3c9',
+        			'label' => 'Phonetic variants',
+        			'name' => 'aiwa_phonetic_variants',
         			'aria-label' => '',
         			'type' => 'relationship',
-        			'instructions' => 'Other words in the dictionary that have sound similar in pronunciation to this word. Connect this word to other entries so people can discover related vocabulary.',
+        			'instructions' => 'Words that share similar pronunciation patterns.',
         			'required' => 0,
         			'conditional_logic' => 0,
         			'wrapper' => array(
@@ -634,7 +634,7 @@ class Sparxstar3IAtlasPostTypes {
         			'bidirectional' => 0,
         			'show_in_graphql' => 1,
         			'graphql_description' => '',
-        			'graphql_field_name' => 'aiwaHomonyms',
+        			'graphql_field_name' => 'aiwaPhoneticVariants',
         			'graphql_connection_type' => 'one_to_many',
         			'bidirectional_target' => array(
         			),
@@ -859,8 +859,8 @@ class Sparxstar3IAtlasPostTypes {
         add_action( 'init', function() {
         	register_post_type( 'aiwa-cpt-dictionary', array(
         	'labels' => array(
-        		'name' => 'Dictionaries',
-        		'singular_name' => 'Dictionary',
+        		'name' => 'Dictionary Entries',
+        		'singular_name' => 'Dictionary Entry',
         		'menu_name' => 'Dictionaries',
         		'all_items' => 'All Dictionaries',
         		'edit_item' => 'Edit Dictionary',
@@ -889,7 +889,7 @@ class Sparxstar3IAtlasPostTypes {
         		'item_link' => 'Dictionary Link',
         		'item_link_description' => 'A link to a dictionary.',
         	),
-        	'description' => 'Public word entries for dictionaries.',
+        	'description' => 'Individual word records in a dictionary that provide information such as meaning, pronunciation, usage, and related forms.',
         	'public' => true,
         	'show_in_rest' => true,
         	'menu_icon' => 'dashicons-book-alt',
