@@ -571,7 +571,17 @@ const DictionaryApp = () => {
                     {filteredWords.length} {filteredWords.length === 1 ? 'word' : 'words'} found
                 </div>
             </header>
-
+                            onClick={() => handleWordClick(word)}
+                            onKeyDown={(event) => {
+                                // Note: 'Spacebar' check retained for legacy browser support (user base in Africa/The Gambia)
+                                // Modern browsers use ' ' (space string), older browsers use 'Spacebar'
+                                if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
+                                    event.preventDefault();
+                                    handleWordClick(word);
+                                }
+                            }}
+                            role="button"
+                            tabIndex={0}
             <div className="flex-1 max-w-3xl mx-auto w-full relative">
                 <Virtuoso
                     style={{ height: 'calc(100vh - 220px)' }}
