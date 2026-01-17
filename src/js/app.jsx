@@ -385,7 +385,7 @@ export default function DictionaryApp() {
                     language={language} 
                     onClose={() => {
                         setSelectedWordSlug(null);
-                        setSelectedWordTitle(null);
+                        setSelectedWordTitle('');
                     }} 
                 />
             )}
