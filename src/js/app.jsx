@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ApolloClient, InMemoryCache, gql, useQuery } from '@apollo/client';
+import { ApolloClient, InMemoryCache, ApolloProvider, gql, useQuery } from '@apollo/client';
 import { Virtuoso } from 'react-virtuoso';
 import {
     Search,
@@ -20,16 +20,37 @@ const GRAPHQL_ENDPOINT = window.sparxStarDictionarySettings?.graphqlUrl || '/gra
 const client = new ApolloClient({
     uri: GRAPHQL_ENDPOINT,
     cache: new InMemoryCache(),
+    defaultOptions: {
+        query: {
+            fetchPolicy: 'cache-first',
+            nextFetchPolicy: 'cache-first',
+        },
+        watchQuery: {
+            fetchPolicy: 'cache-first',
+            nextFetchPolicy: 'cache-first',
+        },
+    },
 });
 
 // --- QUERY 1: LIGHTWEIGHT INDEX (For the List) ---
 const GET_ALL_WORDS_INDEX = gql`
-    query GetWordIndex {
-        dictionaries(first: 100000, where: { orderby: { field: TITLE, order: ASC } }) {
+    query GetWordIndex($first: Int = 500, $after: String) {
+        dictionaries(
+            first: $first
+            after: $after
+            where: { orderby: { field: TITLE, order: ASC } }
+        ) {
+            pageInfo {
+                hasNextPage
+                endCursor
+            }
             edges {
                 node {
                     id
                     title
+                    // NOTE: slug is not displayed in the list itself but is required for navigation
+                    // to the detail view (GET_SINGLE_WORD_DETAILS uses slug). We include it here
+                    // so clicking a word can immediately use its slug without an extra lookup.
                     slug
                     dictionaryEntryDetails {
                         aiwaTranslationEnglish
@@ -37,6 +58,11 @@ const GET_ALL_WORDS_INDEX = gql`
                         aiwaPartOfSpeech
                         aiwaSearchStringEnglish
                         aiwaSearchStringFrench
+                        aiwaWordPhoto {
+                            node {
+                                sourceUrl
+                            }
+                        }
                     }
                 }
             }
@@ -111,7 +137,7 @@ const GET_SINGLE_WORD_DETAILS = gql`
 
 // --- HELPER COMPONENTS ---
 
-const AudioButton = ({ url }) => {
+const AudioButton = ({ url, word }) => {
     const playAudio = (e) => {
         e.stopPropagation();
         const audio = new Audio(url);
@@ -154,7 +180,7 @@ const RelatedList = ({ title, items }) => {
 
 // --- MODAL COMPONENT ---
 
-const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
+const WordDetailModal = ({ slug, wordTitle, language, onClose }) => {
     const { loading, error, data } = useQuery(GET_SINGLE_WORD_DETAILS, {
         variables: { slug },
     });
@@ -170,7 +196,7 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                 {loading && (
                     <div className="h-full flex flex-col items-center justify-center space-y-4">
                         <Loader2 className="animate-spin text-blue-600" size={40} />
-                        <p className="text-gray-500">Loading details for {initialTitle}...</p>
+                        <p className="text-gray-500">Loading details for {wordTitle}...</p>
                     </div>
                 )}
 
@@ -337,37 +363,44 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                                                 {details.aiwaOrigin}
                                             </div>
                                         )}
+                                        <p className="text-gray-500 italic">
+                                            {language === 'en'
+                                                ? ex.sentenceEnglishTranslation
+                                                : ex.sentenceFrenchTranslation}
+                                        </p>
                                     </div>
-                                </>
-                            );
-                        })()}
-                    </>
-                )}
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {d.aiwaOrigin && (
+                        <div className="text-sm text-gray-500 border-t pt-4 mt-4">
+                            <span className="font-bold text-gray-700">Origin:</span> {d.aiwaOrigin}
+                        </div>
+                    )}
+                </div>
+            </>
+        );
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex justify-end md:justify-center items-end md:items-center pointer-events-none">
+            <div
+                className="absolute inset-0 bg-black/50 pointer-events-auto transition-opacity"
+                onClick={onClose}
+            />
+
+            <div className="bg-white w-full md:w-[600px] h-[85vh] md:h-[80vh] rounded-t-2xl md:rounded-2xl shadow-2xl pointer-events-auto flex flex-col overflow-hidden animate-slide-up">
+                {renderContent()}
             </div>
         </div>
     );
 };
 
-const AlphaIndex = ({ onSelectLetter }) => {
-    const alphabet = '#ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-    return (
-        <div className="hidden md:flex flex-col fixed right-2 top-24 bottom-4 w-6 items-center justify-center z-10 text-xs text-gray-500 font-bold overflow-y-auto">
-            {alphabet.map((char) => (
-                <button
-                    key={char}
-                    onClick={() => onSelectLetter(char)}
-                    className="hover:text-blue-600 hover:scale-125 transition-transform py-0.5"
-                >
-                    {char}
-                </button>
-            ))}
-        </div>
-    );
-};
+// --- MAIN APP ---
 
-// --- MAIN LIST COMPONENT ---
-
-export default function DictionaryApp() {
+const DictionaryApp = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [language, setLanguage] = useState('en');
     const [selectedWordSlug, setSelectedWordSlug] = useState(null);
@@ -417,45 +450,64 @@ export default function DictionaryApp() {
     if (error) return <div className="p-4 text-red-500">Error: {error.message}</div>;
 
     return (
-        <div className="flex flex-col h-screen bg-gray-50 text-gray-900 font-sans overflow-hidden">
-            <header className="bg-white border-b border-gray-200 z-20 shrink-0">
-                <div className="max-w-3xl mx-auto px-4 py-3">
-                    <div className="flex justify-between items-center mb-3">
-                        <h1 className="text-xl font-bold tracking-tight text-gray-800">
-                            AIWA <span className="text-blue-600">Dictionary</span>
-                        </h1>
-                        <button
-                            onClick={() => setLanguage((l) => (l === 'en' ? 'fr' : 'en'))}
-                            className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
-                        >
-                            <Globe size={16} /> {language === 'en' ? 'EN' : 'FR'}
-                        </button>
-                    </div>
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+            {/* Sticky Header */}
+            <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-lg border-b border-gray-200 shadow-sm">
+                <div className="max-w-5xl mx-auto px-4 py-4 space-y-3">
+                    {/* Search */}
                     <div className="relative">
                         <Search
                             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                             size={18}
                         />
                         <input
+                            ref={searchRef}
                             type="text"
-                            placeholder={`Search ${filteredData.length} words...`}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-gray-100 text-gray-900 pl-10 pr-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                            placeholder="Search by word or translation..."
+                            className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-100 transition-all shadow-sm"
                         />
                     </div>
-                </div>
-            </header>
 
-            <div className="flex-1 max-w-3xl mx-auto w-full relative">
+                    {/* Toggle */}
+                    <div className="flex items-center gap-3 justify-center">
+                        <span
+                            className={`text-sm font-medium transition-colors ${language === 'en' ? 'text-blue-600' : 'text-gray-400'}`}
+                        >
+                            English
+                        </span>
+                        <button
+                            onClick={() => setLanguage(language === 'en' ? 'fr' : 'en')}
+                            className={`relative w-14 h-7 rounded-full transition-colors ${language === 'en' ? 'bg-blue-500' : 'bg-purple-500'}`}
+                            aria-label="Toggle language"
+                        >
+                            <span
+                                className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow-md transition-transform ${language === 'fr' ? 'translate-x-7' : ''}`}
+                            />
+                        </button>
+                        <span
+                            className={`text-sm font-medium transition-colors ${language === 'fr' ? 'text-purple-600' : 'text-gray-400'}`}
+                        >
+                            Français
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Results */}
+            <div className="max-w-5xl mx-auto px-4 py-6">
+                <div className="mb-4 text-sm text-gray-500">
+                    {filteredWords.length} {filteredWords.length === 1 ? 'word' : 'words'} found
+                </div>
+
                 <Virtuoso
-                    ref={virtuosoRef}
-                    data={filteredData}
-                    totalCount={filteredData.length}
-                    className="h-full w-full scrollbar-hide"
+                    style={{ height: 'calc(100vh - 220px)' }}
+                    data={filteredWords}
                     itemContent={(index, word) => (
                         <div
-                            onClick={() => handleWordClick(word)}
+                            key={word.id}
+                            onClick={() => setSelectedModal({ slug: word.slug, title: word.title })}
                             className="px-4 py-4 border-b border-gray-100 bg-white hover:bg-blue-50 cursor-pointer active:bg-blue-100 transition-colors"
                         >
                             <div className="flex justify-between items-start">
@@ -465,8 +517,8 @@ export default function DictionaryApp() {
                                     </h3>
                                     <p className="text-gray-500 text-sm mt-0.5 line-clamp-1">
                                         {language === 'en'
-                                            ? word.dictionaryEntryDetails.aiwaTranslationEnglish
-                                            : word.dictionaryEntryDetails.aiwaTranslationFrench}
+                                            ? word.details.aiwaTranslationEnglish
+                                            : word.details.aiwaTranslationFrench}
                                     </p>
                                 </div>
                                 <div className="flex gap-2 items-center">
@@ -490,7 +542,6 @@ export default function DictionaryApp() {
                         </div>
                     )}
                 />
-                <AlphaIndex onSelectLetter={handleScrollToLetter} />
             </div>
 
             {selectedWordSlug && (
@@ -506,13 +557,19 @@ export default function DictionaryApp() {
             )}
         </div>
     );
-}
+};
+
+// --- MOUNT ---
 
 document.addEventListener('DOMContentLoaded', () => {
     const rootId = window.sparxStarDictionarySettings?.root_id || 'sparxstar-dictionary-root';
     const container = document.getElementById(rootId);
     if (container) {
         const root = createRoot(container);
-        root.render(<DictionaryApp />);
+        root.render(
+            <ApolloProvider client={client}>
+                <DictionaryApp />
+            </ApolloProvider>
+        );
     }
 });
