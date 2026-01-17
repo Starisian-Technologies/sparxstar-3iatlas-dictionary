@@ -211,7 +211,7 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                                                 {d.aiwaAudioFile?.node?.mediaItemUrl && <AudioButton url={d.aiwaAudioFile.node.mediaItemUrl} />}
                                             </div>
                                             <div className="flex flex-wrap items-center gap-2 mt-2 text-gray-600">
-                                                <span className="italic font-serif text-lg text-gray-500">{d.aiwaPartOfSpeech}</span>
+                                                {d.aiwaPartOfSpeech && <span className="italic font-serif text-lg text-gray-500">{d.aiwaPartOfSpeech}</span>}
                                                 {d.aiwaIpaPronunciation && (
                                                     <span className="bg-gray-100 px-2 py-0.5 rounded text-sm font-mono text-gray-700">/{d.aiwaIpaPronunciation}/</span>
                                                 )}
