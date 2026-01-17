@@ -1,3 +1,5 @@
+/* global document */
+
 const searchId = 'LiBfqbJVcV';
 const searchHash = '#' + searchId;
 const searchContainer = document.querySelector('#PkfLWpAbet');

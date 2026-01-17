@@ -5,33 +5,32 @@
 /* --- Custom Utilities --- */
 
 @layer utilities {
-  /* Hide scrollbar for Chrome, Safari and Opera */
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
+    /* Hide scrollbar for Chrome, Safari and Opera */
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+    }
 
-  /* Hide scrollbar for IE, Edge and Firefox */
-  .scrollbar-hide {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
-  }
+    /* Hide scrollbar for IE, Edge and Firefox */
+    .scrollbar-hide {
+        -ms-overflow-style: none; /* IE and Edge */
+        scrollbar-width: none; /* Firefox */
+    }
 }
 
 /* --- Base Styles --- */
 
 body {
-  /* Prevent "bounce" scrolling on the body itself to make it feel like an app */
-  overscroll-behavior-y: none;
-  -webkit-tap-highlight-color: transparent;
-  
-  
-  /* System fonts for native feel */
-  font-family: "Noto Sans", system-ui, sans-serif;
+    /* Prevent "bounce" scrolling on the body itself to make it feel like an app */
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+
+    /* System fonts for native feel */
+    font-family: 'Noto Sans', system-ui, sans-serif;
 }
 
 /* Ensure React root takes full height for virtual scrolling */
 #root {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
 }

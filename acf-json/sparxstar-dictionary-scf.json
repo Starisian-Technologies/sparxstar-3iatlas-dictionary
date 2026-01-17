@@ -493,15 +493,10 @@
                     "class": "",
                     "id": ""
                 },
-                "post_type": [
-                    "aiwa-cpt-dictionary"
-                ],
+                "post_type": ["aiwa-cpt-dictionary"],
                 "post_status": "",
                 "taxonomy": "",
-                "filters": [
-                    "search",
-                    "taxonomy"
-                ],
+                "filters": ["search", "taxonomy"],
                 "return_format": "object",
                 "min": "",
                 "max": "",
@@ -528,15 +523,10 @@
                     "class": "",
                     "id": ""
                 },
-                "post_type": [
-                    "aiwa-cpt-dictionary"
-                ],
+                "post_type": ["aiwa-cpt-dictionary"],
                 "post_status": "",
                 "taxonomy": "",
-                "filters": [
-                    "search",
-                    "taxonomy"
-                ],
+                "filters": ["search", "taxonomy"],
                 "return_format": "object",
                 "min": "",
                 "max": "",
@@ -563,15 +553,10 @@
                     "class": "",
                     "id": ""
                 },
-                "post_type": [
-                    "aiwa-cpt-dictionary"
-                ],
+                "post_type": ["aiwa-cpt-dictionary"],
                 "post_status": "",
                 "taxonomy": "",
-                "filters": [
-                    "search",
-                    "taxonomy"
-                ],
+                "filters": ["search", "taxonomy"],
                 "return_format": "object",
                 "min": "",
                 "max": "",
@@ -664,9 +649,7 @@
         "menu_order": 0,
         "active": true,
         "taxonomy": "aiwa-alpha-letter",
-        "object_type": [
-            "sparx-dictionary"
-        ],
+        "object_type": ["sparx-dictionary"],
         "advanced_configuration": 1,
         "import_source": "",
         "import_date": "",
@@ -797,9 +780,7 @@
         "menu_order": 0,
         "active": true,
         "taxonomy": "aiwa_domain",
-        "object_type": [
-            "aiwa-cpt-dictionary"
-        ],
+        "object_type": ["aiwa-cpt-dictionary"],
         "advanced_configuration": 1,
         "import_source": "",
         "import_date": "",
@@ -930,10 +911,7 @@
         "menu_order": 0,
         "active": true,
         "taxonomy": "starmus_part_of_speech",
-        "object_type": [
-            "starmus_transcript",
-            "starmus_translate"
-        ],
+        "object_type": ["starmus_transcript", "starmus_translate"],
         "advanced_configuration": false,
         "import_source": "",
         "import_date": "",

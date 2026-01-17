@@ -6,8 +6,8 @@ A frontend form for adding and editing dictionary entries in WordPress with role
 
 - ✅ **Password Protected**: Only logged-in users can access
 - ✅ **Role-Based Permissions**:
-  - Contributors: Can add new entries
-  - Editors: Can add AND edit existing entries
+    - Contributors: Can add new entries
+    - Editors: Can add AND edit existing entries
 - ✅ **Non-Destructive Editing**: Editing creates a new draft instead of modifying the original
 - ✅ **All submissions saved as drafts** for review before publishing
 - ✅ **Media Upload**: Support for images and audio files
@@ -22,9 +22,9 @@ A frontend form for adding and editing dictionary entries in WordPress with role
 
 1. Create a new folder in `/wp-content/plugins/` called `SPARXSTAR 3IAtlas-dictionary-form`
 2. Copy all three files into this folder:
-   - `3IAtlasDictionaryForm.php`
-   - `3iatlas-dictionary-form.js`
-   - `3iatlas-diictionary-form.css`
+    - `3IAtlasDictionaryForm.php`
+    - `3iatlas-dictionary-form.js`
+    - `3iatlas-diictionary-form.css`
 3. Go to WordPress admin → Plugins
 4. Activate "SPARXSTAR 3IAtlas Dictionary Form"
 
@@ -70,6 +70,7 @@ Replace `123` with the actual post ID of the dictionary entry.
 ## Form Fields
 
 ### Basic Information
+
 - Word/Term (required)
 - Translation
 - Translation (English)
@@ -81,31 +82,37 @@ Replace `123` with the actual post ID of the dictionary entry.
 - Rating Average (1-5)
 
 ### Media
+
 - Audio Recording (mp3, wav)
 - Word Photo (image)
 
 ### Content
+
 - Word Origin
 - Extract (Long Definition)
 
 ### Example Sentences
+
 - Sentence
 - Translation
 - Translation (English)
 - Translation (French)
 
 ### Relationships
+
 - Synonyms (searchable relationship field)
 
 ## Behavior
 
 ### Adding New Entries
+
 - All fields are blank
 - Submit button says "Add Entry (Draft)"
 - Creates a new post with status "draft"
 - Form resets after successful submission
 
 ### Editing Entries
+
 - Form pre-populated with existing data
 - Submit button says "Save as New Draft"
 - Creates a NEW draft post (does not modify original)
@@ -113,6 +120,7 @@ Replace `123` with the actual post ID of the dictionary entry.
 - Can track edit history
 
 ### Security
+
 - Nonce verification on all AJAX requests
 - User authentication required
 - Role-based permission checks
@@ -143,19 +151,23 @@ The form uses CSS variables for easy customization. Edit these in `SPARXSTAR 3IA
 ## Troubleshooting
 
 ### "You must be logged in to access this form"
+
 - Make sure you're logged into WordPress
 - Check that the user has Contributor or Editor role
 
 ### "Only editors can edit entries"
+
 - User must have Editor role or higher to edit existing entries
 - Contributors can only add new entries
 
 ### Media uploader not working
+
 - Make sure WordPress media library is properly configured
 - Check browser console for JavaScript errors
 - Verify `wp_enqueue_media()` is being called
 
 ### AJAX submission fails
+
 - Check that the plugin/theme is properly activated
 - Verify nonce is being generated correctly
 - Check PHP error logs for server-side issues
@@ -163,6 +175,7 @@ The form uses CSS variables for easy customization. Edit these in `SPARXSTAR 3IA
 ## Support
 
 For issues or questions, check:
+
 - WordPress user role settings
 - PHP error logs
 - Browser console for JavaScript errors

@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import url('tailwindcss');
 
 /* AIWA Dictionary Form Styles */
 
@@ -129,15 +127,15 @@
     gap: 1.5rem;
 }
 
-@media (width <= 768px) {
+@media (width <=768px) {
     .form-row {
         grid-template-columns: 1fr;
     }
 }
 
 /* Form Controls */
-.sparx-dict-form input[type="text"],
-.sparx-dict-form input[type="number"],
+.sparx-dict-form input[type='text'],
+.sparx-dict-form input[type='number'],
 .sparx-dict-form select,
 .sparx-dict-form textarea {
     width: 100%;
@@ -148,11 +146,13 @@
     font-size: 1rem;
     color: var(--color-text);
     background: #fff;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
 }
 
-.sparx-dict-form input[type="text"]:focus,
-.sparx-dict-form input[type="number"]:focus,
+.sparx-dict-form input[type='text']:focus,
+.sparx-dict-form input[type='number']:focus,
 .sparx-dict-form select:focus,
 .sparx-dict-form textarea:focus {
     outline: none;
@@ -427,7 +427,7 @@
 }
 
 /* Responsive */
-@media (width <= 640px) {
+@media (width <=640px) {
     .sparx-dict-form-container {
         padding: 0 1rem;
         margin: 2rem auto;

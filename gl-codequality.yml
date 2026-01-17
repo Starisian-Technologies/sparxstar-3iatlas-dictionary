@@ -1,2 +1,2 @@
 include:
-  template: Code-Quality.gitlab-ci.yml
+    template: Code-Quality.gitlab-ci.yml

@@ -64,6 +64,8 @@ example.env
 
 # Directories
 build
+build_test
+dest_test
 data
 develop
 docs

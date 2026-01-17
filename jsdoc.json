@@ -1,8 +1,6 @@
 {
     "source": {
-        "include": [
-            "src/js"
-        ],
+        "include": ["src/js"],
         "includePattern": ".+\\.jsx?$",
         "excludePattern": "(^|\\/|\\\\)_"
     },
@@ -12,9 +10,7 @@
         "readme": "README.md",
         "template": "node_modules/clean-jsdoc-theme"
     },
-    "plugins": [
-        "plugins/markdown"
-    ],
+    "plugins": ["plugins/markdown"],
     "templates": {
         "default": {
             "includeDate": true

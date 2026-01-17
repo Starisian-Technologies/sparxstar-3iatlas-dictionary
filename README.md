@@ -1,4 +1,3 @@
-
 <img width="1280" height="640" alt="3iatlas" src="https://github.com/user-attachments/assets/6a8c2659-a371-4298-8a23-b5e16e7c7472" />
 
 # SPARXSTAR 3IAtlas Dictionary
@@ -11,28 +10,28 @@ A comprehensive WordPress plugin for managing dictionary entries with full WPGra
 
 ## 🚀 Features
 
-* **Dictionary Management**: Custom Post Type (`aiwa_cpt_dictionary`) for managing word entries.
-* **Rich Taxonomies**: Categorize words by:
-  * Language (`starmus_tax_language`)
-  * Dialect (`starmus_tax_dialect`)
-  * Part of Speech (`starmus_part_of_speech`)
-  * Alphabetical Grouping (`aiwa-alpha-letter`)
-* **GraphQL Integration**: Full schema exposure for headless or decoupled applications.
-* **SCF Integration**: Dynamic schema generation based on `acf-json` configurations.
-* **React Frontend**: Built-in, high-performance dictionary viewer with:
-  * Virtual scrolling for large datasets.
-  * Instant search with debouncing.
-  * Audio pronunciation support.
-  * English/French toggles.
-* **Frontend Submission**: Shortcode-based form for contributors to suggest new entries.
+- **Dictionary Management**: Custom Post Type (`aiwa_cpt_dictionary`) for managing word entries.
+- **Rich Taxonomies**: Categorize words by:
+    - Language (`starmus_tax_language`)
+    - Dialect (`starmus_tax_dialect`)
+    - Part of Speech (`starmus_part_of_speech`)
+    - Alphabetical Grouping (`aiwa-alpha-letter`)
+- **GraphQL Integration**: Full schema exposure for headless or decoupled applications.
+- **SCF Integration**: Dynamic schema generation based on `acf-json` configurations.
+- **React Frontend**: Built-in, high-performance dictionary viewer with:
+    - Virtual scrolling for large datasets.
+    - Instant search with debouncing.
+    - Audio pronunciation support.
+    - English/French toggles.
+- **Frontend Submission**: Shortcode-based form for contributors to suggest new entries.
 
 ## 📋 Requirements
 
-* **PHP**: 8.2 or higher
-* **WordPress**: 6.4 or higher
-* **Plugins**:
-  * WPGraphQL (Required for API)
-  * Secure Custom Fields (SCF) PRO or Free (Required for data structure)
+- **PHP**: 8.2 or higher
+- **WordPress**: 6.4 or higher
+- **Plugins**:
+    - WPGraphQL (Required for API)
+    - Secure Custom Fields (SCF) PRO or Free (Required for data structure)
 
 ## 🛠️ Installation
 
@@ -66,7 +65,7 @@ view, just like in a printed dictionary.
 ```
 
 **Frontend Submission Form**
-Enable logged-in users (Contributors/Editors) to add or edit dictionary entries 
+Enable logged-in users (Contributors/Editors) to add or edit dictionary entries
 directly from the frontend.
 
 ```shortcode
@@ -75,7 +74,7 @@ directly from the frontend.
 
 **Attributes:**
 
-* `entry_id` (optional): The ID of the dictionary entry to edit.
+- `entry_id` (optional): The ID of the dictionary entry to edit.
 
 Example:
 
@@ -91,27 +90,27 @@ The plugin registers a `dictionaries` root query in the GraphQL schema.
 
 ```graphql
 query GetDictionaryEntries {
-  dictionaries(first: 10) {
-    edges {
-      node {
-        title
-        aiwaWordDetails {
-          aiwaTranslationEnglish
-          aiwaTranslationFrench
-          aiwaPartOfSpeech
-          aiwaExampleSentences {
-            aiwaSentence
-            aiwaSTranslationEnglish
-          }
+    dictionaries(first: 10) {
+        edges {
+            node {
+                title
+                aiwaWordDetails {
+                    aiwaTranslationEnglish
+                    aiwaTranslationFrench
+                    aiwaPartOfSpeech
+                    aiwaExampleSentences {
+                        aiwaSentence
+                        aiwaSTranslationEnglish
+                    }
+                }
+                starmusTaxLanguages {
+                    nodes {
+                        name
+                    }
+                }
+            }
         }
-        starmusTaxLanguages {
-          nodes {
-            name
-          }
-        }
-      }
     }
-  }
 }
 ```
 
@@ -119,16 +118,16 @@ query GetDictionaryEntries {
 
 ### Architecture
 
-* **Root**: `sparxstar-3iatlas-dictionary.php` (Bootloader)
-* **Core Logic**: `src/core/SparxstarIAtlasOrchestrator.php`
-* **Post Types**: `src/includes/SparxstarIAtlasPostTypes.php`
-* **Frontend**: `src/js/app.jsx` (React Application)
+- **Root**: `sparxstar-3iatlas-dictionary.php` (Bootloader)
+- **Core Logic**: `src/core/SparxstarIAtlasOrchestrator.php`
+- **Post Types**: `src/includes/SparxstarIAtlasPostTypes.php`
+- **Frontend**: `src/js/app.jsx` (React Application)
 
 ### Build Commands
 
-* `npm run build`: Compile and minify assets for production.
-* `npm run watch`: specific watch command for development.
-* `npm run lint`: Run ESLint and Stylelint.
+- `npm run build`: Compile and minify assets for production.
+- `npm run watch`: specific watch command for development.
+- `npm run lint`: Run ESLint and Stylelint.
 
 ## 🤝 Contributing
 
@@ -140,16 +139,15 @@ query GetDictionaryEntries {
 License: Starisian Technologies Proprietary License (STPD)
 Copyright (c) 2026 Starisian Technologies. All rights reserved.
 
-SPARXSTAR and Starisian Technologies is a trademark of Starisian Technologies.  
+SPARXSTAR and Starisian Technologies is a trademark of Starisian Technologies.
 
-NOTICE: All information contained herein is, and remains, the property of 
-**Starisian Technologies** and its suppliers, if any. The intellectual 
-and technical concepts contained herein are proprietary to Starisian 
-Technologies and its suppliers and may be protected by U.S. and 
-international copyright, trade secret, and patent laws, including 
+NOTICE: All information contained herein is, and remains, the property of
+**Starisian Technologies** and its suppliers, if any. The intellectual
+and technical concepts contained herein are proprietary to Starisian
+Technologies and its suppliers and may be protected by U.S. and
+international copyright, trade secret, and patent laws, including
 patents in process.
 
-Unauthorized reproduction, redistribution, transmission, or disclosure 
-of any part of this repository is strictly prohibited without prior 
+Unauthorized reproduction, redistribution, transmission, or disclosure
+of any part of this repository is strictly prohibited without prior
 written consent from Starisian Technologies.
-

@@ -15,6 +15,7 @@ namespace Starisian\Sparxstar\IAtlas\core;
 use Starisian\Sparxstar\IAtlas\frontend\Sparxstar3IAtlasDictionaryForm;
 use Starisian\Sparxstar\IAtlas\includes\Sparxstar3IAtlasPostTypes;
 use Starisian\Sparxstar\IAtlas\core\Sparxstar3IAtlasDictionaryCore;
+use Starisian\Sparxstar\IAtlas\includes\Sparxstar3IAtlasAutoLinker;
 use Throwable;
 use RuntimeException;
 use function defined;
@@ -169,15 +170,23 @@ final class Sparxstar3IAtlasDictionary {
                 new Sparxstar3IAtlasPostTypes();
             }
 
-            // Instantiate Core logic
-            if ( class_exists( Sparxstar3IAtlasDictionaryCore::class ) ) {
-                Sparxstar3IAtlasDictionaryCore::sparxIAtlas_get_instance();
+            // Only load frontend components if not in admin area
+            if ( ! is_admin() ) {
+                if ( class_exists( Sparxstar3IAtlasDictionaryCore::class ) ) {
+                    // Instantiate Core logic
+                        Sparxstar3IAtlasDictionaryCore::sparxIAtlas_get_instance();
+                }
+                
+                if ( class_exists( Sparxstar3IAtlasDictionaryForm::class ) && is_user_logged_in() ) {
+                    // Instantiate Form if needed
+                    new Sparxstar3IAtlasDictionaryForm(); 
+                } 
             }
-            
-            // Instantiate Form if needed
-            if ( class_exists( Sparxstar3IAtlasDictionaryForm::class ) && \is_user_logged_in() ) {
-                new Sparxstar3IAtlasDictionaryForm(); 
-            } 
+
+            // Instantiate Auto Linker
+            if ( class_exists( Sparxstar3IAtlasAutoLinker::class ) ) {
+                new Sparxstar3IAtlasAutoLinker();
+            }        
         } catch ( \Throwable $throwable ) {
             if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
                 error_log( '[Starisian 3IAtlas Dictionary]: Error loading dependencies - ' . $throwable->getMessage() );

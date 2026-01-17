@@ -17,6 +17,9 @@ node_modules/
 npm-debug.log
 yarn.lock
 dist/
+dest_test/
+build_test/
+build/
 
 # WordPress-generated or temp
 *.min.js
@@ -66,7 +69,6 @@ languages/*.pot
 /wp-content/plugins/index.php
 /wp-content/themes/index.php
 /wp-includes/
-/index.php
 /license.txt
 /readme.html
 /wp-*.php
@@ -104,3 +106,5 @@ wp-config.php
 .phpdoc/
 build/
 docs/api/
+
+
