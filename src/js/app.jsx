@@ -369,7 +369,7 @@ export default function DictionaryApp() {
                 <div className="max-w-3xl mx-auto px-4 py-3">
                     <div className="flex justify-between items-center mb-3">
                         <h1 className="text-xl font-bold tracking-tight text-gray-800">
-                            AIWA <span className="text-blue-600">Dictionary</span>
+                            AI West Africa <span className="text-blue-600">Dictionary</span>
                         </h1>
                         <button
                             onClick={() => setLanguage((l) => (l === 'en' ? 'fr' : 'en'))}
