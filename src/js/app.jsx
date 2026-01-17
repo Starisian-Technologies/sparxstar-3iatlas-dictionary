@@ -409,7 +409,15 @@ export default function DictionaryApp() {
                     data={filteredData}
                     totalCount={filteredData.length}
                     className="h-full w-full scrollbar-hide"
-                    itemContent={(index, word) => (
+                            onClick={() => handleWordClick(word)}
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
+                                    event.preventDefault();
+                                    handleWordClick(word);
+                                }
+                            }}
+                            role="button"
+                            tabIndex={0}
                         <div
                             onClick={() => handleWordClick(word)}
                             className="px-4 py-4 border-b border-gray-100 bg-white hover:bg-blue-50 cursor-pointer active:bg-blue-100 transition-colors"
