@@ -299,6 +299,7 @@ const AlphaIndex = ({ onSelectLetter }) => {
                     key={char}
                     onClick={() => onSelectLetter(char)}
                     className="hover:text-blue-600 hover:scale-125 transition-transform py-0.5"
+                    aria-label={`Jump to words starting with ${char}`}
                 >
                     {char}
                 </button>
