@@ -82,7 +82,7 @@ const GET_SINGLE_WORD_DETAILS = gql`
                     }
                 }
                 aiwaAntonyms {
-                     nodes {
+                    nodes {
                         ... on Dictionary { title slug }
                     }
                 }
