@@ -20,16 +20,37 @@ const GRAPHQL_ENDPOINT = window.sparxStarDictionarySettings?.graphqlUrl || '/gra
 const client = new ApolloClient({
     uri: GRAPHQL_ENDPOINT,
     cache: new InMemoryCache(),
+    defaultOptions: {
+        query: {
+            fetchPolicy: 'cache-first',
+            nextFetchPolicy: 'cache-first',
+        },
+        watchQuery: {
+            fetchPolicy: 'cache-first',
+            nextFetchPolicy: 'cache-first',
+        },
+    },
 });
 
 // --- QUERY 1: LIGHTWEIGHT INDEX (For the List) ---
 const GET_ALL_WORDS_INDEX = gql`
-    query GetWordIndex {
-        dictionaries(first: 100000, where: { orderby: { field: TITLE, order: ASC } }) {
+    query GetWordIndex($first: Int = 500, $after: String) {
+        dictionaries(
+            first: $first
+            after: $after
+            where: { orderby: { field: TITLE, order: ASC } }
+        ) {
+            pageInfo {
+                hasNextPage
+                endCursor
+            }
             edges {
                 node {
                     id
                     title
+                    // NOTE: slug is not displayed in the list itself but is required for navigation
+                    // to the detail view (GET_SINGLE_WORD_DETAILS uses slug). We include it here
+                    // so clicking a word can immediately use its slug without an extra lookup.
                     slug
                     dictionaryEntryDetails {
                         aiwaTranslationEnglish
@@ -114,14 +135,6 @@ const GET_SINGLE_WORD_DETAILS = gql`
     }
 `;
 
-// --- HELPER COMPONENTS ---
-
-const AudioButton = ({ url }) => {
-    const playAudio = (e) => {
-        e.stopPropagation();
-        const audio = new Audio(url);
-        audio.play();
-    };
     if (!url) return null;
     return (
         <button
@@ -163,6 +176,11 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
     const { loading, error, data } = useQuery(GET_SINGLE_WORD_DETAILS, {
         variables: { slug },
     });
+
+    // Extract word data outside of JSX for cleaner code
+    const word = data?.dictionaryBy;
+    const d = word?.dictionaryEntryDetails;
+    const translation = language === 'en' ? d?.aiwaTranslationEnglish : d?.aiwaTranslationFrench;
 
     return (
         <div className="fixed inset-0 z-50 flex justify-end md:justify-center items-end md:items-center pointer-events-none">
@@ -212,6 +230,30 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                                         </div>
                                     )}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2 mt-2 text-gray-600">
+                                    <span className="italic font-serif text-lg text-gray-500">
+                                        {d.aiwaPartOfSpeech}
+                                    </span>
+                                    {d.aiwaIpaPronunciation && (
+                                        <span className="bg-gray-100 px-2 py-0.5 rounded text-sm font-mono text-gray-700">
+                                            /{d.aiwaIpaPronunciation}/
+                                        </span>
+                                    )}
+                                    {d.phoneticProunciation && (
+                                        <span className="bg-gray-50 border border-gray-200 px-2 py-0.5 rounded text-sm text-gray-600">
+                                            [{d.phoneticProunciation}]
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                            <button
+                                onClick={onClose}
+                                className="p-2 hover:bg-gray-100 rounded-full"
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
 
                                     {/* Sticky Header */}
                                     <div className="p-6 border-b border-gray-100 flex justify-between items-start bg-white z-10">
@@ -330,11 +372,18 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                                                 </span>{' '}
                                                 {d.aiwaOrigin}
                                             </div>
-                                        )}
+                                        ))}
                                     </div>
-                                </>
-                            );
-                        })()}
+                                </div>
+                            )}
+
+                            {d.aiwaOrigin && (
+                                <div className="text-sm text-gray-500 border-t pt-4 mt-4">
+                                    <span className="font-bold text-gray-700">Origin:</span>{' '}
+                                    {d.aiwaOrigin}
+                                </div>
+                            )}
+                        </div>
                     </>
                 )}
             </div>
@@ -351,6 +400,7 @@ const AlphaIndex = ({ onSelectLetter }) => {
                     key={char}
                     onClick={() => onSelectLetter(char)}
                     className="hover:text-blue-600 hover:scale-125 transition-transform py-0.5"
+                    aria-label={`Jump to words starting with ${char}`}
                 >
                     {char}
                 </button>
@@ -377,11 +427,11 @@ export default function DictionaryApp() {
         if (searchTerm) {
             const lowerSearch = searchTerm.toLowerCase();
             entries = entries.filter((item) => {
-                const d = item.dictionaryEntryDetails;
+                const details = item.dictionaryEntryDetails;
                 return (
                     item.title.toLowerCase().includes(lowerSearch) ||
-                    d.aiwaSearchStringEnglish?.toLowerCase().includes(lowerSearch) ||
-                    d.aiwaSearchStringFrench?.toLowerCase().includes(lowerSearch)
+                    details.aiwaSearchStringEnglish?.toLowerCase().includes(lowerSearch) ||
+                    details.aiwaSearchStringFrench?.toLowerCase().includes(lowerSearch)
                 );
             });
         }
@@ -421,6 +471,7 @@ export default function DictionaryApp() {
                         <button
                             onClick={() => setLanguage((l) => (l === 'en' ? 'fr' : 'en'))}
                             className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
+                            aria-label="Toggle language between English and French"
                         >
                             <Globe size={16} /> {language === 'en' ? 'EN' : 'FR'}
                         </button>
@@ -440,14 +491,30 @@ export default function DictionaryApp() {
                     </div>
                 </div>
             </header>
-
+                            onClick={() => handleWordClick(word)}
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
+                                    event.preventDefault();
+                                    handleWordClick(word);
+                                }
+                            }}
+                            role="button"
+                            tabIndex={0}
             <div className="flex-1 max-w-3xl mx-auto w-full relative">
                 <Virtuoso
                     ref={virtuosoRef}
                     data={filteredData}
                     totalCount={filteredData.length}
                     className="h-full w-full scrollbar-hide"
-                    itemContent={(index, word) => (
+                            onClick={() => handleWordClick(word)}
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
+                                    event.preventDefault();
+                                    handleWordClick(word);
+                                }
+                            }}
+                            role="button"
+                            tabIndex={0}
                         <div
                             onClick={() => handleWordClick(word)}
                             className="px-4 py-4 border-b border-gray-100 bg-white hover:bg-blue-50 cursor-pointer active:bg-blue-100 transition-colors"
