@@ -1,17 +1,8 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ApolloClient, InMemoryCache, gql, useQuery } from '@apollo/client';
+import { ApolloClient, InMemoryCache, ApolloProvider, gql, useQuery } from '@apollo/client';
 import { Virtuoso } from 'react-virtuoso';
-import {
-    Search,
-    Volume2,
-    X,
-    Globe,
-    BookOpen,
-    Image as ImageIcon,
-    Link as LinkIcon,
-    Loader2,
-} from 'lucide-react';
+import { Search, Volume2, X, BookOpen, Link as LinkIcon, Loader2 } from 'lucide-react';
 import '../css/sparxstar-3iatlas-dictionary-form.css';
 
 // --- CONFIGURATION ---
@@ -153,18 +144,13 @@ const RelatedList = ({ title, items }) => {
 
     if (!list || list.length === 0) return null;
 
-    // Filter out items without a title to prevent rendering empty badges
-    const validItems = list.filter((item) => item?.title);
-
-    if (validItems.length === 0) return null;
-
     return (
         <div className="mt-3">
             <h4 className="text-xs font-bold uppercase text-gray-400 mb-1">{title}</h4>
             <div className="flex flex-wrap gap-2">
-                {validItems.map((item) => (
+                {list.map((item, i) => (
                     <span
-                        key={item.slug || item.title}
+                        key={item.slug || item.title || i}
                         className="bg-gray-100 text-gray-700 text-sm px-2 py-1 rounded-md border border-gray-200"
                     >
                         {item.title}
@@ -182,19 +168,157 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
         variables: { slug },
     });
 
-    useEffect(() => {
-        const handleEscapeKey = (event) => {
-            if (event.key === 'Escape') {
-                onClose();
-            }
-        };
+    // Determine content to display
+    const renderContent = () => {
+        if (loading) {
+            return (
+                <div className="h-full flex flex-col items-center justify-center space-y-4">
+                    <Loader2 className="animate-spin text-blue-600" size={40} />
+                    <p className="text-gray-500">Loading details for {initialTitle}...</p>
+                </div>
+            );
+        }
 
-        document.addEventListener('keydown', handleEscapeKey);
+        if (error) {
+            return (
+                <div className="p-6 text-red-500 text-center">
+                    <p className="font-bold">Error loading details</p>
+                    <p className="text-sm mt-2">
+                        Unable to load word details. Please try again or contact support if the
+                        problem persists.
+                    </p>
+                </div>
+            );
+        }
 
-        return () => {
-            document.removeEventListener('keydown', handleEscapeKey);
-        };
-    }, [onClose]);
+        if (!data?.dictionaryBy) {
+            return (
+                <div className="h-full flex flex-col items-center justify-center space-y-4">
+                    <p className="text-gray-500">No data available</p>
+                </div>
+            );
+        }
+
+        const word = data.dictionaryBy;
+        const d = word.dictionaryEntryDetails;
+        const translation = language === 'en' ? d.aiwaTranslationEnglish : d.aiwaTranslationFrench;
+
+        return (
+            <>
+                {/* Header Image */}
+                {d.aiwaWordPhoto?.node?.sourceUrl && (
+                    <div className="h-48 w-full relative bg-gray-100 shrink-0">
+                        <img
+                            src={d.aiwaWordPhoto.node.sourceUrl}
+                            alt={word.title}
+                            className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    </div>
+                )}
+
+                {/* Sticky Header */}
+                <div className="p-6 border-b border-gray-100 flex justify-between items-start bg-white z-10">
+                    <div>
+                        <div className="flex items-center gap-3">
+                            <h2 className="text-3xl font-bold text-gray-900">{word.title}</h2>
+                            {d.aiwaAudioFile?.node?.mediaItemUrl && (
+                                <AudioButton url={d.aiwaAudioFile.node.mediaItemUrl} />
+                            )}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 mt-2 text-gray-600">
+                            <span className="italic font-serif text-lg text-gray-500">
+                                {d.aiwaPartOfSpeech}
+                            </span>
+                            {d.aiwaIpaPronunciation && (
+                                <span className="bg-gray-100 px-2 py-0.5 rounded text-sm font-mono text-gray-700">
+                                    /{d.aiwaIpaPronunciation}/
+                                </span>
+                            )}
+                            {d.phoneticProunciation && (
+                                <span className="bg-gray-50 border border-gray-200 px-2 py-0.5 rounded text-sm text-gray-600">
+                                    [{d.phoneticProunciation}]
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="p-2 hover:bg-gray-100 rounded-full"
+                        aria-label="Close word details"
+                    >
+                        <X size={24} />
+                    </button>
+                </div>
+
+                {/* Content Scroll */}
+                <div className="overflow-y-auto p-6 space-y-6">
+                    <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                        <h3 className="text-sm uppercase tracking-wide text-blue-500 font-bold mb-1">
+                            {language === 'en' ? 'English' : 'Français'}
+                        </h3>
+                        <p className="text-2xl text-blue-900 font-medium">
+                            {translation || 'No translation available'}
+                        </p>
+                    </div>
+
+                    {d.aiwaExtract && (
+                        <div>
+                            <h3 className="flex items-center gap-2 font-bold text-gray-900 mb-2">
+                                <BookOpen size={18} /> Definition
+                            </h3>
+                            <p className="text-gray-700 leading-relaxed">{d.aiwaExtract}</p>
+                        </div>
+                    )}
+
+                    {/* Relationships */}
+                    <div className="border-t border-b border-gray-100 py-4">
+                        {((d.aiwaSynonyms?.nodes?.length ?? 0) > 0 ||
+                            (d.aiwaAntonyms?.nodes?.length ?? 0) > 0 ||
+                            (d.aiwaPhoneticVariants?.nodes?.length ?? 0) > 0) && (
+                            <h3 className="flex items-center gap-2 font-bold text-gray-900 mb-2">
+                                <LinkIcon size={18} /> Related
+                            </h3>
+                        )}
+                        <RelatedList title="Synonyms" items={d.aiwaSynonyms} />
+                        <RelatedList title="Antonyms" items={d.aiwaAntonyms} />
+                        <RelatedList title="Phonetic Variants" items={d.aiwaPhoneticVariants} />
+                    </div>
+
+                    {d.aiwaExampleSentences && d.aiwaExampleSentences.length > 0 && (
+                        <div>
+                            <h3 className="font-bold text-gray-900 mb-3">Examples</h3>
+                            <div className="space-y-4">
+                                {d.aiwaExampleSentences.map((ex, idx) => (
+                                    <div key={idx} className="pl-4 border-l-4 border-gray-200">
+                                        <p className="text-lg text-gray-900 mb-1">
+                                            {ex.sentenceExample}
+                                        </p>
+                                        {ex.sentencePhoneticPronunciation && (
+                                            <p className="text-xs text-gray-400 font-mono mb-1">
+                                                {ex.sentencePhoneticPronunciation}
+                                            </p>
+                                        )}
+                                        <p className="text-gray-500 italic">
+                                            {language === 'en'
+                                                ? ex.sentenceEnglishTranslation
+                                                : ex.sentenceFrenchTranslation}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {d.aiwaOrigin && (
+                        <div className="text-sm text-gray-500 border-t pt-4 mt-4">
+                            <span className="font-bold text-gray-700">Origin:</span> {d.aiwaOrigin}
+                        </div>
+                    )}
+                </div>
+            </>
+        );
+    };
 
     return (
         <div className="fixed inset-0 z-50 flex justify-end md:justify-center items-end md:items-center pointer-events-none">
@@ -204,333 +328,128 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
             />
 
             <div className="bg-white w-full md:w-[600px] h-[85vh] md:h-[80vh] rounded-t-2xl md:rounded-2xl shadow-2xl pointer-events-auto flex flex-col overflow-hidden animate-slide-up">
-                {loading && (
-                    <div className="h-full flex flex-col items-center justify-center space-y-4">
-                        <Loader2 className="animate-spin text-blue-600" size={40} />
-                        <p className="text-gray-500">Loading details for {initialTitle}...</p>
-                    </div>
-                )}
-
-                {error && (
-                    <div className="p-6 text-red-500 text-center">
-                        <p className="font-bold">Error loading details</p>
-                        <p className="text-sm mt-2">
-                            Unable to load word details. Please try again or contact support if the
-                            problem persists.
-                        </p>
-                    </div>
-                )}
-
-                {!loading && !error && data?.dictionaryBy && (
-                    <>
-                        {(() => {
-                            const word = data.dictionaryBy;
-                            const d = word.dictionaryEntryDetails;
-                            const translation =
-                                language === 'en'
-                                    ? d.aiwaTranslationEnglish
-                                    : d.aiwaTranslationFrench;
-
-                            return (
-                                <>
-                                    {/* Header Image */}
-                                    {d.aiwaWordPhoto?.node?.sourceUrl && (
-                                        <div className="h-48 w-full relative bg-gray-100 shrink-0">
-                                            <img
-                                                src={d.aiwaWordPhoto.node.sourceUrl}
-                                                alt={word.title}
-                                                className="w-full h-full object-cover"
-                                            />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="flex flex-wrap items-center gap-2 mt-2 text-gray-600">
-                                    <span className="italic font-serif text-lg text-gray-500">
-                                        {d.aiwaPartOfSpeech}
-                                    </span>
-                                    {d.aiwaIpaPronunciation && (
-                                        <span className="bg-gray-100 px-2 py-0.5 rounded text-sm font-mono text-gray-700">
-                                            /{d.aiwaIpaPronunciation}/
-                                        </span>
-                                    )}
-                                    {d.phoneticProunciation && (
-                                        <span className="bg-gray-50 border border-gray-200 px-2 py-0.5 rounded text-sm text-gray-600">
-                                            [{d.phoneticProunciation}]
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                            <button
-                                onClick={onClose}
-                                className="p-2 hover:bg-gray-100 rounded-full"
-                            >
-                                <X size={24} />
-                            </button>
-                        </div>
-
-                                    {/* Sticky Header */}
-                                    <div className="p-6 border-b border-gray-100 flex justify-between items-start bg-white z-10">
-                                        <div>
-                                            <div className="flex items-center gap-3">
-                                                <h2 className="text-3xl font-bold text-gray-900">
-                                                    {word.title}
-                                                </h2>
-                                                {d.aiwaAudioFile?.node?.mediaItemUrl && (
-                                                    <AudioButton
-                                                        url={d.aiwaAudioFile.node.mediaItemUrl}
-                                                    />
-                                                )}
-                                            </div>
-                                            <div className="flex flex-wrap items-center gap-2 mt-2 text-gray-600">
-                                                <span className="italic font-serif text-lg text-gray-500">
-                                                    {d.aiwaPartOfSpeech}
-                                                </span>
-                                                {d.aiwaIpaPronunciation && (
-                                                    <span className="bg-gray-100 px-2 py-0.5 rounded text-sm font-mono text-gray-700">
-                                                        /{d.aiwaIpaPronunciation}/
-                                                    </span>
-                                                )}
-                                                {d.phoneticProunciation && (
-                                                    <span className="bg-gray-50 border border-gray-200 px-2 py-0.5 rounded text-sm text-gray-600">
-                                                        [{d.phoneticProunciation}]
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <button
-                                            onClick={onClose}
-                                            className="p-2 hover:bg-gray-100 rounded-full"
-                                            aria-label="Close word details"
-                                        >
-                                            <X size={24} />
-                                        </button>
-                                    </div>
-
-                                    {/* Content Scroll */}
-                                    <div className="overflow-y-auto p-6 space-y-6">
-                                        <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                                            <h3 className="text-sm uppercase tracking-wide text-blue-500 font-bold mb-1">
-                                                {language === 'en' ? 'English' : 'Français'}
-                                            </h3>
-                                            <p className="text-2xl text-blue-900 font-medium">
-                                                {translation || 'No translation available'}
-                                            </p>
-                                        </div>
-
-                                        {d.aiwaExtract && (
-                                            <div>
-                                                <h3 className="flex items-center gap-2 font-bold text-gray-900 mb-2">
-                                                    <BookOpen size={18} /> Definition
-                                                </h3>
-                                                <p className="text-gray-700 leading-relaxed">
-                                                    {d.aiwaExtract}
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        {/* Relationships */}
-                                        <div className="border-t border-b border-gray-100 py-4">
-                                            {(d.aiwaSynonyms?.nodes?.length > 0 ||
-                                                d.aiwaAntonyms?.nodes?.length > 0 ||
-                                                d.aiwaPhoneticVariants?.nodes?.length > 0) && (
-                                                <h3 className="flex items-center gap-2 font-bold text-gray-900 mb-2">
-                                                    <LinkIcon size={18} /> Related
-                                                </h3>
-                                            )}
-                                            <RelatedList title="Synonyms" items={d.aiwaSynonyms} />
-                                            <RelatedList title="Antonyms" items={d.aiwaAntonyms} />
-                                            <RelatedList
-                                                title="Phonetic Variants"
-                                                items={d.aiwaPhoneticVariants}
-                                            />
-                                        </div>
-
-                                        {d.aiwaExampleSentences &&
-                                            d.aiwaExampleSentences.length > 0 && (
-                                                <div>
-                                                    <h3 className="font-bold text-gray-900 mb-3">
-                                                        Examples
-                                                    </h3>
-                                                    <div className="space-y-4">
-                                                        {d.aiwaExampleSentences.map((ex, idx) => (
-                                                            <div
-                                                                key={idx}
-                                                                className="pl-4 border-l-4 border-gray-200"
-                                                            >
-                                                                <p className="text-lg text-gray-900 mb-1">
-                                                                    {ex.sentenceExample}
-                                                                </p>
-                                                                {ex.sentencePhoneticPronunciation && (
-                                                                    <p className="text-xs text-gray-400 font-mono mb-1">
-                                                                        {
-                                                                            ex.sentencePhoneticPronunciation
-                                                                        }
-                                                                    </p>
-                                                                )}
-                                                                <p className="text-gray-500 italic">
-                                                                    {language === 'en'
-                                                                        ? ex.sentenceEnglishTranslation
-                                                                        : ex.sentenceFrenchTranslation}
-                                                                </p>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                        {d.aiwaOrigin && (
-                                            <div className="text-sm text-gray-500 border-t pt-4 mt-4">
-                                                <span className="font-bold text-gray-700">
-                                                    Origin:
-                                                </span>{' '}
-                                                {d.aiwaOrigin}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {d.aiwaOrigin && (
-                                <div className="text-sm text-gray-500 border-t pt-4 mt-4">
-                                    <span className="font-bold text-gray-700">Origin:</span>{' '}
-                                    {d.aiwaOrigin}
-                                </div>
-                            )}
-                        </div>
-                    </>
-                )}
+                {renderContent()}
             </div>
         </div>
     );
 };
 
-const AlphaIndex = ({ onSelectLetter }) => {
-    const alphabet = '#ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-    return (
-        <div className="hidden md:flex flex-col fixed right-2 top-24 bottom-4 w-6 items-center justify-center z-10 text-xs text-gray-500 font-bold overflow-y-auto">
-            {alphabet.map((char) => (
-                <button
-                    key={char}
-                    onClick={() => onSelectLetter(char)}
-                    className="hover:text-blue-600 hover:scale-125 transition-transform py-0.5"
-                    aria-label={`Jump to words starting with ${char}`}
-                >
-                    {char}
-                </button>
-            ))}
-        </div>
-    );
-};
+// --- MAIN APP ---
 
-// --- MAIN LIST COMPONENT ---
-
-export default function DictionaryApp() {
+const DictionaryApp = () => {
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedModal, setSelectedModal] = useState(null);
     const [language, setLanguage] = useState('en');
-    const [selectedWordSlug, setSelectedWordSlug] = useState(null);
-    const [selectedWordTitle, setSelectedWordTitle] = useState('');
-    const virtuosoRef = useRef(null);
+    const searchRef = useRef(null);
 
-    const { loading, error, data } = useQuery(GET_ALL_WORDS_INDEX, { client });
+    const { loading, error, data } = useQuery(GET_ALL_WORDS_INDEX);
 
-    const filteredData = useMemo(() => {
-        if (!data) return [];
-        let entries = data.dictionaries.edges.map((edge) => edge.node);
+    // Filtered list of words
+    const filteredWords = useMemo(() => {
+        if (!data?.dictionaries?.edges) return [];
 
-        if (searchTerm) {
-            const lowerSearch = searchTerm.toLowerCase();
-            entries = entries.filter((item) => {
-                const details = item.dictionaryEntryDetails;
-                return (
-                    item.title.toLowerCase().includes(lowerSearch) ||
-                    details.aiwaSearchStringEnglish?.toLowerCase().includes(lowerSearch) ||
-                    details.aiwaSearchStringFrench?.toLowerCase().includes(lowerSearch)
-                );
-            });
-        }
-        return entries;
+        const words = data.dictionaries.edges.map(({ node }) => ({
+            id: node.id,
+            title: node.title,
+            slug: node.slug,
+            details: node.dictionaryEntryDetails,
+        }));
+
+        if (!searchTerm.trim()) return words;
+
+        const lowerSearch = searchTerm.toLowerCase();
+        return words.filter((w) => {
+            const englishSearch = w.details.aiwaSearchStringEnglish || '';
+            const frenchSearch = w.details.aiwaSearchStringFrench || '';
+            return (
+                englishSearch.toLowerCase().includes(lowerSearch) ||
+                frenchSearch.toLowerCase().includes(lowerSearch) ||
+                w.title.toLowerCase().includes(lowerSearch)
+            );
+        });
     }, [data, searchTerm]);
-
-    const handleScrollToLetter = (char) => {
-        const index = filteredData.findIndex((item) => item.title.toUpperCase().startsWith(char));
-        if (index !== -1 && virtuosoRef.current) {
-            virtuosoRef.current.scrollToIndex({ index, align: 'start' });
-        }
-    };
-
-    const handleWordClick = (word) => {
-        setSelectedWordTitle(word.title);
-        setSelectedWordSlug(word.slug);
-    };
 
     if (loading)
         return (
-            <div className="flex h-screen items-center justify-center flex-col gap-4">
-                <Loader2 className="animate-spin text-blue-600" size={48} />
-                <p className="text-gray-500 font-medium">Loading Words...</p>
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center space-y-4">
+                    <Loader2 className="animate-spin mx-auto text-blue-600" size={48} />
+                    <p className="text-gray-600">Loading dictionary...</p>
+                </div>
             </div>
         );
 
-    if (error) return <div className="p-4 text-red-500">Error: {error.message}</div>;
+    if (error)
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center text-red-600 space-y-2">
+                    <p className="font-bold text-xl">Error Loading Dictionary</p>
+                    <p className="text-sm">
+                        Unable to load the dictionary. Please refresh or contact support.
+                    </p>
+                </div>
+            </div>
+        );
 
     return (
-        <div className="flex flex-col h-screen bg-gray-50 text-gray-900 font-sans overflow-hidden">
-            <header className="bg-white border-b border-gray-200 z-20 shrink-0">
-                <div className="max-w-3xl mx-auto px-4 py-3">
-                    <div className="flex justify-between items-center mb-3">
-                        <h1 className="text-xl font-bold tracking-tight text-gray-800">
-                            AIWA <span className="text-blue-600">Dictionary</span>
-                        </h1>
-                        <button
-                            onClick={() => setLanguage((l) => (l === 'en' ? 'fr' : 'en'))}
-                            className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
-                            aria-label="Toggle language between English and French"
-                        >
-                            <Globe size={16} /> {language === 'en' ? 'EN' : 'FR'}
-                        </button>
-                    </div>
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+            {/* Sticky Header */}
+            <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-lg border-b border-gray-200 shadow-sm">
+                <div className="max-w-5xl mx-auto px-4 py-4 space-y-3">
+                    {/* Search */}
                     <div className="relative">
                         <Search
-                            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                            size={18}
+                            className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                            size={20}
                         />
                         <input
+                            ref={searchRef}
                             type="text"
-                            placeholder={`Search ${filteredData.length} words...`}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-gray-100 text-gray-900 pl-10 pr-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                            placeholder="Search by word or translation..."
+                            className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-100 transition-all shadow-sm"
                         />
                     </div>
+
+                    {/* Toggle */}
+                    <div className="flex items-center gap-3 justify-center">
+                        <span
+                            className={`text-sm font-medium transition-colors ${language === 'en' ? 'text-blue-600' : 'text-gray-400'}`}
+                        >
+                            English
+                        </span>
+                        <button
+                            onClick={() => setLanguage(language === 'en' ? 'fr' : 'en')}
+                            className={`relative w-14 h-7 rounded-full transition-colors ${language === 'en' ? 'bg-blue-500' : 'bg-purple-500'}`}
+                            aria-label="Toggle language"
+                        >
+                            <span
+                                className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow-md transition-transform ${language === 'fr' ? 'translate-x-7' : ''}`}
+                            />
+                        </button>
+                        <span
+                            className={`text-sm font-medium transition-colors ${language === 'fr' ? 'text-purple-600' : 'text-gray-400'}`}
+                        >
+                            Français
+                        </span>
+                    </div>
                 </div>
-            </header>
-                            onClick={() => handleWordClick(word)}
-                            onKeyDown={(event) => {
-                                if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
-                                    event.preventDefault();
-                                    handleWordClick(word);
-                                }
-                            }}
-                            role="button"
-                            tabIndex={0}
-            <div className="flex-1 max-w-3xl mx-auto w-full relative">
+            </div>
+
+            {/* Results */}
+            <div className="max-w-5xl mx-auto px-4 py-6">
+                <div className="mb-4 text-sm text-gray-500">
+                    {filteredWords.length} {filteredWords.length === 1 ? 'word' : 'words'} found
+                </div>
+
                 <Virtuoso
-                    ref={virtuosoRef}
-                    data={filteredData}
-                    totalCount={filteredData.length}
-                    className="h-full w-full scrollbar-hide"
-                            onClick={() => handleWordClick(word)}
-                            onKeyDown={(event) => {
-                                if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
-                                    event.preventDefault();
-                                    handleWordClick(word);
-                                }
-                            }}
-                            role="button"
-                            tabIndex={0}
+                    style={{ height: 'calc(100vh - 220px)' }}
+                    data={filteredWords}
+                    itemContent={(index, word) => (
                         <div
-                            onClick={() => handleWordClick(word)}
+                            key={word.id}
+                            onClick={() => setSelectedModal({ slug: word.slug, title: word.title })}
                             className="px-4 py-4 border-b border-gray-100 bg-white hover:bg-blue-50 cursor-pointer active:bg-blue-100 transition-colors"
                         >
                             <div className="flex justify-between items-start">
@@ -540,8 +459,8 @@ export default function DictionaryApp() {
                                     </h3>
                                     <p className="text-gray-500 text-sm mt-0.5 line-clamp-1">
                                         {language === 'en'
-                                            ? word.dictionaryEntryDetails.aiwaTranslationEnglish
-                                            : word.dictionaryEntryDetails.aiwaTranslationFrench}
+                                            ? word.details.aiwaTranslationEnglish
+                                            : word.details.aiwaTranslationFrench}
                                     </p>
                                 </div>
                                 <div className="flex gap-2 items-center">
@@ -549,39 +468,39 @@ export default function DictionaryApp() {
                                         <ImageIcon size={16} className="text-gray-400" />
                                     )}
                                     <span className="text-xs font-semibold text-gray-400 px-2 py-1 bg-gray-100 rounded">
-                                        {word.dictionaryEntryDetails.aiwaPartOfSpeech?.substring(
-                                            0,
-                                            3
-                                        )}
+                                        {word.details.aiwaPartOfSpeech?.substring(0, 3)}
                                     </span>
                                 </div>
                             </div>
                         </div>
                     )}
                 />
-                <AlphaIndex onSelectLetter={handleScrollToLetter} />
             </div>
 
-            {selectedWordSlug && (
+            {/* Modal */}
+            {selectedModal && (
                 <WordDetailModal
-                    slug={selectedWordSlug}
-                    initialTitle={selectedWordTitle}
+                    slug={selectedModal.slug}
+                    initialTitle={selectedModal.title}
                     language={language}
-                    onClose={() => {
-                        setSelectedWordSlug(null);
-                        setSelectedWordTitle(null);
-                    }}
+                    onClose={() => setSelectedModal(null)}
                 />
             )}
         </div>
     );
-}
+};
+
+// --- MOUNT ---
 
 document.addEventListener('DOMContentLoaded', () => {
     const rootId = window.sparxStarDictionarySettings?.root_id || 'sparxstar-dictionary-root';
     const container = document.getElementById(rootId);
     if (container) {
         const root = createRoot(container);
-        root.render(<DictionaryApp />);
+        root.render(
+            <ApolloProvider client={client}>
+                <DictionaryApp />
+            </ApolloProvider>
+        );
     }
 });
