@@ -151,7 +151,16 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                     </div>
                 )}
 
-                {!loading && !error && data?.dictionaryBy && (
+                {!loading && !error && data && !data.dictionaryBy && (
+                    <div className="p-6 text-center text-gray-600">
+                        <p className="font-bold text-gray-800">Word not found</p>
+                        <p className="text-sm mt-2">
+                            No details were found for <span className="font-semibold">{initialTitle}</span>. It may have been removed or is not yet in the dictionary.
+                        </p>
+                    </div>
+                )}
+
+                {!loading && !error && data && data.dictionaryBy && (
                     <>
                         {(() => {
                             const word = data.dictionaryBy;
