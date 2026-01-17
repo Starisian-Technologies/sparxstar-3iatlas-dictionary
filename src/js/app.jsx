@@ -472,7 +472,7 @@ const DictionaryApp = () => {
 // --- MOUNT ---
 
 document.addEventListener('DOMContentLoaded', () => {
-    const rootId = window.sparxStarDictionarySettings?.root_id || 'sparxstar-dictionary-app';
+    const rootId = window.sparxStarDictionarySettings?.root_id || 'sparxstar-dictionary-root';
     const container = document.getElementById(rootId);
     if (container) {
         const root = createRoot(container);
