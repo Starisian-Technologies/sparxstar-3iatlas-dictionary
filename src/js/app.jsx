@@ -206,7 +206,9 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
 
                                         {/* Relationships */}
                                         <div className="border-t border-b border-gray-100 py-4">
-                                            {(d.aiwaSynonyms?.nodes?.length > 0 || d.aiwaAntonyms?.nodes?.length > 0 || d.aiwaPhoneticVariants?.nodes?.length > 0) && (
+                                            {(((d.aiwaSynonyms?.nodes?.length ?? 0) > 0) ||
+                                              ((d.aiwaAntonyms?.nodes?.length ?? 0) > 0) ||
+                                              ((d.aiwaPhoneticVariants?.nodes?.length ?? 0) > 0)) && (
                                                 <h3 className="flex items-center gap-2 font-bold text-gray-900 mb-2"><LinkIcon size={18} /> Related</h3>
                                             )}
                                             <RelatedList title="Synonyms" items={d.aiwaSynonyms} />
