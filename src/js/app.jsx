@@ -20,16 +20,37 @@ const GRAPHQL_ENDPOINT = window.sparxStarDictionarySettings?.graphqlUrl || '/gra
 const client = new ApolloClient({
     uri: GRAPHQL_ENDPOINT,
     cache: new InMemoryCache(),
+    defaultOptions: {
+        query: {
+            fetchPolicy: 'cache-first',
+            nextFetchPolicy: 'cache-first',
+        },
+        watchQuery: {
+            fetchPolicy: 'cache-first',
+            nextFetchPolicy: 'cache-first',
+        },
+    },
 });
 
 // --- QUERY 1: LIGHTWEIGHT INDEX (For the List) ---
 const GET_ALL_WORDS_INDEX = gql`
-    query GetWordIndex {
-        dictionaries(first: 100000, where: { orderby: { field: TITLE, order: ASC } }) {
+    query GetWordIndex($first: Int = 500, $after: String) {
+        dictionaries(
+            first: $first
+            after: $after
+            where: { orderby: { field: TITLE, order: ASC } }
+        ) {
+            pageInfo {
+                hasNextPage
+                endCursor
+            }
             edges {
                 node {
                     id
                     title
+                    // NOTE: slug is not displayed in the list itself but is required for navigation
+                    // to the detail view (GET_SINGLE_WORD_DETAILS uses slug). We include it here
+                    // so clicking a word can immediately use its slug without an extra lookup.
                     slug
                     dictionaryEntryDetails {
                         aiwaTranslationEnglish
@@ -109,14 +130,6 @@ const GET_SINGLE_WORD_DETAILS = gql`
     }
 `;
 
-// --- HELPER COMPONENTS ---
-
-const AudioButton = ({ url }) => {
-    const playAudio = (e) => {
-        e.stopPropagation();
-        const audio = new Audio(url);
-        audio.play();
-    };
     if (!url) return null;
     return (
         <button
@@ -177,7 +190,25 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                 {error && (
                     <div className="p-6 text-red-500 text-center">
                         <p className="font-bold">Error loading details</p>
-                        <p className="text-sm mt-2">{error.message}</p>
+                        <p className="text-sm mt-2">
+                            {error.networkError
+                                ? 'A network error occurred while loading word details. Please check your internet connection and try again.'
+                                : 'An unexpected error occurred while loading word details. Please try again or contact support if the problem persists.'}
+                        </p>
+                        {(error?.message || error?.graphQLErrors?.[0]?.message) && (
+                            <p className="text-xs mt-2 text-red-400 break-words">
+                                {error?.message || error?.graphQLErrors?.[0]?.message}
+                            </p>
+                        )}
+                    </div>
+                )}
+
+                {!loading && !error && data && !data.dictionaryBy && (
+                    <div className="p-6 text-center text-gray-600">
+                        <p className="font-bold text-gray-800">Word not found</p>
+                        <p className="text-sm mt-2">
+                            No details were found for <span className="font-semibold">{initialTitle}</span>. It may have been removed or is not yet in the dictionary.
+                        </p>
                     </div>
                 )}
 
@@ -215,7 +246,7 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                             return (
                                 <>
                                     {/* Header Image */}
-                                    {d.aiwaWordPhoto?.node?.sourceUrl && (
+                                    {details.aiwaWordPhoto?.node?.sourceUrl && (
                                         <div className="h-48 w-full relative bg-gray-100 shrink-0">
                                             <img
                                                 src={d.aiwaWordPhoto.node.sourceUrl}
@@ -274,7 +305,7 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                                             </p>
                                         </div>
 
-                                        {d.aiwaExtract && (
+                                        {details.aiwaExtract && (
                                             <div>
                                                 <h3 className="flex items-center gap-2 font-bold text-gray-900 mb-2">
                                                     <BookOpen size={18} /> Definition
@@ -335,7 +366,7 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                                                 </div>
                                             )}
 
-                                        {d.aiwaOrigin && (
+                                        {details.aiwaOrigin && (
                                             <div className="text-sm text-gray-500 border-t pt-4 mt-4">
                                                 <span className="font-bold text-gray-700">
                                                     Origin:
@@ -363,6 +394,7 @@ const AlphaIndex = ({ onSelectLetter }) => {
                     key={char}
                     onClick={() => onSelectLetter(char)}
                     className="hover:text-blue-600 hover:scale-125 transition-transform py-0.5"
+                    aria-label={`Jump to words starting with ${char}`}
                 >
                     {char}
                 </button>
@@ -389,11 +421,11 @@ export default function DictionaryApp() {
         if (searchTerm) {
             const lowerSearch = searchTerm.toLowerCase();
             entries = entries.filter((item) => {
-                const d = item.dictionaryEntryDetails;
+                const details = item.dictionaryEntryDetails;
                 return (
                     item.title.toLowerCase().includes(lowerSearch) ||
-                    d.aiwaSearchStringEnglish?.toLowerCase().includes(lowerSearch) ||
-                    d.aiwaSearchStringFrench?.toLowerCase().includes(lowerSearch)
+                    details.aiwaSearchStringEnglish?.toLowerCase().includes(lowerSearch) ||
+                    details.aiwaSearchStringFrench?.toLowerCase().includes(lowerSearch)
                 );
             });
         }
@@ -433,6 +465,7 @@ export default function DictionaryApp() {
                         <button
                             onClick={() => setLanguage((l) => (l === 'en' ? 'fr' : 'en'))}
                             className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
+                            aria-label="Toggle language between English and French"
                         >
                             <Globe size={16} /> {language === 'en' ? 'EN' : 'FR'}
                         </button>
@@ -452,14 +485,30 @@ export default function DictionaryApp() {
                     </div>
                 </div>
             </header>
-
+                            onClick={() => handleWordClick(word)}
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
+                                    event.preventDefault();
+                                    handleWordClick(word);
+                                }
+                            }}
+                            role="button"
+                            tabIndex={0}
             <div className="flex-1 max-w-3xl mx-auto w-full relative">
                 <Virtuoso
                     ref={virtuosoRef}
                     data={filteredData}
                     totalCount={filteredData.length}
                     className="h-full w-full scrollbar-hide"
-                    itemContent={(index, word) => (
+                            onClick={() => handleWordClick(word)}
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
+                                    event.preventDefault();
+                                    handleWordClick(word);
+                                }
+                            }}
+                            role="button"
+                            tabIndex={0}
                         <div
                             onClick={() => handleWordClick(word)}
                             className="px-4 py-4 border-b border-gray-100 bg-white hover:bg-blue-50 cursor-pointer active:bg-blue-100 transition-colors"
@@ -475,7 +524,16 @@ export default function DictionaryApp() {
                                             : word.dictionaryEntryDetails.aiwaTranslationFrench}
                                     </p>
                                 </div>
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 items-center">
+                                    {(word.dictionaryEntryDetails &&
+                                        (word.dictionaryEntryDetails.imageUrl ||
+                                            word.dictionaryEntryDetails.photoUrl)) && (
+                                        <ImageIcon
+                                            className="text-blue-500"
+                                            size={16}
+                                            aria-label="Has image"
+                                        />
+                                    )}
                                     <span className="text-xs font-semibold text-gray-400 px-2 py-1 bg-gray-100 rounded">
                                         {word.dictionaryEntryDetails.aiwaPartOfSpeech?.substring(
                                             0,
