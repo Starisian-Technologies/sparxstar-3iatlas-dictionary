@@ -189,7 +189,7 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                         <div className="text-center">
                             <p className="text-xl font-bold text-gray-900">Word not found</p>
                             <p className="text-gray-500 mt-2">
-                                The word &ldquo;{initialTitle}&rdquo; could not be found in the
+                                The word &quot;{initialTitle}&quot; could not be found in the
                                 dictionary.
                             </p>
                         </div>
