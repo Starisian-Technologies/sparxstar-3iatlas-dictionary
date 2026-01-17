@@ -486,26 +486,32 @@
                 "aria-label": "",
                 "type": "relationship",
                 "instructions": "Other words in the dictionary that have similar meanings or are related to this word. Connect this word to other entries so people can discover related vocabulary.",
-                "required": false,
-                "conditional_logic": false,
+                "required": 0,
+                "conditional_logic": 0,
                 "wrapper": {
                     "width": "",
                     "class": "",
                     "id": ""
                 },
                 "post_type": [
-                    "aiwa_cpt_dictionary"
+                    "aiwa-cpt-dictionary"
                 ],
-                "post_status": [],
-                "taxonomy": [],
+                "post_status": "",
+                "taxonomy": "",
                 "filters": [
-                    "search"
+                    "search",
+                    "taxonomy"
                 ],
                 "return_format": "object",
                 "min": "",
                 "max": "",
+                "allow_in_bindings": 1,
                 "elements": "",
                 "bidirectional": 0,
+                "show_in_graphql": 1,
+                "graphql_description": "",
+                "graphql_field_name": "aiwaSynonyms",
+                "graphql_connection_type": "one_to_many",
                 "bidirectional_target": []
             },
             {
@@ -513,8 +519,8 @@
                 "label": "Antonyms",
                 "name": "aiwa_antonyms",
                 "aria-label": "",
-                "type": "text",
-                "instructions": "",
+                "type": "relationship",
+                "instructions": "Other words in the dictionary that have the opposite meanings of to this word. Connect this word to other entries so people can discover related vocabulary.",
                 "required": 0,
                 "conditional_logic": 0,
                 "wrapper": {
@@ -522,24 +528,34 @@
                     "class": "",
                     "id": ""
                 },
-                "default_value": "",
-                "maxlength": "",
-                "allow_in_bindings": 0,
-                "placeholder": "",
-                "prepend": "",
-                "append": "",
+                "post_type": [
+                    "aiwa-cpt-dictionary"
+                ],
+                "post_status": "",
+                "taxonomy": "",
+                "filters": [
+                    "search",
+                    "taxonomy"
+                ],
+                "return_format": "object",
+                "min": "",
+                "max": "",
+                "allow_in_bindings": 1,
+                "elements": "",
+                "bidirectional": 0,
                 "show_in_graphql": 1,
                 "graphql_description": "",
-                "graphql_field_name": "antonyms",
-                "graphql_non_null": 0
+                "graphql_field_name": "aiwaAntonyms",
+                "graphql_connection_type": "one_to_many",
+                "bidirectional_target": []
             },
             {
-                "key": "field_696977991194a",
-                "label": "Homonyms",
-                "name": "aiwa_homonyms",
+                "key": "field_696b19f2bf3c9",
+                "label": "Phonetic variants",
+                "name": "aiwa_phonetic_variants",
                 "aria-label": "",
-                "type": "text",
-                "instructions": "",
+                "type": "relationship",
+                "instructions": "Words that share similar pronunciation patterns.",
                 "required": 0,
                 "conditional_logic": 0,
                 "wrapper": {
@@ -547,16 +563,26 @@
                     "class": "",
                     "id": ""
                 },
-                "default_value": "",
-                "maxlength": "",
-                "allow_in_bindings": 0,
-                "placeholder": "",
-                "prepend": "",
-                "append": "",
+                "post_type": [
+                    "aiwa-cpt-dictionary"
+                ],
+                "post_status": "",
+                "taxonomy": "",
+                "filters": [
+                    "search",
+                    "taxonomy"
+                ],
+                "return_format": "object",
+                "min": "",
+                "max": "",
+                "allow_in_bindings": 1,
+                "elements": "",
+                "bidirectional": 0,
                 "show_in_graphql": 1,
                 "graphql_description": "",
-                "graphql_field_name": "homonyms",
-                "graphql_non_null": 0
+                "graphql_field_name": "aiwaPhoneticVariants",
+                "graphql_connection_type": "one_to_many",
+                "bidirectional_target": []
             },
             {
                 "key": "aiwa_field_qc_2",
@@ -954,7 +980,7 @@
     },
     {
         "key": "post_type_69654be855b7a",
-        "title": "Dictionaries",
+        "title": "Dictionary Entries",
         "menu_order": 0,
         "active": true,
         "post_type": "aiwa-cpt-dictionary",
@@ -962,8 +988,8 @@
         "import_source": "",
         "import_date": "",
         "labels": {
-            "name": "Dictionaries",
-            "singular_name": "Dictionary",
+            "name": "Dictionary Entries",
+            "singular_name": "Dictionary Entry",
             "menu_name": "Dictionaries",
             "all_items": "All Dictionaries",
             "edit_item": "Edit Dictionary",
@@ -996,7 +1022,7 @@
             "item_link": "Dictionary Link",
             "item_link_description": "A link to a dictionary."
         },
-        "description": "Public word entries for dictionaries.",
+        "description": "Individual word records in a dictionary that provide information such as meaning, pronunciation, usage, and related forms.",
         "public": true,
         "hierarchical": false,
         "exclude_from_search": false,
