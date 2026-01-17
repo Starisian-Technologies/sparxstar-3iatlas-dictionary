@@ -422,7 +422,15 @@ export default function DictionaryApp() {
                             <div className="flex justify-between items-start">
                                 <div>
                                     <h3 className="text-lg font-bold text-gray-900">{word.title}</h3>
-                                    <p className="text-gray-500 text-sm mt-0.5 line-clamp-1">
+                            onClick={() => handleWordClick(word)}
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
+                                    event.preventDefault();
+                                    handleWordClick(word);
+                                }
+                            }}
+                            role="button"
+                            tabIndex={0}
                                         {language === 'en'
                                             ? word.dictionaryEntryDetails.aiwaTranslationEnglish
                                             : word.dictionaryEntryDetails.aiwaTranslationFrench}
