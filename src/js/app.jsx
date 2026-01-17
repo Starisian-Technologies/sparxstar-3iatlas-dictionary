@@ -368,6 +368,7 @@ export default function DictionaryApp() {
                         <button
                             onClick={() => setLanguage((l) => (l === 'en' ? 'fr' : 'en'))}
                             className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
+                            aria-label="Toggle language between English and French"
                         >
                             <Globe size={16} /> {language === 'en' ? 'EN' : 'FR'}
                         </button>
