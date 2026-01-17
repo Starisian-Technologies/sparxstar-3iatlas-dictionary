@@ -137,17 +137,73 @@ const GET_SINGLE_WORD_DETAILS = gql`
 
 // --- HELPER COMPONENTS ---
 
-const AudioButton = ({ url, word }) => {
+const AudioButton = ({ url }) => {
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [hasError, setHasError] = useState(false);
+    const audioRef = useRef(null);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current = null;
+            }
+        };
+    }, []);
+
     const playAudio = (e) => {
         e.stopPropagation();
+
+        // Stop any currently playing audio
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
+        }
+
+        // Create new audio instance
         const audio = new Audio(url);
-        audio.play();
+        audioRef.current = audio;
+        setHasError(false);
+        setIsPlaying(true);
+
+        // Handle successful playback
+        audio.addEventListener('ended', () => {
+            setIsPlaying(false);
+            audioRef.current = null;
+        });
+
+        // Handle errors
+        audio.addEventListener('error', (err) => {
+            console.error('Audio playback error:', err);
+            setIsPlaying(false);
+            setHasError(true);
+            audioRef.current = null;
+        });
+
+        // Attempt to play
+        audio.play().catch((err) => {
+            console.error('Audio play() failed:', err);
+            setIsPlaying(false);
+            setHasError(true);
+            audioRef.current = null;
+        });
     };
+
     if (!url) return null;
+
     return (
         <button
             onClick={playAudio}
-            className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
+            disabled={isPlaying}
+            className={`p-2 rounded-full transition-colors ${
+                hasError
+                    ? 'bg-red-100 text-red-600 hover:bg-red-200'
+                    : isPlaying
+                      ? 'bg-blue-200 text-blue-700 cursor-not-allowed'
+                      : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+            }`}
+            title={hasError ? 'Audio failed to load' : isPlaying ? 'Playing...' : 'Play audio'}
         >
             <Volume2 size={20} />
         </button>
