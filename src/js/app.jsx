@@ -183,6 +183,10 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
 
         const word = data.dictionaryBy;
         const d = word.dictionaryEntryDetails;
+
+        // Check if dictionaryEntryDetails exists
+        if (!d) return null;
+
         const translation = language === 'en' ? d.aiwaTranslationEnglish : d.aiwaTranslationFrench;
 
         return { word, d, translation };
@@ -224,7 +228,7 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                     </div>
                 )}
 
-                {!loading && !error && data && data.dictionaryBy && wordData && (
+                {!loading && !error && wordData && (
                     <>
                         {/* Header Image */}
                         {wordData.d.aiwaWordPhoto?.node?.sourceUrl && (
