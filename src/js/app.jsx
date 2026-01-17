@@ -25,7 +25,7 @@ const client = new ApolloClient({
 
 // --- QUERY 1: LIGHTWEIGHT INDEX (For the List) ---
 const GET_ALL_WORDS_INDEX = gql`
-    query GetWordIndex($first: Int = 500, $after: String) {
+    query GetWordIndex($first: Int = 10000, $after: String) {
         dictionaries(
             first: $first
             after: $after
@@ -39,9 +39,7 @@ const GET_ALL_WORDS_INDEX = gql`
                 node {
                     id
                     title
-                    // NOTE: slug is not displayed in the list itself but is required for navigation
-                    // to the detail view (GET_SINGLE_WORD_DETAILS uses slug). We include it here
-                    // so clicking a word can immediately use its slug without an extra lookup.
+                    # Slug is required for the detail lookup
                     slug
                     dictionaryEntryDetails {
                         aiwaTranslationEnglish
@@ -49,6 +47,12 @@ const GET_ALL_WORDS_INDEX = gql`
                         aiwaPartOfSpeech
                         aiwaSearchStringEnglish
                         aiwaSearchStringFrench
+                        # We fetch the ID just to know if an image exists for the list icon
+                        aiwaWordPhoto {
+                            node {
+                                id
+                            }
+                        }
                     }
                 }
             }
@@ -57,7 +61,6 @@ const GET_ALL_WORDS_INDEX = gql`
 `;
 
 // --- QUERY 2: HEAVY DETAILS (For the Popup) ---
-// FIXED: Relationships now query 'nodes' to handle AcfContentNodeConnection
 const GET_SINGLE_WORD_DETAILS = gql`
     query GetWordDetails($slug: String!) {
         dictionaryBy(slug: $slug) {
@@ -86,7 +89,7 @@ const GET_SINGLE_WORD_DETAILS = gql`
                     sentenceFrenchTranslation
                 }
 
-                # --- FIX: Querying inside 'nodes' ---
+                # Relationships using 'nodes' for connections
                 aiwaSynonyms {
                     nodes {
                         ... on Dictionary { title slug }
@@ -97,7 +100,6 @@ const GET_SINGLE_WORD_DETAILS = gql`
                         ... on Dictionary { title slug }
                     }
                 }
-                # If this field still errors, ensure you have clicked "Save" on your ACF Field Group
                 aiwaPhoneticVariants {
                      nodes {
                         ... on Dictionary { title slug }
@@ -108,7 +110,17 @@ const GET_SINGLE_WORD_DETAILS = gql`
     }
 `;
 
+// --- HELPER COMPONENTS ---
+
+const AudioButton = ({ url }) => {
+    const playAudio = (e) => {
+        e.stopPropagation();
+        const audio = new Audio(url);
+        audio.play();
+    };
+
     if (!url) return null;
+    
     return (
         <button onClick={playAudio} className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors" aria-label="Play pronunciation">
             <Volume2 size={20} />
@@ -116,7 +128,6 @@ const GET_SINGLE_WORD_DETAILS = gql`
     );
 };
 
-// Updated to handle the 'nodes' structure or flat arrays safely
 const RelatedList = ({ title, items }) => {
     // Safety check: items might be a connection object (with nodes) or null
     let list;
@@ -169,14 +180,9 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                         <p className="font-bold">Error loading details</p>
                         <p className="text-sm mt-2">
                             {error.networkError
-                                ? 'A network error occurred while loading word details. Please check your internet connection and try again.'
-                                : 'An unexpected error occurred while loading word details. Please try again or contact support if the problem persists.'}
+                                ? 'A network error occurred. Please check your internet connection.'
+                                : 'An unexpected error occurred. Please try again.'}
                         </p>
-                        {(error?.message || error?.graphQLErrors?.[0]?.message) && (
-                            <p className="text-xs mt-2 text-red-400 break-words">
-                                {error?.message || error?.graphQLErrors?.[0]?.message}
-                            </p>
-                        )}
                     </div>
                 )}
 
@@ -184,7 +190,7 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                     <div className="p-6 text-center text-gray-600">
                         <p className="font-bold text-gray-800">Word not found</p>
                         <p className="text-sm mt-2">
-                            No details were found for <span className="font-semibold">{initialTitle}</span>. It may have been removed or is not yet in the dictionary.
+                            No details were found for <span className="font-semibold">{initialTitle}</span>.
                         </p>
                     </div>
                 )}
@@ -385,21 +391,16 @@ export default function DictionaryApp() {
                     </div>
                 </div>
             </header>
-                            onClick={() => handleWordClick(word)}
-                            onKeyDown={(event) => {
-                                if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
-                                    event.preventDefault();
-                                    handleWordClick(word);
-                                }
-                            }}
-                            role="button"
-                            tabIndex={0}
+
             <div className="flex-1 max-w-3xl mx-auto w-full relative">
                 <Virtuoso
                     ref={virtuosoRef}
                     data={filteredData}
                     totalCount={filteredData.length}
                     className="h-full w-full scrollbar-hide"
+                    itemContent={(index, word) => (
+                        <div
+                            className="px-4 py-4 border-b border-gray-100 bg-white hover:bg-blue-50 cursor-pointer active:bg-blue-100 transition-colors"
                             onClick={() => handleWordClick(word)}
                             onKeyDown={(event) => {
                                 if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
@@ -409,31 +410,19 @@ export default function DictionaryApp() {
                             }}
                             role="button"
                             tabIndex={0}
-                        <div
-                            onClick={() => handleWordClick(word)}
-                            className="px-4 py-4 border-b border-gray-100 bg-white hover:bg-blue-50 cursor-pointer active:bg-blue-100 transition-colors"
                         >
                             <div className="flex justify-between items-start">
                                 <div>
                                     <h3 className="text-lg font-bold text-gray-900">{word.title}</h3>
-                            onClick={() => handleWordClick(word)}
-                            onKeyDown={(event) => {
-                                if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
-                                    event.preventDefault();
-                                    handleWordClick(word);
-                                }
-                            }}
-                            role="button"
-                            tabIndex={0}
+                                    <p className="text-gray-500 text-sm mt-0.5 line-clamp-1">
                                         {language === 'en'
                                             ? word.dictionaryEntryDetails.aiwaTranslationEnglish
                                             : word.dictionaryEntryDetails.aiwaTranslationFrench}
                                     </p>
                                 </div>
                                 <div className="flex gap-2 items-center">
-                                    {(word.dictionaryEntryDetails &&
-                                        (word.dictionaryEntryDetails.imageUrl ||
-                                            word.dictionaryEntryDetails.photoUrl)) && (
+                                    {/* Icon if image exists (checked by ID presence from index query) */}
+                                    {word.dictionaryEntryDetails?.aiwaWordPhoto?.node && (
                                         <ImageIcon
                                             className="text-blue-500"
                                             size={16}
