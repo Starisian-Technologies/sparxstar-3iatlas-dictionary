@@ -199,12 +199,7 @@ const WordDetailModal = ({ slug, wordTitle, language, onClose }) => {
                 onClick={onClose}
             />
 
-            <div
-                className="bg-white w-full md:w-[600px] h-[85vh] md:h-[80vh] rounded-t-2xl md:rounded-2xl shadow-2xl pointer-events-auto flex flex-col overflow-hidden animate-slide-up"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="word-title"
-            >
+            <div className="bg-white w-full md:w-[600px] h-[85vh] md:h-[80vh] rounded-t-2xl md:rounded-2xl shadow-2xl pointer-events-auto flex flex-col overflow-hidden animate-slide-up">
                 {loading && (
                     <div className="h-full flex flex-col items-center justify-center space-y-4">
                         <Loader2 className="animate-spin text-blue-600" size={40} />
@@ -242,6 +237,10 @@ const WordDetailModal = ({ slug, wordTitle, language, onClose }) => {
                                 language === 'en'
                                     ? d.aiwaTranslationEnglish
                                     : d.aiwaTranslationFrench;
+                            const hasRelatedWords =
+                                (d.aiwaSynonyms?.nodes?.length ?? 0) > 0 ||
+                                (d.aiwaAntonyms?.nodes?.length ?? 0) > 0 ||
+                                (d.aiwaPhoneticVariants?.nodes?.length ?? 0) > 0;
 
                             return (
                                 <>
@@ -261,10 +260,7 @@ const WordDetailModal = ({ slug, wordTitle, language, onClose }) => {
                                     <div className="p-6 border-b border-gray-100 flex justify-between items-start bg-white z-10">
                                         <div>
                                             <div className="flex items-center gap-3">
-                                                <h2
-                                                    id="word-title"
-                                                    className="text-3xl font-bold text-gray-900"
-                                                >
+                                                <h2 className="text-3xl font-bold text-gray-900">
                                                     {word.title}
                                                 </h2>
                                                 {d.aiwaAudioFile?.node?.mediaItemUrl && (
@@ -322,10 +318,7 @@ const WordDetailModal = ({ slug, wordTitle, language, onClose }) => {
 
                                         {/* Relationships */}
                                         <div className="border-t border-b border-gray-100 py-4">
-                                            {((d.aiwaSynonyms?.nodes?.length ?? 0) > 0 ||
-                                                (d.aiwaAntonyms?.nodes?.length ?? 0) > 0 ||
-                                                (d.aiwaPhoneticVariants?.nodes?.length ?? 0) >
-                                                    0) && (
+                                            {hasRelatedWords && (
                                                 <h3 className="flex items-center gap-2 font-bold text-gray-900 mb-2">
                                                     <LinkIcon size={18} /> Related
                                                 </h3>
