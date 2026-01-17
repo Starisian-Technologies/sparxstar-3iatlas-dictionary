@@ -381,7 +381,10 @@ export default function DictionaryApp() {
                     slug={selectedWordSlug} 
                     initialTitle={selectedWordTitle}
                     language={language} 
-                    onClose={() => setSelectedWordSlug(null)} 
+                    onClose={() => {
+                        setSelectedWordSlug(null);
+                        setSelectedWordTitle(null);
+                    }} 
                 />
             )}
         </div>
