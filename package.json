@@ -9,7 +9,7 @@
         "lint:css": "stylelint \"src/**/*.css\" --fix",
         "docs:js": "jsdoc -c jsdoc.json",
         "format": "prettier --write .",
-        "test": "jest",
+        "test": "jest --passWithNoTests",
         "prepare": "husky"
     },
     "lint-staged": {

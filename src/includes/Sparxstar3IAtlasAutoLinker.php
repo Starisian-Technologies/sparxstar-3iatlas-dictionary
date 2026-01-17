@@ -232,7 +232,7 @@ class Sparxstar3IAtlasAutoLinker {
         // But that's expensive. Better to let them expire naturally or clear manually.
     }
 
-    private function _get_post_cache( int $post_id, string $taxonomy = '' ): ?string {
+    private function _get_post_cache( int $post_id, string $taxonomy = '' ): mixed {
         return get_transient( $this->get_post_cache_key( $post_id, $taxonomy ) );
     }
 
@@ -252,7 +252,7 @@ class Sparxstar3IAtlasAutoLinker {
         set_transient( $key, $terms, $expires );
     }
 
-    private function _get_term_cache( string $taxonomy = '' ): ?array {
+    private function _get_term_cache( string $taxonomy = '' ): mixed {
         return get_transient( $this->get_term_cache_key( $taxonomy ) );
     }
 
