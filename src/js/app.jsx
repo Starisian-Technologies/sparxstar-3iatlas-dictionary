@@ -171,7 +171,7 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                         </p>
                         {(error.message || (error.graphQLErrors && error.graphQLErrors.length > 0)) && (
                             <p className="text-xs mt-2 text-red-400 break-words">
-                                {error.message || error.graphQLErrors[0].message}
+                                {error.message || (error.graphQLErrors?.[0]?.message)}
                             </p>
                         )}
                     </div>
