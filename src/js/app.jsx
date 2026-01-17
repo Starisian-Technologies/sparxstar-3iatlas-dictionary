@@ -147,7 +147,7 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                 {error && (
                     <div className="p-6 text-red-500 text-center">
                         <p className="font-bold">Error loading details</p>
-                        <p className="text-sm mt-2">{error.message}</p>
+                        <p className="text-sm mt-2">Unable to load word details. Please try again or contact support if the problem persists.</p>
                     </div>
                 )}
 
