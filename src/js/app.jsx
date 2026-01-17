@@ -366,7 +366,16 @@ export default function DictionaryApp() {
                                             : word.dictionaryEntryDetails.aiwaTranslationFrench}
                                     </p>
                                 </div>
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 items-center">
+                                    {(word.dictionaryEntryDetails &&
+                                        (word.dictionaryEntryDetails.imageUrl ||
+                                            word.dictionaryEntryDetails.photoUrl)) && (
+                                        <ImageIcon
+                                            className="text-blue-500"
+                                            size={16}
+                                            aria-label="Has image"
+                                        />
+                                    )}
                                     <span className="text-xs font-semibold text-gray-400 px-2 py-1 bg-gray-100 rounded">
                                         {word.dictionaryEntryDetails.aiwaPartOfSpeech?.substring(0, 3)}
                                     </span>
