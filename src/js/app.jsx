@@ -58,8 +58,11 @@ const GET_ALL_WORDS_INDEX = gql`
                         aiwaPartOfSpeech
                         aiwaSearchStringEnglish
                         aiwaSearchStringFrench
-                        imageUrl
-                        photoUrl
+                        aiwaWordPhoto {
+                            node {
+                                sourceUrl
+                            }
+                        }
                     }
                 }
             }
@@ -193,6 +196,7 @@ const AudioButton = ({ url }) => {
         <button
             onClick={playAudio}
             className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
+            aria-label="Play pronunciation"
         >
             <Volume2 size={20} />
         </button>
@@ -381,10 +385,9 @@ const WordDetailModal = ({ slug, wordTitle, language, onClose }) => {
 
                                         {/* Relationships */}
                                         <div className="border-t border-b border-gray-100 py-4">
-                                            {((d.aiwaSynonyms?.nodes?.length ?? 0) > 0 ||
-                                                (d.aiwaAntonyms?.nodes?.length ?? 0) > 0 ||
-                                                (d.aiwaPhoneticVariants?.nodes?.length ?? 0) >
-                                                    0) && (
+                                            {(d.aiwaSynonyms?.nodes?.length ||
+                                                d.aiwaAntonyms?.nodes?.length ||
+                                                d.aiwaPhoneticVariants?.nodes?.length) && (
                                                 <h3 className="flex items-center gap-2 font-bold text-gray-900 mb-2">
                                                     <LinkIcon size={18} /> Related
                                                 </h3>
@@ -566,6 +569,15 @@ const DictionaryApp = () => {
                     {filteredWords.length} {filteredWords.length === 1 ? 'word' : 'words'} found
                 </div>
             </header>
+            onClick={() => handleWordClick(word)}
+            onKeyDown=
+            {(event) => {
+                if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
+                    event.preventDefault();
+                    handleWordClick(word);
+                }
+            }}
+            role="button" tabIndex={0}
             <div className="flex-1 max-w-3xl mx-auto w-full relative">
                 <Virtuoso
                     style={{ height: 'calc(100vh - 220px)' }}
@@ -588,15 +600,13 @@ const DictionaryApp = () => {
                                     </p>
                                 </div>
                                 <div className="flex gap-2 items-center">
-                                    {word.dictionaryEntryDetails &&
-                                        (word.dictionaryEntryDetails.imageUrl ||
-                                            word.dictionaryEntryDetails.photoUrl) && (
-                                            <ImageIcon
-                                                className="text-blue-500"
-                                                size={16}
-                                                aria-label="Has image"
-                                            />
-                                        )}
+                                    {word.dictionaryEntryDetails?.aiwaWordPhoto?.node && (
+                                        <ImageIcon
+                                            className="text-blue-500"
+                                            size={16}
+                                            aria-label="Has image"
+                                        />
+                                    )}
                                     <span className="text-xs font-semibold text-gray-400 px-2 py-1 bg-gray-100 rounded">
                                         {word.dictionaryEntryDetails.aiwaPartOfSpeech?.substring(
                                             0,
