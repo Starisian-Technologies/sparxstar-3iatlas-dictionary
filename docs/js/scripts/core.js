@@ -340,7 +340,11 @@ function getPreTopBar(id, lang = '') {
         lang.toLocaleUpperCase() +
         '</div></div>';
 
-    var topBar = '<div class="pre-top-bar-container">' + langNameDiv + copyToClipboard + '</div>';
+    var topBar =
+        '<div class="pre-top-bar-container">' +
+        langNameDiv +
+        copyToClipboard +
+        '</div>';
 
     return topBar;
 }
@@ -415,7 +419,10 @@ function getFontSize() {
     var currentFontSize = 16;
 
     try {
-        currentFontSize = Number.parseInt(html.style.fontSize.split('px')[0], 10);
+        currentFontSize = Number.parseInt(
+            html.style.fontSize.split('px')[0],
+            10
+        );
     } catch (error) {
         console.log(error);
     }
@@ -426,7 +433,9 @@ function getFontSize() {
 function localUpdateFontSize(fontSize) {
     html.style.fontSize = fontSize + 'px';
 
-    var fontSizeText = document.querySelector('#b77a68a492f343baabea06fad81f651e');
+    var fontSizeText = document.querySelector(
+        '#b77a68a492f343baabea06fad81f651e'
+    );
 
     if (fontSizeText) {
         fontSizeText.innerHTML = fontSize;
@@ -630,7 +639,9 @@ function highlightActiveLinkInSidebar() {
 
     if (!element) {
         try {
-            element = document.querySelector(`.sidebar a[href*='${targetURL.split('#')[0]}']`);
+            element = document.querySelector(
+                `.sidebar a[href*='${targetURL.split('#')[0]}']`
+            );
         } catch (e) {
             console.error(e);
 
@@ -710,5 +721,6 @@ window.addEventListener('storage', (event) => {
     initTooltip();
 
     if (event.key === themeLocalStorageKey) localUpdateTheme(event.newValue);
-    if (event.key === fontSizeLocalStorageKey) localUpdateFontSize(event.newValue);
+    if (event.key === fontSizeLocalStorageKey)
+        localUpdateFontSize(event.newValue);
 });

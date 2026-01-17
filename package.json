@@ -70,6 +70,7 @@
         "husky": "latest",
         "jest": "latest",
         "jsdoc": "latest",
+        "jsdoc-babel": "^0.5.0",
         "lint-staged": "latest",
         "mini-css-extract-plugin": "latest",
         "postcss": "latest",

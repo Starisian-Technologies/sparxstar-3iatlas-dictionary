@@ -1,7 +1,5 @@
 /**
  * Admin JavaScript file for SPARXSTAR 3iAtlas Dictionary
- *
- * @package Sparxstar3IAtlasDictionary
  */
 
 (function ($) {

@@ -43,6 +43,8 @@ h6 {
     background: #252525;
 }
 
+
+
 .with-arrow {
     fill: #999;
 }
@@ -196,6 +198,7 @@ samp {
 .hljs .selected .hljs-ln-numbers {
     color: #eee;
 }
+
 
 table .name,
 .params .name,
@@ -397,6 +400,7 @@ blockquote {
 .mobile-sidebar-wrapper {
     background: #222;
 }
+
 
 .child-tutorial {
     border-color: #555;

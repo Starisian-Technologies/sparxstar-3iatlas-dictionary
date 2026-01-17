@@ -10,7 +10,7 @@
         "readme": "README.md",
         "template": "node_modules/clean-jsdoc-theme"
     },
-    "plugins": ["plugins/markdown"],
+    "plugins": ["plugins/markdown", "node_modules/jsdoc-babel"],
     "templates": {
         "default": {
             "includeDate": true
