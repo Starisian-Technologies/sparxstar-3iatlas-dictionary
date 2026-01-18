@@ -6,22 +6,26 @@ import { Search, Volume2, X, Globe, BookOpen, Image as ImageIcon, Link as LinkIc
 import '../css/sparxstar-3iatlas-dictionary-form.css';
 
 // --- CONFIGURATION ---
-// FIXED: Using lowercase 's' to match your PHP localization
-const settings = window.sparxstarDictionarySettings;
-const GRAPHQL_ENDPOINT = settings?.graphqlUrl || '/graphql';
+// 1. Safe access to settings
+const settings = window.sparxstarDictionarySettings || {}; 
+
+// 2. Debug Log (Check console to see if this appears)
+console.log('Dictionary App Initializing. Settings:', settings);
+
+// 3. Fallback endpoint to prevent "Request" errors if settings are missing
+const GRAPHQL_ENDPOINT = settings.graphqlUrl || '/graphql';
+
+// 4. Ensure we have a valid endpoint before initializing Apollo
+if (!settings.graphqlUrl) {
+    console.warn('⚠️ Dictionary Settings missing. Using fallback /graphql endpoint.');
+}
 
 const client = new ApolloClient({
     uri: GRAPHQL_ENDPOINT,
     cache: new InMemoryCache(),
     defaultOptions: {
-        query: {
-            fetchPolicy: 'cache-first',
-            nextFetchPolicy: 'cache-first',
-        },
-        watchQuery: {
-            fetchPolicy: 'cache-first',
-            nextFetchPolicy: 'cache-first',
-        },
+        query: { fetchPolicy: 'cache-first' },
+        watchQuery: { fetchPolicy: 'cache-first' },
     },
 });
 
