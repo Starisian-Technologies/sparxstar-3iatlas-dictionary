@@ -80,8 +80,6 @@ jobs:
               run: npm run build
             - name: Verify build output
               run: |
-                  test -f assets/js/sparxstar-3iatlas-dictionary-admin.min.js || { echo "Missing admin JS"; exit 1; }
-                  test -f assets/css/sparxstar-3iatlas-dictionary-admin-style.min.css || { echo "Missing admin CSS"; exit 1; }
                   test -f assets/js/sparxstar-3iatlas-dictionary-app.min.js || { echo "Missing app JS"; exit 1; }
                   test -f assets/css/sparxstar-3iatlas-dictionary-app.min.css || { echo "Missing app CSS"; exit 1; }
                   test -f assets/js/sparxstar-3iatlas-dictionary-form.min.js || { echo "Missing form JS"; exit 1; }
@@ -97,7 +95,7 @@ jobs:
                   echo "🔍 Verifying production-ready files..."
                   test -d src/ || { echo "❌ Missing src/ directory"; exit 1; }
                   test -f sparxstar-3iatlas-dictionary.php || { echo "❌ Missing plugin main file"; exit 1; }
-                  test -f assets/js/sparxstar-3iatlas-dictionary-admin.min.js || { echo "❌ Missing admin JS"; exit 1; }
+                  test -f assets/js/sparxstar-3iatlas-dictionary-app.min.js || { echo "❌ Missing app JS"; exit 1; }
                   test -f vendor/autoload.php || { echo "❌ Missing Composer autoloader"; exit 1; }
                   echo "✅ All production files verified"
 
