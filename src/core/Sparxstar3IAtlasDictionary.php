@@ -21,23 +21,6 @@ use WP_Post;
 use Throwable;
 use RuntimeException;
 use function defined;
-use function shortcode_atts;
-use function esc_attr;
-use function get_post;
-use function is_user_logged_in;
-use function _doing_it_wrong;
-use function add_shortcode;
-use function add_action;
-use function has_shortcode;
-use function is_singular;
-use function is_a;
-use function load_plugin_textdomain;
-use function plugin_basename;
-use function wp_enqueue_script;
-use function wp_enqueue_style;
-use function wp_localize_script;
-use function wp_register_script;
-use function wp_register_style;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -82,6 +65,7 @@ final class Sparxstar3IAtlasDictionary {
     private function sparxIAtlas_register_hooks(): void {
         add_action( 'init', array( $this, 'sparxIAtlas_register_shortcodes' ) );
         add_action( 'wp_enqueue_scripts', array( $this, 'sparxIAtlas_register_assets' ) );
+        
     }
 
     /**

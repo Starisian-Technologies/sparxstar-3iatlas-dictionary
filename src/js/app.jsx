@@ -1,21 +1,38 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ApolloClient, InMemoryCache, gql, useQuery } from '@apollo/client';
+// CRITICAL FIX: Consolidated Import.
+// We import everything from '@apollo/client' to satisfy Webpack 5.
+import { ApolloClient, InMemoryCache, gql, ApolloProvider, useQuery } from '@apollo/client';
 import { Virtuoso } from 'react-virtuoso';
-import { Search, Volume2, X, Globe, BookOpen, Image as ImageIcon, Link as LinkIcon, Loader2 } from 'lucide-react';
+import {
+    Search,
+    Volume2,
+    X,
+    Globe,
+    BookOpen,
+    Image as ImageIcon,
+    Link as LinkIcon,
+    Loader2,
+} from 'lucide-react';
 import '../css/sparxstar-3iatlas-dictionary-form.css';
 
+// --- HELPERS ---
+const renderTitle = (title) => {
+    if (!title) return <span>Dictionary</span>;
+    const parts = title.trim().split(' ');
+    if (parts.length === 1) return <span className="text-blue-600">{parts[0]}</span>;
+    const lastWord = parts.pop();
+    return (
+        <>
+            {parts.join(' ')} <span className="text-blue-600">{lastWord}</span>
+        </>
+    );
+};
+
 // --- CONFIGURATION ---
-// 1. Safe access to settings
-const settings = window.sparxstarDictionarySettings || {}; 
-
-// 2. Debug Log (Check console to see if this appears)
-console.log('Dictionary App Initializing. Settings:', settings);
-
-// 3. Fallback endpoint to prevent "Request" errors if settings are missing
+const settings = window.sparxstarDictionarySettings || {};
 const GRAPHQL_ENDPOINT = settings.graphqlUrl || '/graphql';
 
-// 4. Ensure we have a valid endpoint before initializing Apollo
 if (!settings.graphqlUrl) {
     console.warn('⚠️ Dictionary Settings missing. Using fallback /graphql endpoint.');
 }
@@ -80,29 +97,36 @@ const GET_SINGLE_WORD_DETAILS = gql`
                 phoneticProunciation
                 aiwaOrigin
                 aiwaExtract
-                
                 aiwaAudioFile {
-                    node { mediaItemUrl }
+                    node {
+                        mediaItemUrl
+                    }
                 }
                 aiwaWordPhoto {
-                    node { sourceUrl }
+                    node {
+                        sourceUrl
+                    }
                 }
-                
                 aiwaExampleSentences {
                     sentenceExample
                     sentencePhoneticPronunciation
                     sentenceEnglishTranslation
                     sentenceFrenchTranslation
                 }
-
                 aiwaSynonyms {
                     nodes {
-                        ... on Dictionary { title slug }
+                        ... on Dictionary {
+                            title
+                            slug
+                        }
                     }
                 }
                 aiwaAntonyms {
                     nodes {
-                        ... on Dictionary { title slug }
+                        ... on Dictionary {
+                            title
+                            slug
+                        }
                     }
                 }
             }
@@ -113,16 +137,41 @@ const GET_SINGLE_WORD_DETAILS = gql`
 // --- HELPER COMPONENTS ---
 
 const AudioButton = ({ url }) => {
+    const audioRef = useRef(null);
+
     const playAudio = (e) => {
         e.stopPropagation();
-        const audio = new Audio(url);
-        audio.play();
+        try {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current.currentTime = 0;
+            }
+            audioRef.current = new Audio(url);
+            audioRef.current.play().catch((error) => {
+                console.error('Audio playback failed:', error);
+            });
+        } catch (error) {
+            console.error('Error creating audio:', error);
+        }
     };
 
+    // Cleanup audio on unmount
+    React.useEffect(() => {
+        return () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current = null;
+            }
+        };
+    }, []);
+
     if (!url) return null;
-    
     return (
-        <button onClick={playAudio} className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors" aria-label="Play pronunciation">
+        <button
+            onClick={playAudio}
+            className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
+            aria-label="Play pronunciation"
+        >
             <Volume2 size={20} />
         </button>
     );
@@ -137,15 +186,16 @@ const RelatedList = ({ title, items }) => {
     } else {
         list = [];
     }
-    
     if (list.length === 0) return null;
-    
     return (
         <div className="mt-3">
             <h4 className="text-xs font-bold uppercase text-gray-400 mb-1">{title}</h4>
             <div className="flex flex-wrap gap-2">
                 {list.map((item, i) => (
-                    <span key={item.slug || item.title || i} className="bg-gray-100 text-gray-700 text-sm px-2 py-1 rounded-md border border-gray-200">
+                    <span
+                        key={item.slug || item.title || i}
+                        className="bg-gray-100 text-gray-700 text-sm px-2 py-1 rounded-md border border-gray-200"
+                    >
                         {item.title}
                     </span>
                 ))}
@@ -158,15 +208,16 @@ const RelatedList = ({ title, items }) => {
 
 const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
     const { loading, error, data } = useQuery(GET_SINGLE_WORD_DETAILS, {
-        variables: { slug }
+        variables: { slug },
     });
 
     return (
         <div className="fixed inset-0 z-50 flex justify-end md:justify-center items-end md:items-center pointer-events-none">
-            <div className="absolute inset-0 bg-black/50 pointer-events-auto transition-opacity" onClick={onClose} />
-            
+            <div
+                className="absolute inset-0 bg-black/50 pointer-events-auto transition-opacity"
+                onClick={onClose}
+            />
             <div className="bg-white w-full md:w-[600px] h-[85vh] md:h-[80vh] rounded-t-2xl md:rounded-2xl shadow-2xl pointer-events-auto flex flex-col overflow-hidden animate-slide-up">
-                
                 {loading && (
                     <div className="h-full flex flex-col items-center justify-center space-y-4">
                         <Loader2 className="animate-spin text-blue-600" size={40} />
@@ -178,14 +229,28 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                     <div className="p-6 text-red-500 text-center">
                         <p className="font-bold">Error loading details</p>
                         <p className="text-sm mt-2">
-                            {error.networkError ? 'A network error occurred.' : 'An unexpected error occurred.'}
+                            {error.networkError
+                                ? 'A network error occurred.'
+                                : 'An unexpected error occurred.'}
                         </p>
+                        <button
+                            onClick={onClose}
+                            className="mt-4 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 transition-colors"
+                        >
+                            Close
+                        </button>
                     </div>
                 )}
 
                 {!loading && !error && data && !data.dictionaryBy && (
                     <div className="p-6 text-center text-gray-600">
                         <p className="font-bold text-gray-800">Word not found</p>
+                        <button
+                            onClick={onClose}
+                            className="mt-4 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 transition-colors"
+                        >
+                            Close
+                        </button>
                     </div>
                 )}
 
@@ -194,14 +259,21 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                         {(() => {
                             const word = data.dictionaryBy;
                             const d = word.dictionaryEntryDetails;
-                            const translation = language === 'en' ? d.aiwaTranslationEnglish : d.aiwaTranslationFrench;
+                            const translation =
+                                language === 'en'
+                                    ? d.aiwaTranslationEnglish
+                                    : d.aiwaTranslationFrench;
 
                             return (
                                 <>
                                     {/* Header Image */}
                                     {d.aiwaWordPhoto?.node?.sourceUrl && (
                                         <div className="h-48 w-full relative bg-gray-100 shrink-0">
-                                            <img src={d.aiwaWordPhoto.node.sourceUrl} alt={word.title} className="w-full h-full object-cover" />
+                                            <img
+                                                src={d.aiwaWordPhoto.node.sourceUrl}
+                                                alt={word.title}
+                                                className="w-full h-full object-cover"
+                                            />
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                                         </div>
                                     )}
@@ -210,20 +282,38 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                                     <div className="p-6 border-b border-gray-100 flex justify-between items-start bg-white z-10">
                                         <div>
                                             <div className="flex items-center gap-3">
-                                                <h2 className="text-3xl font-bold text-gray-900">{word.title}</h2>
-                                                {d.aiwaAudioFile?.node?.mediaItemUrl && <AudioButton url={d.aiwaAudioFile.node.mediaItemUrl} />}
+                                                <h2 className="text-3xl font-bold text-gray-900">
+                                                    {word.title}
+                                                </h2>
+                                                {d.aiwaAudioFile?.node?.mediaItemUrl && (
+                                                    <AudioButton
+                                                        url={d.aiwaAudioFile.node.mediaItemUrl}
+                                                    />
+                                                )}
                                             </div>
                                             <div className="flex flex-wrap items-center gap-2 mt-2 text-gray-600">
-                                                <span className="italic font-serif text-lg text-gray-500">{d.aiwaPartOfSpeech}</span>
+                                                <span className="italic font-serif text-lg text-gray-500">
+                                                    {d.aiwaPartOfSpeech}
+                                                </span>
                                                 {d.aiwaIpaPronunciation && (
-                                                    <span className="bg-gray-100 px-2 py-0.5 rounded text-sm font-mono text-gray-700">/{d.aiwaIpaPronunciation}/</span>
+                                                    <span className="bg-gray-100 px-2 py-0.5 rounded text-sm font-mono text-gray-700">
+                                                        /{d.aiwaIpaPronunciation}/
+                                                    </span>
                                                 )}
                                                 {d.phoneticProunciation && (
-                                                    <span className="bg-gray-50 border border-gray-200 px-2 py-0.5 rounded text-sm text-gray-600">[{d.phoneticProunciation}]</span>
+                                                    <span className="bg-gray-50 border border-gray-200 px-2 py-0.5 rounded text-sm text-gray-600">
+                                                        [{d.phoneticProunciation}]
+                                                    </span>
                                                 )}
                                             </div>
                                         </div>
-                                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full" aria-label="Close"><X size={24} /></button>
+                                        <button
+                                            onClick={onClose}
+                                            className="p-2 hover:bg-gray-100 rounded-full"
+                                            aria-label="Close"
+                                        >
+                                            <X size={24} />
+                                        </button>
                                     </div>
 
                                     {/* Content Scroll */}
@@ -232,47 +322,77 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                                             <h3 className="text-sm uppercase tracking-wide text-blue-500 font-bold mb-1">
                                                 {language === 'en' ? 'English' : 'Français'}
                                             </h3>
-                                            <p className="text-2xl text-blue-900 font-medium">{translation || 'No translation available'}</p>
+                                            <p className="text-2xl text-blue-900 font-medium">
+                                                {translation || 'No translation available'}
+                                            </p>
                                         </div>
 
                                         {d.aiwaExtract && (
                                             <div>
-                                                <h3 className="flex items-center gap-2 font-bold text-gray-900 mb-2"><BookOpen size={18} /> Definition</h3>
-                                                <p className="text-gray-700 leading-relaxed">{d.aiwaExtract}</p>
+                                                <h3 className="flex items-center gap-2 font-bold text-gray-900 mb-2">
+                                                    <BookOpen size={18} /> Definition
+                                                </h3>
+                                                <p className="text-gray-700 leading-relaxed">
+                                                    {d.aiwaExtract}
+                                                </p>
                                             </div>
                                         )}
 
                                         <div className="border-t border-b border-gray-100 py-4">
-                                            {(d.aiwaSynonyms?.nodes?.length || d.aiwaAntonyms?.nodes?.length || d.aiwaPhoneticVariants?.nodes?.length) && (
-                                                <h3 className="flex items-center gap-2 font-bold text-gray-900 mb-2"><LinkIcon size={18} /> Related</h3>
+                                            {(d.aiwaSynonyms?.nodes?.length ||
+                                                d.aiwaAntonyms?.nodes?.length ||
+                                                d.aiwaPhoneticVariants?.nodes?.length) && (
+                                                <h3 className="flex items-center gap-2 font-bold text-gray-900 mb-2">
+                                                    <LinkIcon size={18} /> Related
+                                                </h3>
                                             )}
                                             <RelatedList title="Synonyms" items={d.aiwaSynonyms} />
                                             <RelatedList title="Antonyms" items={d.aiwaAntonyms} />
-                                            <RelatedList title="Phonetic Variants" items={d.aiwaPhoneticVariants} />
+                                            <RelatedList
+                                                title="Phonetic Variants"
+                                                items={d.aiwaPhoneticVariants}
+                                            />
                                         </div>
 
-                                        {d.aiwaExampleSentences && d.aiwaExampleSentences.length > 0 && (
-                                            <div>
-                                                <h3 className="font-bold text-gray-900 mb-3">Examples</h3>
-                                                <div className="space-y-4">
-                                                    {d.aiwaExampleSentences.map((ex, idx) => (
-                                                        <div key={idx} className="pl-4 border-l-4 border-gray-200">
-                                                            <p className="text-lg text-gray-900 mb-1">{ex.sentenceExample}</p>
-                                                            {ex.sentencePhoneticPronunciation && (
-                                                                <p className="text-xs text-gray-400 font-mono mb-1">{ex.sentencePhoneticPronunciation}</p>
-                                                            )}
-                                                            <p className="text-gray-500 italic">
-                                                                {language === 'en' ? ex.sentenceEnglishTranslation : ex.sentenceFrenchTranslation}
-                                                            </p>
-                                                        </div>
-                                                    ))}
+                                        {d.aiwaExampleSentences &&
+                                            d.aiwaExampleSentences.length > 0 && (
+                                                <div>
+                                                    <h3 className="font-bold text-gray-900 mb-3">
+                                                        Examples
+                                                    </h3>
+                                                    <div className="space-y-4">
+                                                        {d.aiwaExampleSentences.map((ex, idx) => (
+                                                            <div
+                                                                key={idx}
+                                                                className="pl-4 border-l-4 border-gray-200"
+                                                            >
+                                                                <p className="text-lg text-gray-900 mb-1">
+                                                                    {ex.sentenceExample}
+                                                                </p>
+                                                                {ex.sentencePhoneticPronunciation && (
+                                                                    <p className="text-xs text-gray-400 font-mono mb-1">
+                                                                        {
+                                                                            ex.sentencePhoneticPronunciation
+                                                                        }
+                                                                    </p>
+                                                                )}
+                                                                <p className="text-gray-500 italic">
+                                                                    {language === 'en'
+                                                                        ? ex.sentenceEnglishTranslation
+                                                                        : ex.sentenceFrenchTranslation}
+                                                                </p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        )}
+                                            )}
 
                                         {d.aiwaOrigin && (
                                             <div className="text-sm text-gray-500 border-t pt-4 mt-4">
-                                                <span className="font-bold text-gray-700">Origin:</span> {d.aiwaOrigin}
+                                                <span className="font-bold text-gray-700">
+                                                    Origin:
+                                                </span>{' '}
+                                                {d.aiwaOrigin}
                                             </div>
                                         )}
                                     </div>
@@ -304,11 +424,10 @@ const AlphaIndex = ({ onSelectLetter }) => {
     );
 };
 
-// --- MAIN LIST COMPONENT ---
-
+// --- MAIN DICTIONARY COMPONENT ---
 export default function DictionaryApp({ appTitle }) {
     const [searchTerm, setSearchTerm] = useState('');
-    const [language, setLanguage] = useState('en'); 
+    const [language, setLanguage] = useState('en');
     const [selectedWordSlug, setSelectedWordSlug] = useState(null);
     const [selectedWordTitle, setSelectedWordTitle] = useState('');
     const virtuosoRef = useRef(null);
@@ -318,7 +437,6 @@ export default function DictionaryApp({ appTitle }) {
     const filteredData = useMemo(() => {
         if (!data) return [];
         let entries = data.dictionaries.edges.map((edge) => edge.node);
-
         if (searchTerm) {
             const lowerSearch = searchTerm.toLowerCase();
             entries = entries.filter((item) => {
@@ -345,27 +463,13 @@ export default function DictionaryApp({ appTitle }) {
         setSelectedWordSlug(word.slug);
     };
 
-    // Helper to color the last word blue
-    const renderTitle = (titleString) => {
-        if (!titleString) return <span>Dictionary</span>;
-        const parts = titleString.trim().split(' ');
-        if (parts.length === 1) return <span className="text-blue-600">{parts[0]}</span>;
-        
-        const lastWord = parts.pop();
+    if (loading)
         return (
-            <>
-                {parts.join(' ')} <span className="text-blue-600">{lastWord}</span>
-            </>
+            <div className="flex h-screen items-center justify-center flex-col gap-4">
+                <Loader2 className="animate-spin text-blue-600" size={48} />
+                <p className="text-gray-500 font-medium">Loading Words...</p>
+            </div>
         );
-    };
-
-    if (loading) return (
-        <div className="flex h-screen items-center justify-center flex-col gap-4">
-            <Loader2 className="animate-spin text-blue-600" size={48} />
-            <p className="text-gray-500 font-medium">Loading Words...</p>
-        </div>
-    );
-    
     if (error) return <div className="p-4 text-red-500">Error: {error.message}</div>;
 
     return (
@@ -379,13 +483,15 @@ export default function DictionaryApp({ appTitle }) {
                         <button
                             onClick={() => setLanguage((l) => (l === 'en' ? 'fr' : 'en'))}
                             className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
-                            aria-label="Toggle language between English and French"
                         >
                             <Globe size={16} /> {language === 'en' ? 'EN' : 'FR'}
                         </button>
                     </div>
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                        <Search
+                            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                            size={18}
+                        />
                         <input
                             type="text"
                             placeholder={`Search ${filteredData.length} words...`}
@@ -418,7 +524,9 @@ export default function DictionaryApp({ appTitle }) {
                         >
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <h3 className="text-lg font-bold text-gray-900">{word.title}</h3>
+                                    <h3 className="text-lg font-bold text-gray-900">
+                                        {word.title}
+                                    </h3>
                                     <p className="text-gray-500 text-sm mt-0.5 line-clamp-1">
                                         {language === 'en'
                                             ? word.dictionaryEntryDetails.aiwaTranslationEnglish
@@ -430,7 +538,10 @@ export default function DictionaryApp({ appTitle }) {
                                         <ImageIcon className="text-blue-500" size={16} />
                                     )}
                                     <span className="text-xs font-semibold text-gray-400 px-2 py-1 bg-gray-100 rounded">
-                                        {word.dictionaryEntryDetails.aiwaPartOfSpeech?.substring(0, 3)}
+                                        {word.dictionaryEntryDetails.aiwaPartOfSpeech?.substring(
+                                            0,
+                                            3
+                                        )}
                                     </span>
                                 </div>
                             </div>
@@ -441,27 +552,32 @@ export default function DictionaryApp({ appTitle }) {
             </div>
 
             {selectedWordSlug && (
-                <WordDetailModal 
-                    slug={selectedWordSlug} 
+                <WordDetailModal
+                    slug={selectedWordSlug}
                     initialTitle={selectedWordTitle}
-                    language={language} 
+                    language={language}
                     onClose={() => {
                         setSelectedWordSlug(null);
                         setSelectedWordTitle('');
-                    }} 
+                    }}
                 />
             )}
         </div>
     );
 }
 
+// --- MOUNT APP WITH PROVIDER WRAPPER ---
 document.addEventListener('DOMContentLoaded', () => {
-    // FIXED: Using lowercase 's' variable to find the root ID
     const rootId = window.sparxstarDictionarySettings?.root_id || 'sparxstar-dictionary-root';
     const container = document.getElementById(rootId);
+
     if (container) {
         const appTitle = container.dataset.title || 'Dictionary';
         const root = createRoot(container);
-        root.render(<DictionaryApp appTitle={appTitle} />);
+        root.render(
+            <ApolloProvider client={client}>
+                <DictionaryApp appTitle={appTitle} />
+            </ApolloProvider>
+        );
     }
 });

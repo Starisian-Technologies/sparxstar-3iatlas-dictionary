@@ -1,37 +1,39 @@
 const path = require('path');
+// CHANGE 1: Import Webpack itself
+const webpack = require('webpack');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 
 module.exports = {
     mode: 'production',
+    devtool: 'source-map',
     entry: {
         'sparxstar-3iatlas-dictionary-app': './src/js/app.jsx',
-        'sparxstar-3iatlas-dictionary-admin': './src/js/admin.js',
+        // OPTIONAL: Only keep these if you actually use them features
+        // 'sparxstar-3iatlas-dictionary-admin': './src/js/admin.js',
         'sparxstar-3iatlas-dictionary-form': './src/js/sparxstar-iatlas-dictionary-form.js',
-        'sparxstar-3iatlas-dictionary-admin-style': './src/css/admin.css',
-        'sparxstar-3iatlas-dictionary-form-style': './src/css/sparxstar-3iatlas-dictionary-form.css',
     },
     output: {
         path: path.resolve(__dirname, 'assets'),
         filename: 'js/[name].min.js',
         assetModuleFilename: 'images/[hash][ext][query]',
-        clean: false,
+        clean: true,
     },
     resolve: {
-        // FIX 1: Added '.mjs' to extensions list
-        extensions: ['.js', '.jsx', '.mjs', '.json', '.wasm'],
+        // Ensure modern builds are picked first
+        mainFields: ['browser', 'module', 'main'],
+        extensions: ['.mjs', '.js', '.jsx', '.json', '.wasm'],
     },
     module: {
         rules: [
-            // FIX 2: Handle .mjs files explicitly for Apollo Client
             {
                 test: /\.mjs$/,
                 include: /node_modules/,
                 type: 'javascript/auto',
                 resolve: {
-                    fullySpecified: false // Disable strict ESM imports
-                }
+                    fullySpecified: false,
+                },
             },
             {
                 test: /\.(js|jsx)$/,
@@ -45,11 +47,7 @@ module.exports = {
             },
             {
                 test: /\.css$/i,
-                use: [
-                    MiniCssExtractPlugin.loader,
-                    'css-loader',
-                    'postcss-loader',
-                ],
+                use: [MiniCssExtractPlugin.loader, 'css-loader', 'postcss-loader'],
             },
             {
                 test: /\.(png|svg|jpg|jpeg|gif)$/i,
@@ -59,16 +57,15 @@ module.exports = {
     },
     optimization: {
         minimize: true,
-        minimizer: [
-            new TerserPlugin({
-                extractComments: false,
-            }),
-            new CssMinimizerPlugin(),
-        ],
+        minimizer: [new TerserPlugin({ extractComments: false }), new CssMinimizerPlugin()],
     },
     plugins: [
         new MiniCssExtractPlugin({
             filename: 'css/[name].min.css',
+        }),
+        // CHANGE 2: Define 'process.env.NODE_ENV' for the browser
+        new webpack.DefinePlugin({
+            'process.env.NODE_ENV': JSON.stringify('production'),
         }),
     ],
 };
