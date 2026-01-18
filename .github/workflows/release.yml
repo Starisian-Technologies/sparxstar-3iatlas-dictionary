@@ -83,7 +83,7 @@ jobs:
                   test -f assets/js/sparxstar-3iatlas-dictionary-app.min.js || { echo "Missing app JS"; exit 1; }
                   test -f assets/css/sparxstar-3iatlas-dictionary-app.min.css || { echo "Missing app CSS"; exit 1; }
                   test -f assets/js/sparxstar-3iatlas-dictionary-form.min.js || { echo "Missing form JS"; exit 1; }
-                  test -f assets/css/sparxstar-3iatlas-dictionary-form-style.min.css || { echo "Missing form CSS"; exit 1; }
+                  test -f assets/css/sparxstar-3iatlas-dictionary-style.min.css || { echo "Missing shared CSS"; exit 1; }
                   echo "✅ All required build artifacts present"
 
             # Step 9: Build the distributable plugin ZIP file.

@@ -12,7 +12,8 @@ module.exports = {
         'sparxstar-3iatlas-dictionary-app': './src/js/app.jsx',
         // OPTIONAL: Only keep these if you actually use them features
         // 'sparxstar-3iatlas-dictionary-admin': './src/js/admin.js',
-        'sparxstar-3iatlas-dictionary-form': './src/js/sparxstar-iatlas-dictionary-form.js',
+        'sparxstar-3iatlas-dictionary-form': './src/js/form-entry.jsx',
+        'sparxstar-3iatlas-dictionary-style': './src/js/style-entry.jsx',
     },
     output: {
         path: path.resolve(__dirname, 'assets'),
@@ -41,7 +42,12 @@ module.exports = {
                 use: {
                     loader: 'babel-loader',
                     options: {
-                        presets: ['@babel/preset-env', '@babel/preset-react'],
+                        presets: [
+                            ['@babel/preset-env', { modules: false }],
+                            '@babel/preset-react',
+                        ],
+                        sourceType: 'unambiguous',
+                        cacheDirectory: false,
                     },
                 },
             },

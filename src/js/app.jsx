@@ -14,7 +14,7 @@ import {
     Link as LinkIcon,
     Loader2,
 } from 'lucide-react';
-import '../css/sparxstar-3iatlas-dictionary-form.css';
+import '../css/sparxstar-3iatlas-dictionary-style.css';
 
 // --- HELPERS ---
 const renderTitle = (title) => {
