@@ -17,6 +17,7 @@ use Starisian\Sparxstar\IAtlas\includes\Sparxstar3IAtlasPostTypes;
 use Starisian\Sparxstar\IAtlas\core\Sparxstar3IAtlasDictionaryCore;
 use Starisian\Sparxstar\IAtlas\includes\Sparxstar3IAtlasAutoLinker;
 use WP_DEBUG;
+use WP_Post;
 use Throwable;
 use RuntimeException;
 use function defined;
@@ -29,6 +30,7 @@ use function add_shortcode;
 use function add_action;
 use function has_shortcode;
 use function is_singular;
+use function is_a;
 use function load_plugin_textdomain;
 use function plugin_basename;
 use function wp_enqueue_script;
@@ -97,30 +99,31 @@ final class Sparxstar3IAtlasDictionary {
      * @return void
      */
     public function sparxIAtlas_register_assets(): void {
-        try{
-        // Register assets first so they can be enqueued later via shortcode or logic
-        wp_register_script(
-            'sparxstar-dictionary-app',
-            SPARX_3IATLAS_URL . 'assets/js/sparxstar-3iatlas-dictionary-app.min.js',
-            array(),
-            SPARX_3IATLAS_VERSION,
-            true
-        );
+        try {
+            // Register assets first so they can be enqueued later via shortcode or logic
+            wp_register_script(
+                'sparxstar-dictionary-app',
+                SPARX_3IATLAS_URL . 'assets/js/sparxstar-3iatlas-dictionary-app.min.js',
+                array(),
+                SPARX_3IATLAS_VERSION,
+                true
+            );
 
-        wp_register_style(
-            'sparxstar-dictionary-style',
-            SPARX_3IATLAS_URL . 'assets/css/sparxstar-3iatlas-dictionary-app.min.css',
-            array(),
-            SPARX_3IATLAS_VERSION
-        );
+            wp_register_style(
+                'sparxstar-dictionary-style',
+                SPARX_3IATLAS_URL . 'assets/css/sparxstar-3iatlas-dictionary-app.min.css',
+                array(),
+                SPARX_3IATLAS_VERSION
+            );
 
-        global $post;
+            global $post;
 
-        // Check if we are on a post/page and the shortcode is present
-        if ( has_shortcode( $post->post_content, 'sparxstar_dictionary' ) ) {
-            wp_enqueue_script( 'sparxstar-dictionary-app' );
-            wp_enqueue_style( 'sparxstar-dictionary-style' );
-        }
+            // FIX: Check if $post is actually a WP_Post object before checking content.
+            // Also use ?? '' to ensure we pass a string to has_shortcode, never null.
+            if ( is_a( $post, 'WP_Post' ) && has_shortcode( $post->post_content ?? '', 'sparxstar_dictionary' ) ) {
+                wp_enqueue_script( 'sparxstar-dictionary-app' );
+                wp_enqueue_style( 'sparxstar-dictionary-style' );
+            }
         } catch ( \Throwable $throwable ) {
             if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
                 error_log( '[Starisian 3IAtlas Dictionary]: Error registering/enqueuing assets - ' . $throwable->getMessage() );
@@ -136,11 +139,13 @@ final class Sparxstar3IAtlasDictionary {
      * @return string The rendered shortcode content.
      */
     public function sparxIAtlas_render_app( $atts = array() ): string {
-        try{
+        try {
             $graphql_url = \site_url( SPARX_3IATLAS_GRAPHQL_SLUG );
+            
             if ( empty( $graphql_url ) || filter_var( $graphql_url, FILTER_VALIDATE_URL ) === false ) {
                 return '<p>' . esc_html__( 'Dictionary endpoint is not available.', 'sparxstar-3iatlas-dictionary' ) . '</p>';
             }
+
             $atts = shortcode_atts(
                 array(
                     'title' => 'Dictionary',
@@ -154,9 +159,10 @@ final class Sparxstar3IAtlasDictionary {
             wp_enqueue_style( 'sparxstar-dictionary-style' );
 
             // Pass attributes to the frontend
+            // FIX: Variable name changed to sparxstarDictionarySettings (Capital S) to match React App.js
             wp_localize_script(
                 'sparxstar-dictionary-app',
-                'sparxstarDictionarySettings',
+                'sparxstarDictionarySettings', 
                 array(
                     'root_id'    => 'sparxstar-dictionary-root',
                     'graphqlUrl' => $graphql_url,
@@ -218,39 +224,18 @@ final class Sparxstar3IAtlasDictionary {
     }
 
     // Prevent cloning and unserializing
-    /**
-     * Prevents cloning of the singleton instance.
-     *
-     * @return never
-     */
     private function __clone(): never { 
-        _doing_it_wrong(
-            __FUNCTION__,
-            'Cloning this object is forbidden.',
-            SPARX_3IATLAS_VERSION
-        );
+        _doing_it_wrong( __FUNCTION__, 'Cloning this object is forbidden.', SPARX_3IATLAS_VERSION );
         throw new \RuntimeException( 'Cloning is not allowed.' );
     }
-    /**
-     * Prevents unserializing of the singleton instance.
-     *
-     * @return never
-     */
+    
     public function __wakeup(): never { 
-        _doing_it_wrong(
-            __FUNCTION__,
-            'Serializing this object is forbidden.',
-            SPARX_3IATLAS_VERSION
-        );
+        _doing_it_wrong( __FUNCTION__, 'Serializing this object is forbidden.', SPARX_3IATLAS_VERSION );
         throw new \RuntimeException( 'Serializing is not allowed.' );
     }
 
     public function __unserialize( array $data ): never {
-        _doing_it_wrong(
-            __FUNCTION__,
-            'Unserializing this object is forbidden.',
-            SPARX_3IATLAS_VERSION
-        );
+        _doing_it_wrong( __FUNCTION__, 'Unserializing this object is forbidden.', SPARX_3IATLAS_VERSION );
         throw new \RuntimeException( 'Unserializing is not allowed.' );
     }
 }
