@@ -48,26 +48,26 @@ jobs:
               run: |
                   echo "📋 Verifying version ${{ env.VERSION }} was applied to key files:"
                   
-                  # Verify plugin header version
-                  grep -q "Version:\s*${{ env.VERSION }}" sparxstar-3iatlas-dictionary.php || { 
+                  # Verify plugin header version (allows multiple spaces after Version:)
+                  grep -q "Version:[[:space:]]*${{ env.VERSION }}" sparxstar-3iatlas-dictionary.php || { 
                       echo "❌ Plugin header version not found or incorrect"; 
                       grep "Version:" sparxstar-3iatlas-dictionary.php || echo "No Version: line found";
                       exit 1; 
                   }
                   echo "✅ Plugin header version verified"
                   
-                  # Verify version constant
-                  grep -q "SPARX_3IATLAS_VERSION.*['\"]${{ env.VERSION }}['\"]" sparxstar-3iatlas-dictionary.php || { 
+                  # Verify version constant (matches single quotes as used in the actual code)
+                  grep -q "SPARX_3IATLAS_VERSION', '${{ env.VERSION }}'" sparxstar-3iatlas-dictionary.php || { 
                       echo "❌ Version constant not found or incorrect"; 
                       grep "SPARX_3IATLAS_VERSION" sparxstar-3iatlas-dictionary.php || echo "No SPARX_3IATLAS_VERSION found";
                       exit 1; 
                   }
                   echo "✅ Version constant verified"
                   
-                  # Verify package.json version
-                  grep -q "\"version\":\s*\"${{ env.VERSION }}\"" package.json || { 
+                  # Verify package.json version (matches exact JSON structure with double quotes)
+                  grep -q '"version":[[:space:]]*"${{ env.VERSION }}"' package.json || { 
                       echo "❌ Package.json version not found or incorrect"; 
-                      grep "\"version\"" package.json || echo "No version field found";
+                      grep '"version"' package.json || echo "No version field found";
                       exit 1; 
                   }
                   echo "✅ Package.json version verified"
