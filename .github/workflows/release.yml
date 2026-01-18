@@ -40,10 +40,8 @@ jobs:
                   sed -i -E "s/^(\s*\* Version:\s*).*/\1${{ env.VERSION }}/" sparxstar-3iatlas-dictionary.php
                   sed -i "s/define( 'SPARX_3IATLAS_VERSION', '[^']*' );/define( 'SPARX_3IATLAS_VERSION', '${{ env.VERSION }}' );/" sparxstar-3iatlas-dictionary.php
                   
-                  # 3. Update @version tags in ALL source PHP files (includes/core inside src/)
-                  # This correctly targets src/includes and src/core
+                  # 3. Update @version tags in ALL PHP source files under src/
                   find src/ -type f -name "*.php" -print0 | xargs -0 sed -i "s/@version\s\+[0-9.]\+/@version ${{ env.VERSION }}/g"
-
             # Step 5: Prepare version changes (no commit)
             - name: Prepare version changes for release build
               run: |
