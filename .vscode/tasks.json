@@ -1,0 +1,35 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Install Dependencies",
+            "type": "shell",
+            "command": "npm install && composer install",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Build Assets",
+            "type": "shell",
+            "command": "npm run build",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [],
+            "dependsOn": "Install Dependencies"
+        },
+        {
+            "label": "Lint PHP",
+            "type": "shell",
+            "command": "npm run lint:php", // This runs 'composer run lint:php' which is 'phpcs'
+            "problemMatcher": []
+        },
+        {
+            "label": "Lint JS/CSS",
+            "type": "shell",
+            "command": "npm run lint",
+            "problemMatcher": []
+        }
+    ]
+}
