@@ -49,7 +49,7 @@ jobs:
                   echo "📋 Verifying version ${{ env.VERSION }} was applied to key files:"
                   
                   # Verify plugin header version
-                  grep -q "Version:.*${{ env.VERSION }}" sparxstar-3iatlas-dictionary.php || { 
+                  grep -q "Version:\s*${{ env.VERSION }}" sparxstar-3iatlas-dictionary.php || { 
                       echo "❌ Plugin header version not found or incorrect"; 
                       grep "Version:" sparxstar-3iatlas-dictionary.php || echo "No Version: line found";
                       exit 1; 
@@ -57,7 +57,7 @@ jobs:
                   echo "✅ Plugin header version verified"
                   
                   # Verify version constant
-                  grep -q "SPARX_3IATLAS_VERSION.*${{ env.VERSION }}" sparxstar-3iatlas-dictionary.php || { 
+                  grep -q "SPARX_3IATLAS_VERSION.*['\"]${{ env.VERSION }}['\"]" sparxstar-3iatlas-dictionary.php || { 
                       echo "❌ Version constant not found or incorrect"; 
                       grep "SPARX_3IATLAS_VERSION" sparxstar-3iatlas-dictionary.php || echo "No SPARX_3IATLAS_VERSION found";
                       exit 1; 
@@ -65,7 +65,7 @@ jobs:
                   echo "✅ Version constant verified"
                   
                   # Verify package.json version
-                  grep -q "\"version\".*\"${{ env.VERSION }}\"" package.json || { 
+                  grep -q "\"version\":\s*\"${{ env.VERSION }}\"" package.json || { 
                       echo "❌ Package.json version not found or incorrect"; 
                       grep "\"version\"" package.json || echo "No version field found";
                       exit 1; 
