@@ -42,19 +42,51 @@ jobs:
                   
                   # 3. Update @version tags in ALL PHP source files under src/
                   find src/ -type f -name "*.php" -print0 | xargs -0 sed -i "s/@version\s\+[0-9.]\+/@version ${{ env.VERSION }}/g"
-            # Step 5: Prepare version changes (no commit)
+
+            # Step 5: Verify version numbers were applied successfully
+            - name: Verify version numbers in key files
+              run: |
+                  echo "📋 Verifying version ${{ env.VERSION }} was applied to key files:"
+                  
+                  # Verify plugin header version
+                  grep -q "Version:.*${{ env.VERSION }}" sparxstar-3iatlas-dictionary.php || { 
+                      echo "❌ Plugin header version not found or incorrect"; 
+                      grep "Version:" sparxstar-3iatlas-dictionary.php || echo "No Version: line found";
+                      exit 1; 
+                  }
+                  echo "✅ Plugin header version verified"
+                  
+                  # Verify version constant
+                  grep -q "SPARX_3IATLAS_VERSION.*${{ env.VERSION }}" sparxstar-3iatlas-dictionary.php || { 
+                      echo "❌ Version constant not found or incorrect"; 
+                      grep "SPARX_3IATLAS_VERSION" sparxstar-3iatlas-dictionary.php || echo "No SPARX_3IATLAS_VERSION found";
+                      exit 1; 
+                  }
+                  echo "✅ Version constant verified"
+                  
+                  # Verify package.json version
+                  grep -q "\"version\".*\"${{ env.VERSION }}\"" package.json || { 
+                      echo "❌ Package.json version not found or incorrect"; 
+                      grep "\"version\"" package.json || echo "No version field found";
+                      exit 1; 
+                  }
+                  echo "✅ Package.json version verified"
+                  
+                  echo "✅ All version numbers verified successfully"
+
+            # Step 6: Prepare version changes (no commit)
             - name: Prepare version changes for release build
               run: |
                   echo "📝 Version changes prepared for release build:"
                   git diff --stat || echo "No version changes detected"
 
-            # Step 6: Verify plugin entrypoint exists.
+            # Step 7: Verify plugin entrypoint exists.
             - name: Verify plugin entrypoint
               run: |
                   test -f sparxstar-3iatlas-dictionary.php || { echo "Missing sparxstar-3iatlas-dictionary.php"; exit 1; }
                   grep -q "Plugin Name:" sparxstar-3iatlas-dictionary.php || { echo "No plugin header found"; exit 1; }
 
-            # Step 7: Set up PHP and install Composer dependencies.
+            # Step 8: Set up PHP and install Composer dependencies.
             - name: Set up PHP
               uses: shivammathur/setup-php@44454db4f0199b8b9685a5d763dc37cbf79108e1
               with:
@@ -64,7 +96,7 @@ jobs:
             - name: Install PHP dependencies (no-dev)
               run: composer install --no-dev --prefer-dist --no-progress --no-interaction --optimize-autoloader
 
-            # Step 8: Set up Node.js and build frontend assets.
+            # Step 9: Set up Node.js and build frontend assets.
             # Using Node 20 (LTS) for Webpack/Tailwind compatibility
             - name: Set up Node.js
               uses: actions/setup-node@v4
@@ -78,7 +110,7 @@ jobs:
             - name: Build Assets
               run: npm run build
             
-            # Step 8b: Verify Assets (Built files in assets/)
+            # Step 9b: Verify Assets (Built files in assets/)
             - name: Verify build output
               run: |
                   test -f assets/js/sparxstar-3iatlas-dictionary-admin.min.js || { echo "Missing admin JS"; exit 1; }
@@ -89,7 +121,7 @@ jobs:
                   test -f assets/css/sparxstar-3iatlas-dictionary-form-style.min.css || { echo "Missing form CSS"; exit 1; }
                   echo "✅ All required build artifacts present"
 
-            # Step 9: Build the distributable plugin ZIP file.
+            # Step 10: Build the distributable plugin ZIP file.
             - name: Ensure .distignore exists
               run: test -f .distignore || { echo ".distignore is missing"; exit 1; }
 
@@ -129,14 +161,14 @@ jobs:
                     exit 1
                   fi
 
-            # Step 10: Generate checksums for the ZIP file.
+            # Step 11: Generate checksums for the ZIP file.
             - name: Generate checksums
               run: |
                   ZIP_FILE="sparxstar-3iatlas-dictionary-${{ env.VERSION }}.zip"
                   sha256sum "$ZIP_FILE" > "$ZIP_FILE.sha256"
                   sha1sum   "$ZIP_FILE" > "$ZIP_FILE.sha1"
 
-            # Step 11: Create GitHub Release
+            # Step 12: Create GitHub Release
             - name: Create GitHub Release
               uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b
               with:
