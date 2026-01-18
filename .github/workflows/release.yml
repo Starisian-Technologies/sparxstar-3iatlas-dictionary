@@ -33,22 +33,22 @@ jobs:
             # Step 4: Update version numbers in all files.
             - name: Update version numbers
               run: |
-                  # Update package.json version
+                  # 1. Update package.json version
                   sed -i -E 's/("version":\s*").*(")/\1'${{ env.VERSION }}'\2/' package.json
-                  # Update plugin header version
+                  
+                  # 2. Update main plugin header version (Root file)
                   sed -i -E "s/^(\s*\* Version:\s*).*/\1${{ env.VERSION }}/" sparxstar-3iatlas-dictionary.php
                   sed -i "s/define( 'SPARX_3IATLAS_VERSION', '[^']*' );/define( 'SPARX_3IATLAS_VERSION', '${{ env.VERSION }}' );/" sparxstar-3iatlas-dictionary.php
-                  # Update @version tags in source PHP files only
+                  
+                  # 3. Update @version tags in ALL source PHP files (includes/core inside src/)
+                  # This correctly targets src/includes and src/core
                   find src/ -type f -name "*.php" -print0 | xargs -0 sed -i "s/@version\s\+[0-9.]\+/@version ${{ env.VERSION }}/g"
 
-            # Step 5: Prepare version changes (no commit to protected branch)
+            # Step 5: Prepare version changes (no commit)
             - name: Prepare version changes for release build
               run: |
                   echo "📝 Version changes prepared for release build:"
                   git diff --stat || echo "No version changes detected"
-                  echo "⚠️  Version changes are applied only to the build artifacts"
-                  echo "🔒 Protected branch prevents automatic version commits"
-                  echo "💡 Consider updating versions manually before tagging releases"
 
             # Step 6: Verify plugin entrypoint exists.
             - name: Verify plugin entrypoint
@@ -67,10 +67,11 @@ jobs:
               run: composer install --no-dev --prefer-dist --no-progress --no-interaction --optimize-autoloader
 
             # Step 8: Set up Node.js and build frontend assets.
+            # Using Node 20 (LTS) for Webpack/Tailwind compatibility
             - name: Set up Node.js
               uses: actions/setup-node@v4
               with:
-                  node-version: '18'
+                  node-version: '20'
                   cache: 'npm'
 
             - name: Install JS dependencies
@@ -78,6 +79,8 @@ jobs:
 
             - name: Build Assets
               run: npm run build
+            
+            # Step 8b: Verify Assets (Built files in assets/)
             - name: Verify build output
               run: |
                   test -f assets/js/sparxstar-3iatlas-dictionary-admin.min.js || { echo "Missing admin JS"; exit 1; }
@@ -95,9 +98,10 @@ jobs:
             - name: Verify production files are ready
               run: |
                   echo "🔍 Verifying production-ready files..."
-                  test -d src/ || { echo "❌ Missing src/ directory"; exit 1; }
                   test -f sparxstar-3iatlas-dictionary.php || { echo "❌ Missing plugin main file"; exit 1; }
-                  test -f assets/js/sparxstar-3iatlas-dictionary-admin.min.js || { echo "❌ Missing admin JS"; exit 1; }
+                  # Verify we have both Source AND Assets
+                  test -d src/ || { echo "❌ Missing src/ directory"; exit 1; }
+                  test -d assets/ || { echo "❌ Missing assets/ directory"; exit 1; }
                   test -f vendor/autoload.php || { echo "❌ Missing Composer autoloader"; exit 1; }
                   echo "✅ All production files verified"
 
@@ -107,27 +111,25 @@ jobs:
                   VERSION=${{ env.VERSION }}
                   echo "🏗️ Building release ZIP with version $VERSION"
 
-                  # Verify version was applied to files
-                  echo "📋 Verifying version numbers in key files:"
-                  grep -n "Version:" sparxstar-3iatlas-dictionary.php || { echo "❌ Plugin header version not found"; exit 1; }
-                  grep -n "SPARX_3IATLAS_VERSION" sparxstar-3iatlas-dictionary.php || { echo "❌ Version constant not found"; exit 1; }
-                  grep -n "\"version\"" package.json || { echo "❌ Package version not found"; exit 1; }
-
                   rm -rf build
                   mkdir -p build
+                  
+                  # IMPORTANT: Check your .distignore file!
+                  # Ensure it DOES NOT contain 'src/' or 'assets/' 
+                  # so that both built and un-built files are included.
                   rsync -a --exclude-from=.distignore ./ build/${SLUG}/
+                  
                   (cd build && zip -r "../${SLUG}-${VERSION}.zip" "${SLUG}")
 
                   echo "📦 Release ZIP created: ${SLUG}-${VERSION}.zip"
 
-            # NEW STEP: Ensure vendor exists and is packaged
+            # Ensure vendor exists
             - name: Ensure vendor directory is preserved for ZIP
               run: |
                   if [ ! -d "vendor" ]; then
                     echo "Vendor directory missing — Composer install did not create it."
                     exit 1
                   fi
-                  echo "Vendor directory found."
 
             # Step 10: Generate checksums for the ZIP file.
             - name: Generate checksums
