@@ -92,8 +92,8 @@ final class Sparxstar3IAtlasDictionaryForm {
         if ( is_singular() && $post instanceof \WP_Post && has_shortcode( $post->post_content, 'sparxstar_dictionary_form' ) ) {
             wp_enqueue_media();
             if ( defined( 'SPARX_3IATLAS_URL' ) ) {
-                wp_enqueue_style( 'sparxstar-dict-form-style', SPARX_3IATLAS_URL . 'assets/css/sparxstar-3iatlas-dictionary-form-style.min.css', array(), '1.0' );
-                wp_enqueue_script( 'sparxstar-dict-form-script', SPARX_3IATLAS_URL . 'assets/js/sparxstar-3iatlas-dictionary-form.min.js', array( 'jquery' ), '1.0', true );
+                wp_enqueue_style( 'sparxstar-dict-form-style', SPARX_3IATLAS_URL . 'assets/css/sparxstar-3iatlas-dictionary-form-style.min.css', array(), SPARX_3IATLAS_VERSION );
+                wp_enqueue_script( 'sparxstar-dict-form-script', SPARX_3IATLAS_URL . 'assets/js/sparxstar-3iatlas-dictionary-form.min.js', array( 'jquery' ), SPARX_3IATLAS_VERSION, true );
             } 
             wp_localize_script(
                 'sparxstar-dict-form-script',

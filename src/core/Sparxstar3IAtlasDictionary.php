@@ -97,6 +97,7 @@ final class Sparxstar3IAtlasDictionary {
      * @return void
      */
     public function sparxIAtlas_register_assets(): void {
+        try{
         // Register assets first so they can be enqueued later via shortcode or logic
         wp_register_script(
             'sparxstar-dictionary-app',
@@ -116,9 +117,14 @@ final class Sparxstar3IAtlasDictionary {
         global $post;
 
         // Check if we are on a post/page and the shortcode is present
-        if ( is_singular() && $post instanceof \WP_Post && has_shortcode( $post->post_content, 'sparxstar_dictionary' ) ) {
+        if ( has_shortcode( $post->post_content, 'sparxstar_dictionary' ) ) {
             wp_enqueue_script( 'sparxstar-dictionary-app' );
             wp_enqueue_style( 'sparxstar-dictionary-style' );
+        }
+        } catch ( \Throwable $throwable ) {
+            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                error_log( '[Starisian 3IAtlas Dictionary]: Error registering/enqueuing assets - ' . $throwable->getMessage() );
+            }
         }
     }
 
@@ -130,31 +136,38 @@ final class Sparxstar3IAtlasDictionary {
      * @return string The rendered shortcode content.
      */
     public function sparxIAtlas_render_app( $atts = array() ): string {
-        $graphql_url = \site_url( SPARX_3IATLAS_GRAPHQL_SLUG );
-        if ( empty( $graphql_url ) || filter_var( $graphql_url, FILTER_VALIDATE_URL ) === false ) {
-            return '<p>' . esc_html__( 'Dictionary endpoint is not available.', 'sparxstar-3iatlas-dictionary' ) . '</p>';
+        try{
+            $graphql_url = \site_url( SPARX_3IATLAS_GRAPHQL_SLUG );
+            if ( empty( $graphql_url ) || filter_var( $graphql_url, FILTER_VALIDATE_URL ) === false ) {
+                return '<p>' . esc_html__( 'Dictionary endpoint is not available.', 'sparxstar-3iatlas-dictionary' ) . '</p>';
+            }
+            $atts = shortcode_atts(
+                array(
+                    'title' => 'Dictionary',
+                ),
+                $atts,
+                'sparxstar_dictionary'
+            );
+
+            // Ensure assets are enqueued (in case they weren't caught by the global check, e.g., in a widget)
+            wp_enqueue_script( 'sparxstar-dictionary-app' );
+            wp_enqueue_style( 'sparxstar-dictionary-style' );
+
+            // Pass attributes to the frontend
+            wp_localize_script(
+                'sparxstar-dictionary-app',
+                'sparxstarDictionarySettings',
+                array(
+                    'root_id'    => 'sparxstar-dictionary-root',
+                    'graphqlUrl' => $graphql_url,
+                )
+            );
+        } catch ( \Throwable $throwable ) {
+            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                error_log( '[Starisian 3IAtlas Dictionary]: Error rendering shortcode - ' . $throwable->getMessage() );
+            }
+            return '<p>' . esc_html__( 'An error occurred while loading the dictionary.', 'sparxstar-3iatlas-dictionary' ) . '</p>';
         }
-        $atts = shortcode_atts(
-            array(
-                'title' => 'Dictionary',
-            ),
-            $atts,
-            'sparxstar_dictionary'
-        );
-
-        // Ensure assets are enqueued (in case they weren't caught by the global check, e.g., in a widget)
-        wp_enqueue_script( 'sparxstar-dictionary-app' );
-        wp_enqueue_style( 'sparxstar-dictionary-style' );
-
-        // Pass attributes to the frontend
-        wp_localize_script(
-            'sparxstar-dictionary-app',
-            'sparxstarDictionarySettings',
-            array(
-                'root_id'    => 'sparxstar-dictionary-root',
-                'graphqlUrl' => $graphql_url,
-            )
-        );
 
         return '<div id="sparxstar-dictionary-root" data-title="' . esc_attr( $atts['title'] ) . '"></div>';
     }
