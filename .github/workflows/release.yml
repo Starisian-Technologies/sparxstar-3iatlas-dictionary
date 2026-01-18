@@ -80,7 +80,7 @@ jobs:
             - name: Build Assets
               run: npm run build
             
-            # Step 8b: Verify Assets (Built files in assets/)
+            # Step 9: Verify Assets (Built files in assets/)
             - name: Verify build output
               run: |
                   test -f assets/js/sparxstar-3iatlas-dictionary-admin.min.js || { echo "Missing admin JS"; exit 1; }
@@ -91,7 +91,7 @@ jobs:
                   test -f assets/css/sparxstar-3iatlas-dictionary-form-style.min.css || { echo "Missing form CSS"; exit 1; }
                   echo "✅ All required build artifacts present"
 
-            # Step 9: Build the distributable plugin ZIP file.
+            # Step 10: Build the distributable plugin ZIP file.
             - name: Ensure .distignore exists
               run: test -f .distignore || { echo ".distignore is missing"; exit 1; }
 
@@ -131,14 +131,14 @@ jobs:
                     exit 1
                   fi
 
-            # Step 10: Generate checksums for the ZIP file.
+            # Step 11: Generate checksums for the ZIP file.
             - name: Generate checksums
               run: |
                   ZIP_FILE="sparxstar-3iatlas-dictionary-${{ env.VERSION }}.zip"
                   sha256sum "$ZIP_FILE" > "$ZIP_FILE.sha256"
                   sha1sum   "$ZIP_FILE" > "$ZIP_FILE.sha1"
 
-            # Step 11: Create GitHub Release
+            # Step 12: Create GitHub Release
             - name: Create GitHub Release
               uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b
               with:
