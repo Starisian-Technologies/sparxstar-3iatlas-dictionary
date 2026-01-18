@@ -102,11 +102,11 @@ final class Sparxstar3IAtlasDictionary {
         try {
             // Register assets first so they can be enqueued later via shortcode or logic
             wp_register_script(
-                'sparxstar-dictionary-app',
-                SPARX_3IATLAS_URL . 'assets/js/sparxstar-3iatlas-dictionary-app.min.js',
-                array(),
-                SPARX_3IATLAS_VERSION,
-                true
+            'sparxstar-dictionary-app',
+            SPARX_3IATLAS_URL . 'assets/js/sparxstar-3iatlas-dictionary-app.min.js',
+            [],
+            SPARX_3IATLAS_VERSION,
+            true
             );
 
             wp_register_style(
@@ -116,14 +116,6 @@ final class Sparxstar3IAtlasDictionary {
                 SPARX_3IATLAS_VERSION
             );
 
-            global $post;
-
-            // FIX: Check if $post is actually a WP_Post object before checking content.
-            // Also use ?? '' to ensure we pass a string to has_shortcode, never null.
-            if ( is_a( $post, 'WP_Post' ) && has_shortcode( $post->post_content ?? '', 'sparxstar_dictionary' ) ) {
-                wp_enqueue_script( 'sparxstar-dictionary-app' );
-                wp_enqueue_style( 'sparxstar-dictionary-style' );
-            }
         } catch ( \Throwable $throwable ) {
             if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
                 error_log( '[Starisian 3IAtlas Dictionary]: Error registering/enqueuing assets - ' . $throwable->getMessage() );
@@ -154,20 +146,22 @@ final class Sparxstar3IAtlasDictionary {
                 'sparxstar_dictionary'
             );
 
+             // Pass attributes to the frontend
+            // FIX: Variable name changed to sparxstarDictionarySettings (Capital S) to match React App.js
+            wp_localize_script(
+            'sparxstar-dictionary-app',
+            'sparxstarDictionarySettings',
+            [
+                'root_id'    => 'sparxstar-dictionary-root',
+                'graphqlUrl' => $graphql_url,
+            ]
+            );
             // Ensure assets are enqueued (in case they weren't caught by the global check, e.g., in a widget)
             wp_enqueue_script( 'sparxstar-dictionary-app' );
             wp_enqueue_style( 'sparxstar-dictionary-style' );
 
-            // Pass attributes to the frontend
-            // FIX: Variable name changed to sparxstarDictionarySettings (Capital S) to match React App.js
-            wp_localize_script(
-                'sparxstar-dictionary-app',
-                'sparxstarDictionarySettings', 
-                array(
-                    'root_id'    => 'sparxstar-dictionary-root',
-                    'graphqlUrl' => $graphql_url,
-                )
-            );
+           
+            
         } catch ( \Throwable $throwable ) {
             if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
                 error_log( '[Starisian 3IAtlas Dictionary]: Error rendering shortcode - ' . $throwable->getMessage() );
