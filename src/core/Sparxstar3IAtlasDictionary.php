@@ -16,6 +16,7 @@ use Starisian\Sparxstar\IAtlas\frontend\Sparxstar3IAtlasDictionaryForm;
 use Starisian\Sparxstar\IAtlas\includes\Sparxstar3IAtlasPostTypes;
 use Starisian\Sparxstar\IAtlas\core\Sparxstar3IAtlasDictionaryCore;
 use Starisian\Sparxstar\IAtlas\includes\Sparxstar3IAtlasAutoLinker;
+use WP_DEBUG;
 use Throwable;
 use RuntimeException;
 use function defined;
@@ -148,7 +149,7 @@ final class Sparxstar3IAtlasDictionary {
         // Pass attributes to the frontend
         wp_localize_script(
             'sparxstar-dictionary-app',
-            'sparxStarDictionarySettings',
+            'sparxstarDictionarySettings',
             array(
                 'root_id'    => 'sparxstar-dictionary-root',
                 'graphqlUrl' => $graphql_url,

@@ -62,7 +62,7 @@ TERMS.md
 THIRD_PARTY_LICENSES.md
 example.env
 
-# Directories
+# Directories to exclude
 build
 build_test
 dest_test
@@ -73,10 +73,4 @@ examples
 profiles
 schemas
 tests
-
-# Source Assets (Excluded because they are compiled to assets/)
-src/css
-src/js
-src/templates/index.php
-src/*/*.map
 

@@ -10,7 +10,7 @@ import '../css/sparxstar-3iatlas-dictionary-form.css';
 const renderTitle = (title) => title;
 
 // --- CONFIGURATION ---
-const GRAPHQL_ENDPOINT = window.sparxStarDictionarySettings?.graphqlUrl || '/graphql';
+const GRAPHQL_ENDPOINT = window.sparxstarDictionarySettings?.graphqlUrl || '/graphql';
 
 // UPDATED QUERY TO MATCH NEW JSON SCHEMA
 const GET_ENTRIES = gql`
@@ -380,7 +380,7 @@ export default function DictionaryApp({ appTitle }) {
 
 // Mount the app
 document.addEventListener('DOMContentLoaded', () => {
-    const rootId = window.sparxStarDictionarySettings?.root_id || 'sparxstar-dictionary-root';
+    const rootId = window.sparxstarDictionarySettings?.root_id || 'sparxstar-dictionary-root';
     const container = document.getElementById(rootId);
 
     if (container) {

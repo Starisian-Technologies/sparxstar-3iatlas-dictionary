@@ -7,7 +7,6 @@ Thumbs.db
 *.tmp
 *.log
 .idea/
-.vscode/
 
 # Composer
 /vendor/
@@ -22,8 +21,6 @@ build_test/
 build/
 
 # WordPress-generated or temp
-*.min.js
-*.min.css
 *.gz
 *.zip
 *.tar.gz
