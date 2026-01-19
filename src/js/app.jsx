@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { ApolloClient, InMemoryCache, gql, ApolloProvider, useQuery, HttpLink } from '@apollo/client';
 import { Virtuoso } from 'react-virtuoso';
 import { Search, Volume2, X, Globe, BookOpen, Image as ImageIcon, Link as LinkIcon, Loader2, ChevronDown } from 'lucide-react';
-import '../css/sparxstar-3iatlas-dictionary-styles.css';
+import '../css/sparxstar-3iatlas-dictionary-style.css';
 
 // --- HELPERS ---
 const renderTitle = (title) => {
