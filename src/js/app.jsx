@@ -1,20 +1,10 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
-// Consolidated Import to satisfy Webpack
-import { ApolloClient, InMemoryCache, gql, ApolloProvider, useQuery } from '@apollo/client';
+// FIX 1: Import HttpLink
+import { ApolloClient, InMemoryCache, gql, ApolloProvider, useQuery, HttpLink } from '@apollo/client';
 import { Virtuoso } from 'react-virtuoso';
-import {
-    Search,
-    Volume2,
-    X,
-    Globe,
-    BookOpen,
-    Image as ImageIcon,
-    Link as LinkIcon,
-    Loader2,
-    ChevronDown,
-} from 'lucide-react';
-import '../css/sparxstar-3iatlas-dictionary-style.css';
+import { Search, Volume2, X, Globe, BookOpen, Image as ImageIcon, Link as LinkIcon, Loader2, ChevronDown } from 'lucide-react';
+import '../css/sparxstar-3iatlas-dictionary-form.css';
 
 // --- HELPERS ---
 const renderTitle = (title) => {
@@ -22,22 +12,23 @@ const renderTitle = (title) => {
     const parts = title.trim().split(' ');
     if (parts.length === 1) return <span className="text-blue-600">{parts[0]}</span>;
     const lastWord = parts.pop();
-    return (
-        <>
-            {parts.join(' ')} <span className="text-blue-600">{lastWord}</span>
-        </>
-    );
+    return <>{parts.join(' ')} <span className="text-blue-600">{lastWord}</span></>;
 };
 
 // --- CONFIGURATION ---
 const settings = window.sparxstarDictionarySettings || {};
 const GRAPHQL_ENDPOINT = settings.graphqlUrl || '/graphql';
 
-const client = new ApolloClient({
+// FIX 2: Create explicit HttpLink (Fixes "uri is deprecated" warning)
+const httpLink = new HttpLink({
     uri: GRAPHQL_ENDPOINT,
+});
+
+const client = new ApolloClient({
+    // FIX 2: Use the link instance
+    link: httpLink,
     cache: new InMemoryCache({
         typePolicies: {
-            // FIX: Tell Apollo how to merge paginated results if we ever split queries
             Query: {
                 fields: {
                     dictionaries: {
@@ -47,6 +38,18 @@ const client = new ApolloClient({
                     },
                 },
             },
+            // FIX 3: Handle the Merge Warning for Detail Views
+            Dictionary: {
+                fields: {
+                    dictionaryEntryDetails: {
+                        // This tells Apollo: "When you get new details for this object, 
+                        // merge them with the existing details. Don't delete the old ones."
+                        merge(existing = {}, incoming) {
+                            return { ...existing, ...incoming };
+                        }
+                    }
+                }
+            }
         },
     }),
     defaultOptions: {
@@ -55,7 +58,9 @@ const client = new ApolloClient({
     },
 });
 
-// --- QUERY 1: LIST VIEW (Increased to 20k to be safe) ---
+// --- QUERY 1: LIST VIEW ---
+// Note: Keeping at 20000 based on your last file. 
+// If you revert to chunking, change this to 1000.
 const GET_ALL_WORDS_INDEX = gql`
     query GetWordIndex($first: Int = 20000) {
         dictionaries(first: $first, where: { orderby: { field: TITLE, order: ASC } }) {
@@ -114,29 +119,17 @@ const GET_SINGLE_WORD_DETAILS = gql`
                 }
                 aiwaSynonyms {
                     nodes {
-                        ... on Dictionary {
-                            id
-                            title
-                            slug
-                        }
+                        ... on Dictionary { id title slug }
                     }
                 }
                 aiwaAntonyms {
                     nodes {
-                        ... on Dictionary {
-                            id
-                            title
-                            slug
-                        }
+                        ... on Dictionary { id title slug }
                     }
                 }
                 aiwaPhoneticVariants {
                     nodes {
-                        ... on Dictionary {
-                            id
-                            title
-                            slug
-                        }
+                        ... on Dictionary { id title slug }
                     }
                 }
             }
@@ -185,7 +178,7 @@ const RelatedList = ({ title, items }) => {
     );
 };
 
-// --- MODAL COMPONENT (Fixed Z-Index) ---
+// --- MODAL COMPONENT ---
 const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
     const { loading, error, data } = useQuery(GET_SINGLE_WORD_DETAILS, {
         variables: { slug },
@@ -246,16 +239,11 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                                     <div className="p-6 border-b border-gray-100 flex justify-between items-start bg-white z-10 shrink-0">
                                         <div>
                                             <div className="flex items-center gap-3">
-                                                <h2
-                                                    id="modal-title"
-                                                    className="text-3xl font-bold text-gray-900"
-                                                >
+                                                <h2 id="modal-title" className="text-3xl font-bold text-gray-900">
                                                     {word.title}
                                                 </h2>
                                                 {d.aiwaAudioFile?.node?.mediaItemUrl && (
-                                                    <AudioButton
-                                                        url={d.aiwaAudioFile.node.mediaItemUrl}
-                                                    />
+                                                    <AudioButton url={d.aiwaAudioFile.node.mediaItemUrl} />
                                                 )}
                                             </div>
                                             <div className="flex flex-wrap items-center gap-2 mt-2 text-gray-600">
@@ -290,10 +278,7 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                                             <h3 className="text-sm uppercase tracking-wide text-blue-500 font-bold mb-1">
                                                 {language === 'en' ? 'English' : 'Français'}
                                             </h3>
-                                            <p
-                                                className="text-2xl text-blue-900 font-medium"
-                                                lang={language === 'en' ? 'en' : 'fr'}
-                                            >
+                                            <p className="text-2xl text-blue-900 font-medium" lang={language === 'en' ? 'en' : 'fr'}>
                                                 {translation || 'No translation available'}
                                             </p>
                                         </div>
@@ -301,62 +286,39 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                                         {d.aiwaExtract && (
                                             <div>
                                                 <h3 className="flex items-center gap-2 font-bold text-gray-900 mb-2">
-                                                    <BookOpen size={18} aria-hidden="true" />{' '}
-                                                    Definition
+                                                    <BookOpen size={18} aria-hidden="true" /> Definition
                                                 </h3>
-                                                <p className="text-gray-700 leading-relaxed">
-                                                    {d.aiwaExtract}
-                                                </p>
+                                                <p className="text-gray-700 leading-relaxed">{d.aiwaExtract}</p>
                                             </div>
                                         )}
 
                                         <div className="border-t border-b border-gray-100 py-4">
                                             <RelatedList title="Synonyms" items={d.aiwaSynonyms} />
                                             <RelatedList title="Antonyms" items={d.aiwaAntonyms} />
-                                            <RelatedList
-                                                title="Phonetic Variants"
-                                                items={d.aiwaPhoneticVariants}
-                                            />
+                                            <RelatedList title="Phonetic Variants" items={d.aiwaPhoneticVariants} />
                                         </div>
 
-                                        {d.aiwaExampleSentences &&
-                                            d.aiwaExampleSentences.length > 0 && (
-                                                <div>
-                                                    <h3 className="font-bold text-gray-900 mb-3">
-                                                        Examples
-                                                    </h3>
-                                                    <div className="space-y-4">
-                                                        {d.aiwaExampleSentences.map((ex, idx) => (
-                                                            <div
-                                                                key={idx}
-                                                                className="pl-4 border-l-4 border-gray-200"
-                                                            >
-                                                                <p className="text-lg text-gray-900 mb-1">
-                                                                    {ex.sentenceExample}
-                                                                </p>
-                                                                {ex.sentencePhoneticPronunciation && (
-                                                                    <p className="text-xs text-gray-400 font-mono mb-1">
-                                                                        {
-                                                                            ex.sentencePhoneticPronunciation
-                                                                        }
-                                                                    </p>
-                                                                )}
-                                                                <p className="text-gray-500 italic">
-                                                                    {language === 'en'
-                                                                        ? ex.sentenceEnglishTranslation
-                                                                        : ex.sentenceFrenchTranslation}
-                                                                </p>
-                                                            </div>
-                                                        ))}
-                                                    </div>
+                                        {d.aiwaExampleSentences && d.aiwaExampleSentences.length > 0 && (
+                                            <div>
+                                                <h3 className="font-bold text-gray-900 mb-3">Examples</h3>
+                                                <div className="space-y-4">
+                                                    {d.aiwaExampleSentences.map((ex, idx) => (
+                                                        <div key={idx} className="pl-4 border-l-4 border-gray-200">
+                                                            <p className="text-lg text-gray-900 mb-1">{ex.sentenceExample}</p>
+                                                            {ex.sentencePhoneticPronunciation && (
+                                                                <p className="text-xs text-gray-400 font-mono mb-1">{ex.sentencePhoneticPronunciation}</p>
+                                                            )}
+                                                            <p className="text-gray-500 italic">
+                                                                {language === 'en' ? ex.sentenceEnglishTranslation : ex.sentenceFrenchTranslation}
+                                                            </p>
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                            )}
+                                            </div>
+                                        )}
                                         {d.aiwaOrigin && (
                                             <div className="text-sm text-gray-500 border-t pt-4 mt-4">
-                                                <span className="font-bold text-gray-700">
-                                                    Origin:
-                                                </span>{' '}
-                                                {d.aiwaOrigin}
+                                                <span className="font-bold text-gray-700">Origin:</span> {d.aiwaOrigin}
                                             </div>
                                         )}
                                     </div>
@@ -404,13 +366,11 @@ export default function DictionaryApp({ appTitle }) {
 
     const { loading, error, data } = useQuery(GET_ALL_WORDS_INDEX, { client });
 
-    // Auto-hide scroll hint after 3 seconds
     useEffect(() => {
         const timer = setTimeout(() => setShowScrollHint(false), 3000);
         return () => clearTimeout(timer);
     }, []);
 
-    // FIXED: Search Logic Crash
     const filteredData = useMemo(() => {
         if (!data) return [];
         let entries = data.dictionaries.edges.map((edge) => edge.node);
@@ -419,7 +379,6 @@ export default function DictionaryApp({ appTitle }) {
             const lowerSearch = searchTerm.toLowerCase();
             entries = entries.filter((item) => {
                 const d = item.dictionaryEntryDetails;
-                // FIX: Use || '' to prevent crashing if fields are null
                 return (
                     (item.title || '').toLowerCase().includes(lowerSearch) ||
                     (d.aiwaSearchStringEnglish || '').toLowerCase().includes(lowerSearch) ||
@@ -430,25 +389,16 @@ export default function DictionaryApp({ appTitle }) {
         return entries;
     }, [data, searchTerm]);
 
-    // FIXED: Letter Jump Logic (Trimming whitespace)
-    const handleScrollToLetter = useCallback(
-        (char) => {
-            if (!virtuosoRef.current) return;
-
-            // Robust logic: Convert title to Uppercase, remove accents if possible, check startsWith
-            const index = filteredData.findIndex((item) => {
-                const cleanTitle = (item.title || '').trim().toUpperCase();
-                // Optional: normalize if you have accents (e.g. 'É' -> 'E')
-                // return cleanTitle.normalize("NFD").replace(/[\u0300-\u036f]/g, "").startsWith(char);
-                return cleanTitle.startsWith(char);
-            });
-
-            if (index !== -1) {
-                virtuosoRef.current.scrollToIndex({ index, align: 'start', behavior: 'auto' });
-            }
-        },
-        [filteredData]
-    );
+    const handleScrollToLetter = useCallback((char) => {
+        if (!virtuosoRef.current) return;
+        const index = filteredData.findIndex((item) => {
+            const cleanTitle = (item.title || '').trim().toUpperCase();
+            return cleanTitle.startsWith(char);
+        });
+        if (index !== -1) {
+            virtuosoRef.current.scrollToIndex({ index, align: 'start', behavior: 'auto' });
+        }
+    }, [filteredData]);
 
     if (loading)
         return (
@@ -460,14 +410,11 @@ export default function DictionaryApp({ appTitle }) {
 
     if (error) return <div className="p-4 text-red-500">Error: {error.message}</div>;
 
-    // NEW: Prefetch logic
     const prefetchWord = (slug) => {
-        // We use client.query directly.
-        // This fetches data into the Apollo Cache without triggering a UI loading state.
         client.query({
             query: GET_SINGLE_WORD_DETAILS,
             variables: { slug },
-            fetchPolicy: 'cache-first', // Only fetch if not already in memory
+            fetchPolicy: 'cache-first',
         });
     };
 
@@ -476,27 +423,18 @@ export default function DictionaryApp({ appTitle }) {
             <header className="bg-white border-b border-gray-200 z-20 shrink-0">
                 <div className="max-w-3xl mx-auto px-4 py-3">
                     <div className="flex justify-between items-center mb-3">
-                        <h1 className="text-xl font-bold tracking-tight text-gray-800">
-                            {renderTitle(appTitle)}
-                        </h1>
+                        <h1 className="text-xl font-bold tracking-tight text-gray-800">{renderTitle(appTitle)}</h1>
                         <button
                             onClick={() => setLanguage((l) => (l === 'en' ? 'fr' : 'en'))}
                             className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
-                            aria-label={`Switch to ${language === 'en' ? 'French' : 'English'} translation`}
                             type="button"
                         >
                             <Globe size={16} aria-hidden="true" /> {language === 'en' ? 'EN' : 'FR'}
                         </button>
                     </div>
                     <div className="relative">
-                        <label htmlFor="dictionary-search" className="sr-only">
-                            Search dictionary words
-                        </label>
-                        <Search
-                            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                            size={18}
-                            aria-hidden="true"
-                        />
+                        <label htmlFor="dictionary-search" className="sr-only">Search dictionary words</label>
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} aria-hidden="true" />
                         <input
                             id="dictionary-search"
                             type="search"
@@ -504,7 +442,6 @@ export default function DictionaryApp({ appTitle }) {
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full bg-gray-100 text-gray-900 pl-10 pr-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                            aria-label="Search dictionary words"
                         />
                     </div>
                 </div>
@@ -515,26 +452,11 @@ export default function DictionaryApp({ appTitle }) {
                     {filteredData.length} words found
                 </div>
 
-                {/* Top scroll fade indicator */}
-                <div
-                    className={`absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-gray-50 to-transparent pointer-events-none z-10 transition-opacity duration-300 ${scrollState.atTop ? 'opacity-0' : 'opacity-100'
-                        }`}
-                    aria-hidden="true"
-                />
+                <div className={`absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-gray-50 to-transparent pointer-events-none z-10 transition-opacity duration-300 ${scrollState.atTop ? 'opacity-0' : 'opacity-100'}`} aria-hidden="true" />
+                <div className={`absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-gray-50 via-gray-50/80 to-transparent pointer-events-none z-10 transition-opacity duration-300 ${scrollState.atBottom ? 'opacity-0' : 'opacity-100'}`} aria-hidden="true" />
 
-                {/* Bottom scroll fade indicator */}
-                <div
-                    className={`absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-gray-50 via-gray-50/80 to-transparent pointer-events-none z-10 transition-opacity duration-300 ${scrollState.atBottom ? 'opacity-0' : 'opacity-100'
-                        }`}
-                    aria-hidden="true"
-                />
-
-                {/* Initial scroll hint - mobile friendly */}
                 {showScrollHint && !scrollState.atBottom && filteredData.length > 5 && (
-                    <div
-                        className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 pointer-events-none animate-bounce"
-                        aria-hidden="true"
-                    >
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 pointer-events-none animate-bounce" aria-hidden="true">
                         <div className="bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm font-medium">
                             <span>Scroll for more</span>
                             <ChevronDown size={16} />
@@ -559,52 +481,24 @@ export default function DictionaryApp({ appTitle }) {
                         <div
                             role="button"
                             tabIndex={0}
-                            onClick={() => {
-                                setSelectedWordTitle(word.title);
-                                setSelectedWordSlug(word.slug);
-                            }}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault();
-                                    setSelectedWordTitle(word.title);
-                                    setSelectedWordSlug(word.slug);
-                                }
-                                prefetchWord(word.slug);
-                            }}
-                            // NEW: Prefetch on hover (Desktop)
+                            onClick={() => { setSelectedWordTitle(word.title); setSelectedWordSlug(word.slug); }}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedWordTitle(word.title); setSelectedWordSlug(word.slug); } prefetchWord(word.slug); }}
                             onMouseEnter={() => prefetchWord(word.slug)}
-                            // NEW: Prefetch on touch start (Mobile) - triggers before the 'click' registers
                             onTouchStart={() => prefetchWord(word.slug)}
                             className="px-4 py-4 border-b border-gray-100 bg-white hover:bg-blue-50 cursor-pointer active:bg-blue-100 transition-colors"
                             aria-label={`View details for ${word.title}`}
                         >
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <h3 className="text-lg font-bold text-gray-900">
-                                        {word.title}
-                                    </h3>
+                                    <h3 className="text-lg font-bold text-gray-900">{word.title}</h3>
                                     <p className="text-gray-500 text-sm mt-0.5 line-clamp-1">
-                                        {language === 'en'
-                                            ? word.dictionaryEntryDetails.aiwaTranslationEnglish
-                                            : word.dictionaryEntryDetails.aiwaTranslationFrench}
+                                        {language === 'en' ? word.dictionaryEntryDetails.aiwaTranslationEnglish : word.dictionaryEntryDetails.aiwaTranslationFrench}
                                     </p>
                                 </div>
                                 <div className="flex gap-2 items-center">
-                                    {word.dictionaryEntryDetails?.aiwaWordPhoto?.node && (
-                                        <ImageIcon
-                                            className="text-blue-500"
-                                            size={16}
-                                            aria-hidden="true"
-                                        />
-                                    )}
-                                    <span
-                                        className="text-xs font-semibold text-gray-400 px-2 py-1 bg-gray-100 rounded"
-                                        aria-label={`Part of speech: ${word.dictionaryEntryDetails.aiwaPartOfSpeech}`}
-                                    >
-                                        {word.dictionaryEntryDetails.aiwaPartOfSpeech?.substring(
-                                            0,
-                                            3
-                                        )}
+                                    {word.dictionaryEntryDetails?.aiwaWordPhoto?.node && <ImageIcon className="text-blue-500" size={16} aria-hidden="true" />}
+                                    <span className="text-xs font-semibold text-gray-400 px-2 py-1 bg-gray-100 rounded">
+                                        {word.dictionaryEntryDetails.aiwaPartOfSpeech?.substring(0, 3)}
                                     </span>
                                 </div>
                             </div>
