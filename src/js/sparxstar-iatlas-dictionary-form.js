@@ -115,7 +115,7 @@ jQuery(document).ready(function ($) {
                 url: sparxstarDict.ajaxurl,
                 type: 'POST',
                 data: {
-                    action: 'aiwa_dict_search_synonyms',
+                    action: 'sparxIAtlas_dict_search_synonyms',
                     nonce: sparxstarDict.nonce,
                     search: searchTerm,
                 },
@@ -215,7 +215,7 @@ jQuery(document).ready(function ($) {
             type: 'POST',
             data:
                 formData +
-                '&action=aiwa_dict_form_submit&nonce=' +
+                '&action=sparxIAtlas_dict_form_submit&nonce=' +
                 sparxstarDict.nonce +
                 '&entry_id=' +
                 entryId,

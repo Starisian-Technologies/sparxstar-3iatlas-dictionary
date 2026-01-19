@@ -10,26 +10,18 @@ namespace Starisian\Sparxstar\IAtlas\frontend;
 
 use WP_Query;
 use function defined;
-use function add_action;
-use function has_shortcode;
+use function esc_attr;
+use function esc_html;
+use function esc_textarea;
+use function esc_url;
+use function get_edit_post_link;
 use function get_post;
-use function wp_enqueue_media;
-use function wp_enqueue_style;
-use function wp_enqueue_script;
-use function wp_localize_script;
-use function admin_url;
-use function wp_create_nonce;
-use function is_user_logged_in;
-use function wp_get_current_user;
-use function current_user_can;
-use function sanitize_text_field;
-use function wp_unslash;
+use function get_post_meta;
+use function has_shortcode;
+use function is_singular;
+use function is_user_logged_in; 
 use function intval;
-use function is_wp_error;
-use function wp_insert_post;
-use function update_post_meta; 
-
-
+use function is_string;
 
 // Prevent direct access
 if ( ! defined( 'ABSPATH' ) ) {

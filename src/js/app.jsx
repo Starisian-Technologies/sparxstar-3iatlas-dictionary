@@ -182,15 +182,15 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
             aria-modal="true"
             aria-labelledby="modal-title"
         >
-            {/* Backdrop: Explicit Z-Index 40 */}
+            {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/50 pointer-events-auto transition-opacity z-40 backdrop-blur-sm"
+                className="absolute inset-0 bg-black/25 pointer-events-auto transition-opacity backdrop-blur-sm"
                 onClick={onClose}
                 aria-hidden="true"
             />
 
-            {/* Card: Explicit Z-Index 50 (Above Backdrop) */}
-            <div className="relative z-50 bg-white w-full md:w-[600px] h-[85vh] md:h-[80vh] rounded-t-2xl md:rounded-2xl shadow-2xl pointer-events-auto flex flex-col overflow-hidden animate-slide-up">
+            {/* Modal Card */}
+            <div className="relative z-10 bg-white w-full md:w-[600px] h-[85vh] md:h-[80vh] rounded-t-2xl md:rounded-2xl shadow-2xl pointer-events-auto flex flex-col overflow-hidden animate-slide-up">
                 {loading && (
                     <div className="h-full flex flex-col items-center justify-center space-y-4">
                         <Loader2 className="animate-spin text-blue-600" size={40} />
