@@ -42,10 +42,7 @@ module.exports = {
                 use: {
                     loader: 'babel-loader',
                     options: {
-                        presets: [
-                            ['@babel/preset-env', { modules: false }],
-                            '@babel/preset-react',
-                        ],
+                        presets: [['@babel/preset-env', { modules: false }], '@babel/preset-react'],
                         sourceType: 'unambiguous',
                         cacheDirectory: false,
                     },

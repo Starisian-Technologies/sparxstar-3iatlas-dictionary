@@ -14,7 +14,7 @@ import {
     Loader2,
     ChevronDown,
 } from 'lucide-react';
-import '../css/sparxstar-3iatlas-dictionary.css';
+import '../css/sparxstar-3iatlas-dictionary-style.css';
 
 // --- HELPERS ---
 const renderTitle = (title) => {
