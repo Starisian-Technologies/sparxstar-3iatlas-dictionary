@@ -541,7 +541,7 @@
             },
             {
                 "key": "field_696b19f2bf3c9",
-                "label": "Phonetic variants",
+                "label": "Phonetic Variants",
                 "name": "aiwa_phonetic_variants",
                 "aria-label": "",
                 "type": "relationship",

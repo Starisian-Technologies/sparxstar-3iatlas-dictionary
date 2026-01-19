@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 // Consolidated Import to satisfy Webpack
 import { ApolloClient, InMemoryCache, gql, ApolloProvider, useQuery } from '@apollo/client';
@@ -14,7 +14,7 @@ import {
     Loader2,
     ChevronDown,
 } from 'lucide-react';
-import '../css/sparxstar-3iatlas-dictionary-style.css';
+import '../css/sparxstar-3iatlas-dictionary.css';
 
 // --- HELPERS ---
 const renderTitle = (title) => {
@@ -35,16 +35,29 @@ const GRAPHQL_ENDPOINT = settings.graphqlUrl || '/graphql';
 
 const client = new ApolloClient({
     uri: GRAPHQL_ENDPOINT,
-    cache: new InMemoryCache(),
+    cache: new InMemoryCache({
+        typePolicies: {
+            // FIX: Tell Apollo how to merge paginated results if we ever split queries
+            Query: {
+                fields: {
+                    dictionaries: {
+                        merge(existing = {}, incoming) {
+                            return { ...existing, ...incoming };
+                        },
+                    },
+                },
+            },
+        },
+    }),
     defaultOptions: {
         query: { fetchPolicy: 'cache-first' },
         watchQuery: { fetchPolicy: 'cache-first' },
     },
 });
 
-// --- QUERY 1: LIST VIEW ---
+// --- QUERY 1: LIST VIEW (Increased to 20k to be safe) ---
 const GET_ALL_WORDS_INDEX = gql`
-    query GetWordIndex($first: Int = 10000) {
+    query GetWordIndex($first: Int = 20000) {
         dictionaries(first: $first, where: { orderby: { field: TITLE, order: ASC } }) {
             edges {
                 node {
@@ -102,6 +115,7 @@ const GET_SINGLE_WORD_DETAILS = gql`
                 aiwaSynonyms {
                     nodes {
                         ... on Dictionary {
+                            id
                             title
                             slug
                         }
@@ -110,6 +124,7 @@ const GET_SINGLE_WORD_DETAILS = gql`
                 aiwaAntonyms {
                     nodes {
                         ... on Dictionary {
+                            id
                             title
                             slug
                         }
@@ -118,6 +133,7 @@ const GET_SINGLE_WORD_DETAILS = gql`
                 aiwaPhoneticVariants {
                     nodes {
                         ... on Dictionary {
+                            id
                             title
                             slug
                         }
@@ -184,13 +200,13 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
         >
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/25 pointer-events-auto transition-opacity backdrop-blur-sm"
+                className="absolute inset-0 bg-black/50 pointer-events-auto transition-opacity z-[9998] backdrop-blur-sm"
                 onClick={onClose}
                 aria-hidden="true"
             />
 
             {/* Modal Card */}
-            <div className="relative z-10 bg-white w-full md:w-[600px] h-[85vh] md:h-[80vh] rounded-t-2xl md:rounded-2xl shadow-2xl pointer-events-auto flex flex-col overflow-hidden animate-slide-up">
+            <div className="relative z-[9999] bg-white w-full md:w-[600px] h-[85vh] md:h-[80vh] rounded-t-2xl md:rounded-2xl shadow-2xl pointer-events-auto flex flex-col overflow-hidden animate-slide-up">
                 {loading && (
                     <div className="h-full flex flex-col items-center justify-center space-y-4">
                         <Loader2 className="animate-spin text-blue-600" size={40} />
@@ -230,7 +246,10 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                                     <div className="p-6 border-b border-gray-100 flex justify-between items-start bg-white z-10 shrink-0">
                                         <div>
                                             <div className="flex items-center gap-3">
-                                                <h2 id="modal-title" className="text-3xl font-bold text-gray-900">
+                                                <h2
+                                                    id="modal-title"
+                                                    className="text-3xl font-bold text-gray-900"
+                                                >
                                                     {word.title}
                                                 </h2>
                                                 {d.aiwaAudioFile?.node?.mediaItemUrl && (
@@ -271,7 +290,10 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                                             <h3 className="text-sm uppercase tracking-wide text-blue-500 font-bold mb-1">
                                                 {language === 'en' ? 'English' : 'Français'}
                                             </h3>
-                                            <p className="text-2xl text-blue-900 font-medium" lang={language === 'en' ? 'en' : 'fr'}>
+                                            <p
+                                                className="text-2xl text-blue-900 font-medium"
+                                                lang={language === 'en' ? 'en' : 'fr'}
+                                            >
                                                 {translation || 'No translation available'}
                                             </p>
                                         </div>
@@ -279,7 +301,8 @@ const WordDetailModal = ({ slug, initialTitle, language, onClose }) => {
                                         {d.aiwaExtract && (
                                             <div>
                                                 <h3 className="flex items-center gap-2 font-bold text-gray-900 mb-2">
-                                                    <BookOpen size={18} aria-hidden="true" /> Definition
+                                                    <BookOpen size={18} aria-hidden="true" />{' '}
+                                                    Definition
                                                 </h3>
                                                 <p className="text-gray-700 leading-relaxed">
                                                     {d.aiwaExtract}
@@ -408,19 +431,24 @@ export default function DictionaryApp({ appTitle }) {
     }, [data, searchTerm]);
 
     // FIXED: Letter Jump Logic (Trimming whitespace)
-    const handleScrollToLetter = (char) => {
-        if (!virtuosoRef.current) return;
+    const handleScrollToLetter = useCallback(
+        (char) => {
+            if (!virtuosoRef.current) return;
 
-        // Find index of first word starting with char (Case insensitive, trimmed)
-        const index = filteredData.findIndex((item) => {
-            const cleanTitle = item.title.trim().toUpperCase();
-            return cleanTitle.startsWith(char);
-        });
+            // Robust logic: Convert title to Uppercase, remove accents if possible, check startsWith
+            const index = filteredData.findIndex((item) => {
+                const cleanTitle = (item.title || '').trim().toUpperCase();
+                // Optional: normalize if you have accents (e.g. 'É' -> 'E')
+                // return cleanTitle.normalize("NFD").replace(/[\u0300-\u036f]/g, "").startsWith(char);
+                return cleanTitle.startsWith(char);
+            });
 
-        if (index !== -1) {
-            virtuosoRef.current.scrollToIndex({ index, align: 'start', behavior: 'auto' });
-        }
-    };
+            if (index !== -1) {
+                virtuosoRef.current.scrollToIndex({ index, align: 'start', behavior: 'auto' });
+            }
+        },
+        [filteredData]
+    );
 
     if (loading)
         return (
@@ -520,11 +548,11 @@ export default function DictionaryApp({ appTitle }) {
                     totalCount={filteredData.length}
                     className="h-full w-full scrollbar-hide"
                     atTopStateChange={(atTop) => {
-                        setScrollState(prev => ({ ...prev, atTop }));
+                        setScrollState((prev) => ({ ...prev, atTop }));
                         if (!atTop) setShowScrollHint(false);
                     }}
                     atBottomStateChange={(atBottom) => {
-                        setScrollState(prev => ({ ...prev, atBottom }));
+                        setScrollState((prev) => ({ ...prev, atBottom }));
                         if (atBottom) setShowScrollHint(false);
                     }}
                     itemContent={(index, word) => (
@@ -563,9 +591,16 @@ export default function DictionaryApp({ appTitle }) {
                                 </div>
                                 <div className="flex gap-2 items-center">
                                     {word.dictionaryEntryDetails?.aiwaWordPhoto?.node && (
-                                        <ImageIcon className="text-blue-500" size={16} aria-hidden="true" />
+                                        <ImageIcon
+                                            className="text-blue-500"
+                                            size={16}
+                                            aria-hidden="true"
+                                        />
                                     )}
-                                    <span className="text-xs font-semibold text-gray-400 px-2 py-1 bg-gray-100 rounded" aria-label={`Part of speech: ${word.dictionaryEntryDetails.aiwaPartOfSpeech}`}>
+                                    <span
+                                        className="text-xs font-semibold text-gray-400 px-2 py-1 bg-gray-100 rounded"
+                                        aria-label={`Part of speech: ${word.dictionaryEntryDetails.aiwaPartOfSpeech}`}
+                                    >
                                         {word.dictionaryEntryDetails.aiwaPartOfSpeech?.substring(
                                             0,
                                             3

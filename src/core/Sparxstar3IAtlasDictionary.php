@@ -24,7 +24,7 @@ use Throwable;
 use RuntimeException;
 use function defined;
 
-if (! defined('ABSPATH')) {
+if (!defined('ABSPATH')) {
     exit;
 }
 
@@ -143,7 +143,7 @@ final class Sparxstar3IAtlasDictionary
                 'sparxstar-dictionary-app',
                 'sparxstarDictionarySettings',
                 [
-                    'root_id'    => 'sparxstar-dictionary-root',
+                    'root_id' => 'sparxstar-dictionary-root',
                     'graphqlUrl' => $graphql_url,
                 ]
             );
@@ -174,7 +174,7 @@ final class Sparxstar3IAtlasDictionary
             }
 
             // Only load frontend components if not in admin area
-            if (! is_admin()) {
+            if (!is_admin()) {
                 if (class_exists(Sparxstar3IAtlasDictionaryCore::class)) {
                     // Instantiate Core logic
                     Sparxstar3IAtlasDictionaryCore::sparxIAtlas_get_instance();
