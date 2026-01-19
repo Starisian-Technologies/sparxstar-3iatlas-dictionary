@@ -142,12 +142,10 @@ final class Sparxstar3IAtlasDictionaryCore
      * @param mixed $info The info about the query.
      * @return int The new limit.
      */
-    public function sparxIAtlas_increase_query_limit(int $amount, $source, array $args, $context, $info): int
-    {
-        // Check if we are querying the 'dictionaries' connection
-        // We look at the field name in the GraphQL query
-        if (isset($info->fieldName) && 'dictionaries' === $info->fieldName) {
-            return 25000; // Set high enough to cover future growth
+     public function sparxIAtlas_increase_query_limit( int $amount, $source, array $args, $context, $info ): int {
+        // Allow dictionary queries to fetch up to 2000 items (covering our 1000 item chunks)
+        if ( isset( $info->fieldName ) && 'dictionaries' === $info->fieldName ) {
+            return 2000;
         }
 
         return $amount;
