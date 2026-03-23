@@ -189,9 +189,16 @@ class Sparxstar3IAtlasAutoLinker {
             // Group 5: The Match (Unicode-aware word boundaries)
             $pattern = '/(<a\b[^>]*>.*?<\/a>)|(<h[1-6]\b[^>]*>.*?<\/h[1-6]>)|(<script\b[^>]*>.*?<\/script>)|(<style\b[^>]*>.*?<\/style>)|((?<!\p{L})(?:' . $term_group . ')(?!\p{L}))/isu';
 
+            // Precompute a lowercase → [original_term, url] map so the callback
+            // resolves each match in O(1) instead of scanning all chunk terms.
+            $lowercase_map = [];
+            foreach ( $chunk as $term => $url ) {
+                $lowercase_map[ mb_strtolower( $term, 'UTF-8' ) ] = [ 'term' => $term, 'url' => $url ];
+            }
+
             $result = preg_replace_callback(
                 $pattern,
-                function ( $matches ) use ( $chunk, $current_post_id ) {
+                function ( $matches ) use ( $lowercase_map, $current_post_id ) {
                     // If groups 1-4 matched (Skip tags), return original text unchanged
                     if ( ! empty( $matches[1] ) || ! empty( $matches[2] ) || ! empty( $matches[3] ) || ! empty( $matches[4] ) ) {
                         return $matches[0];
@@ -199,31 +206,26 @@ class Sparxstar3IAtlasAutoLinker {
 
                     // Group 5 matched — a dictionary word
                     $matched_word = $matches[0];
+                    $entry        = $lowercase_map[ mb_strtolower( $matched_word, 'UTF-8' ) ] ?? null;
 
-                    // Look up URL (case-insensitive, multibyte-safe)
-                    foreach ( $chunk as $term => $url ) {
-                        if ( mb_strtolower( $term, 'UTF-8' ) === mb_strtolower( $matched_word, 'UTF-8' ) ) {
-
-                            // Self-reference check: do not link a page to itself.
-                            // url_to_postid() is heavy, but the final output is cached
-                            // via transient so this only runs once per post.
-                            $linked_post_id = url_to_postid( $url );
-
-                            if ( $linked_post_id === $current_post_id ) {
-                                return $matched_word;
-                            }
-
-                            return sprintf(
-                                '<a href="%s" class="aiwa-dictionary-link" title="Define: %s" data-word="%s">%s</a>',
-                                esc_url( $url ),
-                                esc_attr( $term ),
-                                esc_attr( $term ),
-                                $matched_word // Preserve original casing
-                            );
-                        }
+                    if ( null === $entry ) {
+                        return $matched_word; // Fallback (should not be reached)
                     }
 
-                    return $matched_word; // Fallback (should not be reached)
+                    // Self-reference check: do not link a page to itself.
+                    // url_to_postid() is heavy, but the final output is cached
+                    // via transient so this only runs once per post.
+                    if ( url_to_postid( $entry['url'] ) === $current_post_id ) {
+                        return $matched_word;
+                    }
+
+                    return sprintf(
+                        '<a href="%s" class="aiwa-dictionary-link" title="Define: %s" data-word="%s">%s</a>',
+                        esc_url( $entry['url'] ),
+                        esc_attr( $entry['term'] ),
+                        esc_attr( $entry['term'] ),
+                        $matched_word // Preserve original casing
+                    );
                 },
                 $content
             );

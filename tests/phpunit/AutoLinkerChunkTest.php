@@ -75,34 +75,30 @@ if ( ! defined( 'ABSPATH' ) ) {
 // current working code (not a build artefact copy).
 require_once __DIR__ . '/../../src/includes/Sparxstar3IAtlasAutoLinker.php';
 
-// ---------------------------------------------------------------------------
-// Helper: build a term list of $count terms, optionally with a specific term.
-// ---------------------------------------------------------------------------
-
-/**
- * @return array<string,string>
- */
-function build_terms( int $count, string $extra_term = '', string $extra_url = '' ): array {
-    $terms = [];
-
-    // Build from longest to shortest so the sort order in get_dictionary_terms()
-    // is respected for the test fixtures.
-    for ( $i = $count; $i >= 1; $i-- ) {
-        $term        = 'TestTerm' . str_pad( (string) $i, 4, '0', STR_PAD_LEFT );
-        $terms[$term] = "https://example.com/term-{$i}/";
-    }
-
-    if ( '' !== $extra_term ) {
-        // Prepend so it appears in the first chunk (longest-first ordering).
-        $terms = array_merge( [ $extra_term => $extra_url ], $terms );
-    }
-
-    return $terms;
-}
-
-// ---------------------------------------------------------------------------
-
 final class AutoLinkerChunkTest extends TestCase {
+
+    /**
+     * Build a term list of $count terms, optionally with a specific term prepended.
+     *
+     * @return array<string,string>
+     */
+    private static function build_terms( int $count, string $extra_term = '', string $extra_url = '' ): array {
+        $terms = [];
+
+        // Build from longest to shortest so the sort order in get_dictionary_terms()
+        // is respected for the test fixtures.
+        for ( $i = $count; $i >= 1; $i-- ) {
+            $term         = 'TestTerm' . str_pad( (string) $i, 4, '0', STR_PAD_LEFT );
+            $terms[$term] = "https://example.com/term-{$i}/";
+        }
+
+        if ( '' !== $extra_term ) {
+            // Prepend so it appears in the first chunk (longest-first ordering).
+            $terms = array_merge( [ $extra_term => $extra_url ], $terms );
+        }
+
+        return $terms;
+    }
 
     /**
      * Invoke the private process_replacements() method via reflection.
@@ -148,7 +144,7 @@ final class AutoLinkerChunkTest extends TestCase {
     // -----------------------------------------------------------------------
     public function testLargeTermListLinksWithoutPcreError(): void {
         // 500 terms — well above the REGEX_CHUNK_SIZE = 200 constant.
-        $terms   = build_terms( 500, 'Pharmacy', 'https://example.com/pharmacy/' );
+        $terms   = self::build_terms( 500, 'Pharmacy', 'https://example.com/pharmacy/' );
         $content = '<p>Pharmacy is an important subject.</p>';
 
         $result  = $this->invokeProcessReplacements( $content, $terms );
@@ -208,7 +204,7 @@ final class AutoLinkerChunkTest extends TestCase {
     // -----------------------------------------------------------------------
     public function testVeryLargeTermListLinksLastChunkTerm(): void {
         // 1,200 entries puts the last entry in the 6th chunk (chunk index 5).
-        $terms      = build_terms( 1200 );
+        $terms      = self::build_terms( 1200 );
         $last_term  = 'TestTerm0001'; // lowest numeric suffix, so last in longest-first order
         $last_url   = 'https://example.com/term-1/';
 
