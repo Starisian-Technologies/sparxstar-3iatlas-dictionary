@@ -22,10 +22,10 @@ use Starisian\Sparxstar\IAtlas\includes\Sparxstar3IAtlasAutoLinker;
 // ---------------------------------------------------------------------------
 
 if ( ! function_exists( 'add_filter' ) ) {
-    function add_filter(): void {}
+    function add_filter( ...$args ): void {}
 }
 if ( ! function_exists( 'add_action' ) ) {
-    function add_action(): void {}
+    function add_action( ...$args ): void {}
 }
 if ( ! function_exists( 'get_the_ID' ) ) {
     /** Returns a sentinel post ID that never matches a linked post. */
