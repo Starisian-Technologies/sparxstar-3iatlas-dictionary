@@ -175,7 +175,7 @@ class Sparxstar3IAtlasAutoLinker {
         // well within PCRE's size limit (avoids "regular expression is too large").
         $chunks = array_chunk( $terms, self::REGEX_CHUNK_SIZE, true );
 
-        foreach ( $chunks as $chunk ) {
+        foreach ( $chunks as $chunk_index => $chunk ) {
             $escaped_terms = array_map(
                 function ( $term ) {
                     return preg_quote( $term, '/' );
@@ -231,7 +231,9 @@ class Sparxstar3IAtlasAutoLinker {
             // If a chunk fails (e.g. PCRE backtrack limit), log and preserve
             // the content as-is for this chunk rather than silently dropping output.
             if ( null === $result ) {
-                error_log( 'Auto-linker regex failed on chunk. PCRE error code: ' . preg_last_error() );
+                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                    error_log( '[Sparxstar 3iAtlas Dictionary]: Auto-linker regex failed on chunk ' . $chunk_index . '. PCRE error code: ' . preg_last_error() );
+                }
                 continue;
             }
 
