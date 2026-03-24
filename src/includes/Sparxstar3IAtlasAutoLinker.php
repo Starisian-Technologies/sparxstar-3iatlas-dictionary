@@ -34,6 +34,9 @@ class Sparxstar3IAtlasAutoLinker {
 
     private const SPARXSTAR_CACHE_KEY = 'sparxstar_3iatlas_dictionary';
 
+    // Max terms per regex pass. Keeps each compiled pattern well under PCRE size limits.
+    private const REGEX_CHUNK_SIZE = 200;
+
     private int $post_cache_expires;
     private int $term_cache_expires;
 
@@ -141,17 +144,23 @@ class Sparxstar3IAtlasAutoLinker {
     }
 
     /**
-     * Processes content turning matched terms into hyperlinks
-     * 
-     * Regex (unicode optimized) Explanation:
-     * Group 1: <a ...>...</a> (Skip existing links)
+     * Processes content turning matched terms into hyperlinks.
+     *
+     * Terms are processed in chunks of REGEX_CHUNK_SIZE to prevent PCRE from
+     * failing with "regular expression is too large" when the dictionary is
+     * large (e.g. 12,000+ words). Each chunk produces a fresh preg_replace_callback
+     * call. Subsequent chunks safely skip already-linked text because group 1 of
+     * the pattern matches existing <a> tags and returns them unchanged.
+     *
+     * Regex (unicode optimized) Explanation per chunk:
+     * Group 1: <a ...>...</a>           (Skip existing links)
      * Group 2: <h[1-6] ...>...</h[1-6]> (Skip headings)
-     * Group 3: <script ...>...</script> (Skip scripts)
-     * Group 4: <style ...>...</style> (Skip styles)
-     * Group 5: (\p{L})(?:' . $term_group . ')(?=\P{L}|$) (Match whole words only)
+     * Group 3: <script ...>...</script>  (Skip scripts)
+     * Group 4: <style ...>...</style>    (Skip styles)
+     * Group 5: (?<!\p{L})TERM(?!\p{L})  (Match whole words only, Unicode-aware)
      *
      * @param string $content
-     * @param array  $terms
+     * @param array  $terms  Associative array of term => URL, sorted longest-first.
      * @return string
      */
     private function process_replacements( string $content, array $terms ): string {
@@ -160,72 +169,80 @@ class Sparxstar3IAtlasAutoLinker {
             return $content;
         }
 
-        // Prepare terms for Regex: Escape chars
-        $escaped_terms = array_map(
-            function ( $term ) {
-                return preg_quote( $term, '/' );
-            },
-            array_keys( $terms ) 
-        );
-        
-        $term_group = implode( '|', $escaped_terms );
-
-        // 1. Get the current post's ID for self-reference check
         $current_post_id = get_the_ID();
 
-        // 2. Define the Regex Pattern
-        // Group 1-4: Skip tags (A, H1-6, Script, Style)
-        // Group 5: The Match (Unicode aware boundaries)
-        $pattern = '/(<a\b[^>]*>.*?<\/a>)|(<h[1-6]\b[^>]*>.*?<\/h[1-6]>)|(<script\b[^>]*>.*?<\/script>)|(<style\b[^>]*>.*?<\/style>)|((?<!\p{L})(?:' . $term_group . ')(?!\p{L}))/isu';
+        // Split the full term list into chunks so each compiled regex stays
+        // well within PCRE's size limit (avoids "regular expression is too large").
+        $chunks = array_chunk( $terms, self::REGEX_CHUNK_SIZE, true );
 
-        $ret = preg_replace_callback(
-            $pattern,
-            function ( $matches ) use ( $terms, $current_post_id ) {
-                // If groups 1-4 matched (Skip tags), return original text unchanged
-                if ( ! empty( $matches[1] ) || ! empty( $matches[2] ) || ! empty( $matches[3] ) || ! empty( $matches[4] ) ) {
-                    return $matches[0];
-                }
+        foreach ( $chunks as $chunk_index => $chunk ) {
+            $escaped_terms = array_map(
+                function ( $term ) {
+                    return preg_quote( $term, '/' );
+                },
+                array_keys( $chunk )
+            );
 
-                // Group 5 matched! (Dictionary Word)
-                $matched_word = $matches[0];
-            
-                // Look up URL (Case-insensitive)
-                foreach ( $terms as $term => $url ) {
-                    // Use multibyte safe comparison for Unicode strings
-                    if ( mb_strtolower( $term, 'UTF-8' ) === mb_strtolower( $matched_word, 'UTF-8' ) ) {
-                    
-                        // Robust Self-Reference Check
-                        // Note: url_to_postid is heavy, but since this result is cached via transient, it is acceptable.
-                        $linked_post_id = url_to_postid( $url );
+            $term_group = implode( '|', $escaped_terms );
 
-                        if ( $linked_post_id === $current_post_id ) {
-                            return $matched_word;
-                        }
+            // Group 1-4: Skip tags (A, H1-6, Script, Style)
+            // Group 5: The Match (Unicode-aware word boundaries)
+            $pattern = '/(<a\b[^>]*>.*?<\/a>)|(<h[1-6]\b[^>]*>.*?<\/h[1-6]>)|(<script\b[^>]*>.*?<\/script>)|(<style\b[^>]*>.*?<\/style>)|((?<!\p{L})(?:' . $term_group . ')(?!\p{L}))/isu';
 
-                        return sprintf( 
-                            '<a href="%s" class="aiwa-dictionary-link" title="Define: %s" data-word="%s">%s</a>', 
-                            esc_url( $url ), 
-                            esc_attr( $term ),
-                            esc_attr( $term ),
-                            $matched_word // Preserve original casing
-                        );
+            // Precompute a lowercase → [original_term, url] map so the callback
+            // resolves each match in O(1) instead of scanning all chunk terms.
+            $lowercase_map = [];
+            foreach ( $chunk as $term => $url ) {
+                $lowercase_map[ mb_strtolower( $term, 'UTF-8' ) ] = [ 'term' => $term, 'url' => $url ];
+            }
+
+            $result = preg_replace_callback(
+                $pattern,
+                function ( $matches ) use ( $lowercase_map, $current_post_id ) {
+                    // If groups 1-4 matched (Skip tags), return original text unchanged
+                    if ( ! empty( $matches[1] ) || ! empty( $matches[2] ) || ! empty( $matches[3] ) || ! empty( $matches[4] ) ) {
+                        return $matches[0];
                     }
+
+                    // Group 5 matched — a dictionary word
+                    $matched_word = $matches[0];
+                    $entry        = $lowercase_map[ mb_strtolower( $matched_word, 'UTF-8' ) ] ?? null;
+
+                    if ( null === $entry ) {
+                        return $matched_word; // Fallback (should not be reached)
+                    }
+
+                    // Self-reference check: do not link a page to itself.
+                    // url_to_postid() is heavy, but the final output is cached
+                    // via transient so this only runs once per post.
+                    if ( url_to_postid( $entry['url'] ) === $current_post_id ) {
+                        return $matched_word;
+                    }
+
+                    return sprintf(
+                        '<a href="%s" class="aiwa-dictionary-link" title="Define: %s" data-word="%s">%s</a>',
+                        esc_url( $entry['url'] ),
+                        esc_attr( $entry['term'] ),
+                        esc_attr( $entry['term'] ),
+                        $matched_word // Preserve original casing
+                    );
+                },
+                $content
+            );
+
+            // If a chunk fails (e.g. PCRE backtrack limit), log and preserve
+            // the content as-is for this chunk rather than silently dropping output.
+            if ( null === $result ) {
+                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                    error_log( '[Sparxstar 3iAtlas Dictionary]: Auto-linker regex failed on chunk ' . $chunk_index . '. PCRE error code: ' . preg_last_error() );
                 }
+                continue;
+            }
 
-                return $matched_word; // Fallback
-            },
-            $content 
-        );
-
-        // 3. Error Handling
-        // If PCRE limit is hit or error occurs, return original content
-        if ( null === $ret ) {
-            // Optional: Log error if debugging
-            error_log( 'Auto-linker regex failed. Code: ' . preg_last_error() );
-            return $content; 
+            $content = $result;
         }
 
-        return $ret;
+        return $content;
     }
     public function clear_post_cache( int $post_id = 0 ): void {
         if ( $post_id > 0 ) {
