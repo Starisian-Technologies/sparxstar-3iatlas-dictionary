@@ -5,7 +5,7 @@
         "build": "webpack",
         "watch": "webpack --watch",
         "lint": "npm run lint:js && npm run lint:css",
-        "lint:js": "eslint . --fix",
+        "lint:js": "eslint \"src/**/*.js\" --fix",
         "lint:css": "stylelint \"src/**/*.css\" --fix",
         "docs:js": "jsdoc -c jsdoc.json",
         "format": "prettier --write .",
