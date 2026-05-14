@@ -1,0 +1,1 @@
+- See the full [Technical specification](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/blob/main/DICTIONARY-DIRECTION-v2.md)
