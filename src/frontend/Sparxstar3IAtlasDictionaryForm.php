@@ -200,7 +200,7 @@ final class Sparxstar3IAtlasDictionaryForm {
                         if ( ! is_wp_error( $language_terms ) && is_array( $language_terms ) ) {
                             foreach ( $language_terms as $lang_term ) {
                                 $selected = ( ( $entry_data['language'] ?? '' ) === $lang_term->slug ) ? ' selected' : '';
-                                echo '<option value="' . esc_attr( $lang_term->slug ) . '"' . esc_attr( $selected ) . '>' . esc_html( $lang_term->name ) . '</option>';
+                                echo '<option value="' . esc_attr( $lang_term->slug ) . '"' . $selected . '>' . esc_html( $lang_term->name ) . '</option>';
                             }
                         }
                         ?>
@@ -477,8 +477,12 @@ final class Sparxstar3IAtlasDictionaryForm {
             wp_send_json_error( array( 'message' => 'Failed to create entry: ' . $new_post_id->get_error_message() ) );
         }
 
-        // Assign source language taxonomy term
-        wp_set_object_terms( $new_post_id, $language_slug, 'starmus_tax_language' );
+        // Assign source language taxonomy term.
+        $term_result = wp_set_object_terms( $new_post_id, $language_slug, 'starmus_tax_language' );
+        if ( is_wp_error( $term_result ) ) {
+            wp_delete_post( $new_post_id, true );
+            wp_send_json_error( array( 'message' => 'Failed to assign language: ' . $term_result->get_error_message() ) );
+        }
     
         // Save meta fields
         $meta_fields = array(
