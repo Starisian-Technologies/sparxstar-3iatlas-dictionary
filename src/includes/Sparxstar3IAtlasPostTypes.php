@@ -808,6 +808,7 @@ class Sparxstar3IAtlasPostTypes {
             1 => 'audio-recording',
             2 => 'starmus_transcript',
             3 => 'starmus_translate',
+            4 => 'aiwa-cpt-dictionary',
         ), array(
             'labels' => array(
                 'name' => 'Dialects',
@@ -867,6 +868,7 @@ class Sparxstar3IAtlasPostTypes {
             1 => 'audio-recording',
             2 => 'starmus_transcript',
             3 => 'starmus_translate',
+            4 => 'aiwa-cpt-dictionary',
         ), array(
             'labels' => array(
                 'name' => 'Languages',
