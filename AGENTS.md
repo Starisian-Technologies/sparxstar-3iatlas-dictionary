@@ -213,3 +213,4 @@ The React frontend (`src/js/app.jsx`) requires a full rebuild. Do not patch the 
 - Store dictionary data in localStorage or IndexedDB on the client
 - Add the `aiwa_sentence_ipa` field to the SCF JSON
 - Create a custom database table
+- Hardcode language names anywhere in the React app
