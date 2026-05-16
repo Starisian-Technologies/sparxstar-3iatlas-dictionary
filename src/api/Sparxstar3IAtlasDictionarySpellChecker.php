@@ -1,0 +1,99 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Batch spell checker for the 3iAtlas Dictionary.
+ *
+ * @package Starisian\Sparxstar\IAtlas\api
+ * @license Starisian Technologies Proprietary License (STPL)
+ */
+
+namespace Starisian\Sparxstar\IAtlas\api;
+
+if (!defined('ABSPATH')) {
+    exit(1);
+}
+
+final class Sparxstar3IAtlasDictionarySpellChecker
+{
+    private const REST_NAMESPACE = 'sparxstar/v1/dictionary';
+    private const CPT = 'aiwa-cpt-dictionary';
+    private const MAX_WORDS = 100;
+
+    public function register_hooks(): void
+    {
+        add_action('rest_api_init', array($this, 'register_rest_routes'));
+    }
+
+    public function register_rest_routes(): void
+    {
+        register_rest_route(
+            self::REST_NAMESPACE,
+            '/spell',
+            array(
+                'methods' => 'POST',
+                'callback' => array($this, 'handle_spell'),
+                'permission_callback' => '__return_true',
+            )
+        );
+    }
+
+    public function handle_spell(\WP_REST_Request $request): \WP_REST_Response|\WP_Error
+    {
+        $body = $request->get_json_params();
+        $lang = sanitize_text_field((string) ($body['lang'] ?? ''));
+        $words = $body['words'] ?? null;
+
+        if (!is_array($words) || empty($words)) {
+            return new \WP_Error('invalid_payload', 'words must be a non-empty array.', array('status' => 400));
+        }
+
+        $words = array_slice(array_map('sanitize_text_field', $words), 0, self::MAX_WORDS);
+        $results = array();
+
+        foreach ($words as $word) {
+            $word = trim($word);
+            if ('' === $word) {
+                continue;
+            }
+
+            $args = array(
+                'post_type' => self::CPT,
+                'post_status' => 'publish',
+                'posts_per_page' => 5,
+                'title' => $word,
+            );
+
+            if ('' !== $lang) {
+                $args['tax_query'] = array(
+                    array('taxonomy' => 'starmus_tax_language', 'field' => 'slug', 'terms' => $lang),
+                );
+            }
+
+            $exact = get_posts($args);
+            $valid = !empty($exact);
+            $suggestions = array();
+
+            if (!$valid) {
+                $fuzzy_args = $args;
+                unset($fuzzy_args['title']);
+                $fuzzy_args['s'] = $word;
+                $fuzzy_args['posts_per_page'] = 5;
+                $fuzzy = get_posts($fuzzy_args);
+                $suggestions = array_map(
+                    static fn(\WP_Post $post): string => $post->post_title,
+                    $fuzzy
+                );
+            }
+
+            $results[] = array(
+                'word' => $word,
+                'valid' => $valid,
+                'suggestions' => $suggestions,
+            );
+        }
+
+        return new \WP_REST_Response(array('results' => $results), 200);
+    }
+}
