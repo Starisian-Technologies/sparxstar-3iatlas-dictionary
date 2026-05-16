@@ -17,11 +17,15 @@ use function esc_url;
 use function get_edit_post_link;
 use function get_post;
 use function get_post_meta;
+use function get_term_by;
+use function get_terms;
 use function has_shortcode;
 use function is_singular;
-use function is_user_logged_in; 
+use function is_user_logged_in;
 use function intval;
 use function is_string;
+use function wp_get_object_terms;
+use function wp_set_object_terms;
 
 // Prevent direct access
 if ( ! defined( 'ABSPATH' ) ) {
@@ -136,7 +140,7 @@ final class Sparxstar3IAtlasDictionaryForm {
         $entry_data = array();
         if ( $entry_id ) {
             $post = get_post( $entry_id );
-            if ( ! $post || $post->post_type !== 'aiwa_cpt_dictionary' ) {
+            if ( ! $post || $post->post_type !== 'aiwa-cpt-dictionary' ) {
                 return '<div class="sparxstar-dict-notice error" role="alert">Invalid entry ID.</div>';
             }
 
@@ -158,6 +162,9 @@ final class Sparxstar3IAtlasDictionaryForm {
                 'extract'               => get_post_meta( $entry_id, 'aiwa_extract', true ),
                 'synonyms'              => get_post_meta( $entry_id, 'aiwa_synonyms', true ),
             );
+
+            $lang_terms             = wp_get_object_terms( $entry_id, 'starmus_tax_language', array( 'fields' => 'slugs' ) );
+            $entry_data['language'] = ( ! is_wp_error( $lang_terms ) && ! empty( $lang_terms ) ) ? $lang_terms[0] : '';
         }
     
         ob_start();
@@ -176,6 +183,29 @@ final class Sparxstar3IAtlasDictionaryForm {
             <!-- Basic Information Section -->
             <div class="aiwa-form-section">
                 <h3 class="section-title">Basic Information</h3>
+                
+                <div class="form-group">
+                    <label for="aiwa_language">Source Language *</label>
+                    <select id="aiwa_language" name="aiwa_language" required aria-required="true">
+                        <option value=""><?php echo esc_html( 'Select language...' ); ?></option>
+                        <?php
+                        $language_terms = get_terms(
+                            array(
+                                'taxonomy'   => 'starmus_tax_language',
+                                'hide_empty' => false,
+                                'orderby'    => 'name',
+                                'order'      => 'ASC',
+                            )
+                        );
+                        if ( ! is_wp_error( $language_terms ) && is_array( $language_terms ) ) {
+                            foreach ( $language_terms as $lang_term ) {
+                                $selected = ( ( $entry_data['language'] ?? '' ) === $lang_term->slug ) ? ' selected' : '';
+                                echo '<option value="' . esc_attr( $lang_term->slug ) . '"' . $selected . '>' . esc_html( $lang_term->name ) . '</option>';
+                            }
+                        }
+                        ?>
+                    </select>
+                </div>
                 
                 <div class="form-group">
                     <label for="aiwa_title">Word / Term *</label>
@@ -422,19 +452,36 @@ final class Sparxstar3IAtlasDictionaryForm {
         if ( empty( $_POST['aiwa_title'] ) ) {
             wp_send_json_error( array( 'message' => 'Word/Term is required.' ) );
         }
-    
+
+        // Validate language taxonomy term
+        $language_slug = sanitize_text_field( wp_unslash( $_POST['aiwa_language'] ?? '' ) );
+        if ( empty( $language_slug ) ) {
+            wp_send_json_error( array( 'message' => 'Source language is required.' ) );
+        }
+        $language_term = get_term_by( 'slug', $language_slug, 'starmus_tax_language' );
+        if ( ! $language_term ) {
+            wp_send_json_error( array( 'message' => 'Invalid language selection.' ) );
+        }
+
         // Create new post (always draft, never update existing)
         $post_data = array(
             'post_title'  => sanitize_text_field( $_POST['aiwa_title'] ),
-            'post_type'   => 'aiwa_cpt_dictionary',
+            'post_type'   => 'aiwa-cpt-dictionary',
             'post_status' => 'draft',
             'post_author' => $current_user->ID,
         );
-    
+
         $new_post_id = wp_insert_post( $post_data, true );
-    
+
         if ( is_wp_error( $new_post_id ) ) {
             wp_send_json_error( array( 'message' => 'Failed to create entry: ' . $new_post_id->get_error_message() ) );
+        }
+
+        // Assign source language taxonomy term.
+        $term_result = wp_set_object_terms( $new_post_id, $language_slug, 'starmus_tax_language' );
+        if ( is_wp_error( $term_result ) ) {
+            wp_delete_post( $new_post_id, true );
+            wp_send_json_error( array( 'message' => 'Failed to assign language: ' . $term_result->get_error_message() ) );
         }
     
         // Save meta fields
@@ -516,7 +563,7 @@ final class Sparxstar3IAtlasDictionaryForm {
         }
     
         $args = array(
-            'post_type'      => 'aiwa_cpt_dictionary',
+            'post_type'      => 'aiwa-cpt-dictionary',
             'post_status'    => 'publish',
             's'              => $search,
             'posts_per_page' => 10,
@@ -562,7 +609,7 @@ final class Sparxstar3IAtlasDictionaryForm {
     
         $post = get_post( $syn_id );
     
-        if ( ! $post || $post->post_type !== 'aiwa_cpt_dictionary' ) {
+        if ( ! $post || $post->post_type !== 'aiwa-cpt-dictionary' ) {
             wp_send_json_error( array( 'message' => 'Synonym not found.' ) );
         }
     
@@ -596,7 +643,7 @@ final class Sparxstar3IAtlasDictionaryForm {
     
         $post = get_post( $entry_id );
     
-        if ( ! $post || $post->post_type !== 'aiwa_cpt_dictionary' ) {
+        if ( ! $post || $post->post_type !== 'aiwa-cpt-dictionary' ) {
             wp_send_json_error( array( 'message' => 'Entry not found.' ) );
         }
     

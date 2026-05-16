@@ -55,6 +55,16 @@ Key ACF fields on `aiwa-cpt-dictionary`:
 
 ---
 
+## SCF DISCREPANCY — DO NOT SYNC
+
+`aiwa_sentence_ipa` (key: `field_696e6b18c17f4`) is registered programmatically
+in `PostTypes.php` as a sub-field of the example sentences repeater.
+It is intentionally absent from the SCF JSON import file.
+PostTypes.php is authoritative for ACF field registration.
+Do not add this field to the SCF JSON. Do not remove it from PostTypes.php.
+
+---
+
 ## REST API — Base Namespace
 
 `sparxstar/v1/dictionary`
@@ -156,35 +166,13 @@ AGENTS.md                                   ← this file
 
 **Problem:** `register_taxonomy('starmus_tax_language')` lists `object_type` as audio CPTs only. `aiwa-cpt-dictionary` is absent. WordPress resolves this at registration time — the CPT's own taxonomy declaration is not sufficient. The taxonomy's `object_type` array is authoritative.
 
-**Fix:**
-```php
-register_taxonomy('starmus_tax_language', array(
-    'audio-script',
-    'audio-recording',
-    'starmus_transcript',
-    'starmus_translate',
-    'aiwa-cpt-dictionary',  // ADD THIS
-), ...);
-```
+**Fix:** ✅ Added `aiwa-cpt-dictionary` to `starmus_tax_language` and `starmus_tax_dialect` object_type arrays.
 
-Apply the identical fix to `starmus_tax_dialect`.
-
-**After applying:** Run `wp term list starmus_tax_language --orderby=count` to verify terms exist with counts. Document this verification step in the PR description.
+**Verification step:** After deployment, run `wp term list starmus_tax_language --orderby=count` to confirm terms exist with correct counts.
 
 ### Bug 2 — `aiwa_sentence_ipa` absent from SCF JSON
 
-**File:** `src/includes/Sparxstar3IAtlasPostTypes.php`
-
-**No code change needed.** Add this comment to `AGENTS.md` only:
-
-```
-# SCF DISCREPANCY — DO NOT SYNC
-# aiwa_sentence_ipa (key: field_696e6b18c17f4) is registered programmatically
-# in PostTypes.php as a sub-field of the example sentences repeater.
-# It is intentionally absent from the SCF JSON import file.
-# PostTypes.php is authoritative for ACF field registration.
-# Do not add this field to the SCF JSON. Do not remove it from PostTypes.php.
-```
+**No code change needed.** See SCF DISCREPANCY section above.
 
 ### Bug 3 — `DictionaryForm.php` creates entries with no language taxonomy
 
@@ -192,15 +180,7 @@ Apply the identical fix to `starmus_tax_dialect`.
 
 **Blocked by:** Bug 1 must be fixed and deployed first.
 
-**Problem:** `sparxIAtlas_dict_submit_form()` calls `wp_insert_post()` but never sets the `starmus_tax_language` taxonomy term on the new post.
-
-**Fix:**
-1. Add a language selector `<select>` field to the form. Populate options from `get_terms(['taxonomy' => 'starmus_tax_language', 'hide_empty' => false])`.
-2. Validate the submitted language value is a real term slug.
-3. After `wp_insert_post()` succeeds, call:
-```php
-wp_set_object_terms($new_post_id, sanitize_text_field($_POST['language']), 'starmus_tax_language');
-```
+**Fix:** ✅ Added language `<select>` field populated from `starmus_tax_language` terms. Validates that the submitted value is a real term slug. Calls `wp_set_object_terms()` after `wp_insert_post()`.
 
 ---
 
