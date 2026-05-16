@@ -156,9 +156,9 @@ AGENTS.md                                   ← this file
 
 ---
 
-## Current Task — Phase 0: Bug Fixes
+## Current Task — Phase 1: REST API and Gamification
 
-**This is a prerequisite for all other work. Deliver as a single PR.**
+**Phase 0 is complete. Begin Phase 1 implementation in this repository.**
 
 ### Bug 1 — `starmus_tax_language` not registered on dictionary CPT
 

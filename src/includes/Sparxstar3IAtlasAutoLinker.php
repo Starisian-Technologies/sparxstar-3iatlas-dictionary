@@ -234,7 +234,11 @@ class Sparxstar3IAtlasAutoLinker {
             // the content as-is for this chunk rather than silently dropping output.
             if ( null === $result ) {
                 if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                    error_log( '[Sparxstar 3iAtlas Dictionary]: Auto-linker regex failed on chunk ' . $chunk_index . '. PCRE error code: ' . preg_last_error() );
+                    _doing_it_wrong(
+                        __METHOD__,
+                        '[Sparxstar 3iAtlas Dictionary]: Auto-linker regex failed on chunk ' . $chunk_index . '. PCRE error code: ' . preg_last_error(),
+                        defined( 'SPARX_3IATLAS_VERSION' ) ? SPARX_3IATLAS_VERSION : '1.0.0'
+                    );
                 }
                 continue;
             }

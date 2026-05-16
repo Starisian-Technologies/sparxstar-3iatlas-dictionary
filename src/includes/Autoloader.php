@@ -54,7 +54,11 @@ class Autoloader {
     public static function sparxIAtlas_loadClass( string $className ): void {
         // Ensure required constants are defined
         if ( ! defined( 'STARISIAN_NAMESPACE' ) || ! defined( 'STARISIAN_PATH' ) ) {
-            error_log( 'Autoloader error: STARISIAN_NAMESPACE or STARISIAN_PATH is not defined.' );
+            _doing_it_wrong(
+                __METHOD__,
+                'STARISIAN_NAMESPACE or STARISIAN_PATH is not defined.',
+                defined( 'SPARX_3IATLAS_VERSION' ) ? SPARX_3IATLAS_VERSION : '1.0.0'
+            );
             return;
         }
 

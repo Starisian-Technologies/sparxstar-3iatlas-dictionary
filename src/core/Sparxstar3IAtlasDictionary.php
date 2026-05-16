@@ -108,7 +108,11 @@ final class Sparxstar3IAtlasDictionary
             );
         } catch (\Throwable $throwable) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('[Starisian 3IAtlas Dictionary]: Error registering/enqueuing assets - ' . $throwable->getMessage());
+                _doing_it_wrong(
+                    __METHOD__,
+                    '[Starisian 3IAtlas Dictionary]: Error registering/enqueuing assets - ' . $throwable->getMessage(),
+                    SPARX_3IATLAS_VERSION
+                );
             }
         }
     }
@@ -152,7 +156,11 @@ final class Sparxstar3IAtlasDictionary
             wp_enqueue_style('sparxstar-dictionary-style');
         } catch (\Throwable $throwable) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('[Starisian 3IAtlas Dictionary]: Error rendering shortcode - ' . $throwable->getMessage());
+                _doing_it_wrong(
+                    __METHOD__,
+                    '[Starisian 3IAtlas Dictionary]: Error rendering shortcode - ' . $throwable->getMessage(),
+                    SPARX_3IATLAS_VERSION
+                );
             }
             return '<p>' . esc_html__('An error occurred while loading the dictionary.', 'sparxstar-3iatlas-dictionary') . '</p>';
         }
@@ -192,7 +200,11 @@ final class Sparxstar3IAtlasDictionary
             }
         } catch (\Throwable $throwable) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('[Starisian 3IAtlas Dictionary]: Error loading dependencies - ' . $throwable->getMessage());
+                _doing_it_wrong(
+                    __METHOD__,
+                    '[Starisian 3IAtlas Dictionary]: Error loading dependencies - ' . $throwable->getMessage(),
+                    SPARX_3IATLAS_VERSION
+                );
             }
         }
     }
