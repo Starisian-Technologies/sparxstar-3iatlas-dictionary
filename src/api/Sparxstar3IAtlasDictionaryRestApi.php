@@ -218,7 +218,7 @@ final class Sparxstar3IAtlasDictionaryRestApi
         $per_page = min(100, max(1, absint($request->get_param('per_page') ?? 20)));
         $page = max(1, absint($request->get_param('page') ?? 1));
 
-        if (mb_strlen($q) < 2) {
+        if (wp_strlen($q) < 2) {
             return new \WP_Error('query_too_short', 'q must be at least 2 characters.', array('status' => 400));
         }
 
