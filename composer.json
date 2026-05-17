@@ -29,7 +29,10 @@
     "autoload": {
         "psr-4": {
             "Starisian\\Sparxstar\\IAtlas\\": "src/"
-        }
+        },
+        "exclude-from-classmap": [
+            "vendor/phpdocumentor/filesystem/Flysystem/"
+        ]
     },
     "scripts": {
         "lint:php": "phpcs -q",

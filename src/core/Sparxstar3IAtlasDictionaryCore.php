@@ -13,7 +13,7 @@
 
 namespace Starisian\Sparxstar\IAtlas\core;
 
-if (! defined('ABSPATH')) {
+if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
@@ -25,8 +25,8 @@ if (! defined('ABSPATH')) {
  *
  * @package Starisian\Sparxstar\IAtlas\core
  */
-final class Sparxstar3IAtlasDictionaryCore
-{
+final class Sparxstar3IAtlasDictionaryCore {
+
 
     /**
      * Singleton instance of the class.
@@ -40,9 +40,8 @@ final class Sparxstar3IAtlasDictionaryCore
      *
      * @return Sparxstar3IAtlasDictionaryCore The singleton instance.
      */
-    public static function sparxIAtlas_get_instance(): Sparxstar3IAtlasDictionaryCore
-    {
-        if (self::$instance === null) {
+    public static function sparxIAtlas_get_instance(): Sparxstar3IAtlasDictionaryCore {
+        if ( self::$instance === null ) {
             self::$instance = new self();
         }
         return self::$instance;
@@ -51,8 +50,7 @@ final class Sparxstar3IAtlasDictionaryCore
     /**
      * Private constructor to prevent direct instantiation.
      */
-    private function __construct()
-    {
+    private function __construct() {
         $this->sparxIAtlas_register_hooks();
     }
 
@@ -61,15 +59,14 @@ final class Sparxstar3IAtlasDictionaryCore
      *
      * @return void
      */
-    private function sparxIAtlas_register_hooks(): void
-    {
+    private function sparxIAtlas_register_hooks(): void {
         // Hook into ACF save post to sync search index
-        add_action('acf/save_post', array($this, 'sparxIAtlas_sync_dictionary_search_index'), 20);
+        add_action( 'acf/save_post', array( $this, 'sparxIAtlas_sync_dictionary_search_index' ), 20 );
         // Specifically for WP All Import to ensure the search index builds
         add_action(
             'pmxi_saved_post',
-            function ($id) {
-                $this->sparxIAtlas_sync_dictionary_search_index($id);
+            function ( $id ) {
+                $this->sparxIAtlas_sync_dictionary_search_index( $id );
             },
             10,
             1
@@ -77,25 +74,25 @@ final class Sparxstar3IAtlasDictionaryCore
         // add action to set the alphabetical grouping taxonomy
         add_action(
             'save_post_aiwa_cpt_dictionary',
-            function ($post_id) {
+            function ( $post_id ) {
                 // Get the first letter of the title
-                $title        = get_the_title($post_id);
-                $first_letter = strtoupper(substr($title, 0, 1));
+                $title        = get_the_title( $post_id );
+                $first_letter = strtoupper( substr( $title, 0, 1 ) );
 
                 // If it's a number or special char, group under '#'
-                if (! ctype_alpha($first_letter)) {
+                if ( ! ctype_alpha( $first_letter ) ) {
                     $first_letter = '#';
                 }
 
                 // Set the taxonomy term
-                wp_set_object_terms($post_id, $first_letter, 'aiwa-alpha-letter');
+                wp_set_object_terms( $post_id, $first_letter, 'aiwa-alpha-letter' );
             },
             10,
             1
         );
 
         // NEW: Increase the query limit for Dictionary requests
-        add_filter('graphql_connection_max_query_amount', array($this, 'sparxIAtlas_increase_query_limit'), 10, 5);
+        add_filter( 'graphql_connection_max_query_amount', array( $this, 'sparxIAtlas_increase_query_limit' ), 10, 5 );
     }
 
 
@@ -107,22 +104,21 @@ final class Sparxstar3IAtlasDictionaryCore
      * @param int $post_id The ID of the post being saved.
      * @return void
      */
-    public function sparxIAtlas_sync_dictionary_search_index(int $post_id): void
-    {
+    public function sparxIAtlas_sync_dictionary_search_index( int $post_id ): void {
         // Only run for our Dictionary CPT
-        if (get_post_type($post_id) !== 'aiwa_cpt_dictionary') {
+        if ( get_post_type( $post_id ) !== 'aiwa_cpt_dictionary' ) {
             return;
         }
 
         // Get the title (Foreign Word) and the ACF translation (English)
-        $foreign_word = get_the_title($post_id);
-        $translation  = get_field('aiwa_translation', $post_id);
+        $foreign_word = get_the_title( $post_id );
+        $translation  = get_field( 'aiwa_translation', $post_id );
 
         // Combine them into a single string
         $combined_index = $foreign_word . ' ' . $translation;
 
         // Update the post_content (hidden index) without triggering an infinite loop
-        remove_action('acf/save_post', 'sync_dictionary_search_index', 20);
+        remove_action( 'acf/save_post', 'sync_dictionary_search_index', 20 );
         wp_update_post(
             array(
                 'ID'           => $post_id,
@@ -135,14 +131,14 @@ final class Sparxstar3IAtlasDictionaryCore
      * Increase the max query limit for Dictionary entries.
      * This allows the React App to fetch all 12,000+ words in one request.
      *
-     * @param int $amount The default limit (usually 10 or 100).
+     * @param int   $amount The default limit (usually 10 or 100).
      * @param mixed $source The source of the connection.
      * @param array $args The arguments passed to the connection.
      * @param mixed $context The context of the request.
      * @param mixed $info The info about the query.
      * @return int The new limit.
      */
-     public function sparxIAtlas_increase_query_limit( int $amount, $source, array $args, $context, $info ): int {
+    public function sparxIAtlas_increase_query_limit( int $amount, $source, array $args, $context, $info ): int {
         // Allow dictionary queries to fetch up to 2000 items (covering our 1000 item chunks)
         if ( isset( $info->fieldName ) && 'dictionaries' === $info->fieldName ) {
             return 2000;
@@ -158,37 +154,34 @@ final class Sparxstar3IAtlasDictionaryCore
      *
      * @return never
      */
-    private function __clone(): never
-    {
+    private function __clone(): never {
         _doing_it_wrong(
             __FUNCTION__,
             'Cloning this object is forbidden.',
             SPARX_3IATLAS_VERSION
         );
-        throw new \RuntimeException('Cloning is not allowed.');
+        throw new \RuntimeException( 'Cloning is not allowed.' );
     }
     /**
      * Prevents unserializing of the singleton instance.
      *
      * @return never
      */
-    public function __wakeup(): never
-    {
+    public function __wakeup(): never {
         _doing_it_wrong(
             __FUNCTION__,
             'Serializing this object is forbidden.',
             SPARX_3IATLAS_VERSION
         );
-        throw new \RuntimeException('Serializing is not allowed.');
+        throw new \RuntimeException( 'Serializing is not allowed.' );
     }
 
-    public function __unserialize(array $data): never
-    {
+    public function __unserialize( array $data ): never {
         _doing_it_wrong(
             __FUNCTION__,
             'Unserializing this object is forbidden.',
             SPARX_3IATLAS_VERSION
         );
-        throw new \RuntimeException('Unserializing is not allowed.');
+        throw new \RuntimeException( 'Unserializing is not allowed.' );
     }
 }

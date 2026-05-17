@@ -9,8 +9,7 @@
     "opts": {
         "destination": "./docs/js",
         "recurse": true,
-        "readme": "README.md",
-        "template": "node_modules/clean-jsdoc-theme"
+        "readme": "README.md"
     },
     "plugins": [
         "plugins/markdown",
@@ -19,10 +18,6 @@
     "templates": {
         "default": {
             "includeDate": true
-        },
-        "clean-jsdoc-theme": {
-            "title": "SPARXSTAR 3iAtlas Dictionary Frontend API",
-            "darkMode": true
         }
     }
 }

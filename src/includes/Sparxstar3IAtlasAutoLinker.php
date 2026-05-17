@@ -191,9 +191,12 @@ class Sparxstar3IAtlasAutoLinker {
 
             // Precompute a lowercase → [original_term, url] map so the callback
             // resolves each match in O(1) instead of scanning all chunk terms.
-            $lowercase_map = [];
+            $lowercase_map = array();
             foreach ( $chunk as $term => $url ) {
-                $lowercase_map[ mb_strtolower( $term, 'UTF-8' ) ] = [ 'term' => $term, 'url' => $url ];
+                $lowercase_map[ mb_strtolower( $term, 'UTF-8' ) ] = array(
+                    'term' => $term,
+                    'url'  => $url,
+                );
             }
 
             $result = preg_replace_callback(
