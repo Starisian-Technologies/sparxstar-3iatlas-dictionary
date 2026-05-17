@@ -17,6 +17,8 @@ if (!defined('ABSPATH')) {
 
 final class Sparxstar3IAtlasDictionaryRestApi
 {
+    use Sparxstar3IAtlasRateLimitTrait;
+
     public const REST_NAMESPACE = 'sparxstar/v1/dictionary';
     private const CPT = 'aiwa-cpt-dictionary';
     private const RATE_LIMIT = 100;
@@ -65,44 +67,6 @@ final class Sparxstar3IAtlasDictionaryRestApi
         $auth = $request->get_header('Authorization');
         $token = $auth ? str_replace('Bearer ', '', $auth) : '';
         return '' !== $token && is_user_logged_in();
-    }
-
-    private function check_rate_limit(): bool
-    {
-        // TODO: Replace with Helios token introspection when available.
-        $ip = $this->get_client_ip();
-        $key = 'dict_rl_' . md5($ip);
-        $hit = (int) get_transient($key);
-
-        if ($hit >= self::RATE_LIMIT) {
-            return false;
-        }
-
-        set_transient($key, $hit + 1, self::RATE_WINDOW);
-        return true;
-    }
-
-    private function get_client_ip(): string
-    {
-        $candidates = array(
-            (string) ($_SERVER['HTTP_CF_CONNECTING_IP'] ?? ''),
-            (string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ''),
-            (string) ($_SERVER['REMOTE_ADDR'] ?? ''),
-        );
-
-        foreach ($candidates as $candidate) {
-            if ('' === $candidate) {
-                continue;
-            }
-
-            $ip = trim(explode(',', $candidate)[0] ?? '');
-
-            if (false !== filter_var($ip, FILTER_VALIDATE_IP)) {
-                return $ip;
-            }
-        }
-
-        return 'unknown';
     }
 
     private function rate_limit_error(): \WP_Error
