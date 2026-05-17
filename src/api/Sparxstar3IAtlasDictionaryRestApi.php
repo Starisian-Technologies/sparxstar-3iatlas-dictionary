@@ -321,7 +321,8 @@ final class Sparxstar3IAtlasDictionaryRestApi
         );
 
         $response = $this->cached_response($payload, 3600);
-        $etag = md5((string) wp_json_encode($payload));
+        $word_uuids = array_column($words, 'uuid');
+        $etag = md5($lang . ':' . $page . ':' . $per_page . ':' . (string) $query->found_posts . ':' . implode(',', $word_uuids));
         $response->header('ETag', '"' . $etag . '"');
 
         return $response;
@@ -409,7 +410,7 @@ final class Sparxstar3IAtlasDictionaryRestApi
 
             $term_rows = $wpdb->get_results($query);
 
-            if (false === $query || ('' !== $wpdb->last_error && $wpdb->last_error !== $last_error_before)) {
+            if ('' !== $wpdb->last_error && $wpdb->last_error !== $last_error_before) {
                 return new \WP_Error('taxonomy_error', 'Failed to retrieve domains.', array('status' => 500));
             }
 

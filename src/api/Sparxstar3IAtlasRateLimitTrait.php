@@ -42,6 +42,9 @@ trait Sparxstar3IAtlasRateLimitTrait
             }
 
             $ip = trim(explode(',', $candidate)[0]);
+            if ('' === $ip) {
+                continue;
+            }
 
             if (false !== filter_var($ip, FILTER_VALIDATE_IP)) {
                 return $ip;
