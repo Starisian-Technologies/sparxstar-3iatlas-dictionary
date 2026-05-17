@@ -560,12 +560,13 @@ final class Sparxstar3IAtlasDictionaryRestApi
             $words[] = $word;
         }
 
-        $response = $this->cached_response(
+        $response = new \WP_REST_Response(
             array('success' => true, 'data' => array('words' => $words)),
-            10800
+            200
         );
-        $etag = md5($lang . $domain . $limit . (string) $include_audio);
-        $response->header('ETag', '"' . $etag . '"');
+        $response->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+        $response->header('Pragma', 'no-cache');
+        $response->header('Expires', '0');
 
         return $response;
     }
