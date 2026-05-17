@@ -325,20 +325,27 @@ final class Sparxstar3IAtlasDictionaryRestApi
             );
         }
 
-        $response = $this->cached_response(
-            array(
-                'success' => true,
-                'data' => array('words' => $words),
-                'meta' => array(
-                    'total' => (int) $query->found_posts,
-                    'page' => $page,
-                    'per_page' => $per_page,
-                ),
+        $payload = array(
+            'success' => true,
+            'data' => array('words' => $words),
+            'meta' => array(
+                'total' => (int) $query->found_posts,
+                'page' => $page,
+                'per_page' => $per_page,
             ),
+        );
+
+        $response = $this->cached_response(
+            $payload,
             3600
         );
 
-        $etag = md5((string) $query->found_posts . $lang . $page);
+        $etag_source = wp_json_encode($payload);
+        if (!is_string($etag_source)) {
+            $etag_source = serialize($payload);
+        }
+
+        $etag = hash('sha256', $etag_source);
         $response->header('ETag', '"' . $etag . '"');
 
         return $response;
