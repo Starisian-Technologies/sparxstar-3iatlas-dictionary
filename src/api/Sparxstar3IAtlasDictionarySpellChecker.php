@@ -64,7 +64,7 @@ final class Sparxstar3IAtlasDictionarySpellChecker
 
         foreach (array_slice($words, 0, self::MAX_WORDS) as $word) {
             if (!is_scalar($word)) {
-                return new \WP_Error('invalid_payload', 'Each words item must be a scalar value.', array('status' => 400));
+                return new \WP_Error('invalid_payload', 'Each item in words must be a scalar value.', array('status' => 400));
             }
 
             $normalized_words[] = sanitize_text_field((string) $word);
