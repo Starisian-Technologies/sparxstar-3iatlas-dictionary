@@ -94,6 +94,7 @@ Do not add this field to the SCF JSON. Do not remove it from PostTypes.php.
 
 **`/game-set` parameters:** `lang_source` (required), `domain` (optional), `limit` (default 20, max 50), `include_audio` (bool)
 **`/game-set` exclusion rule:** Exclude entries missing headword, translation_en, or IPA. Games require all three.
+**Scale note:** `ORDER BY RAND()` is acceptable only as a temporary implementation pattern; replace it with a scalable selection approach before large production datasets.
 
 ---
 
@@ -169,6 +170,7 @@ AGENTS.md                                   ← this file
 **Fix:** ✅ Added `aiwa-cpt-dictionary` to `starmus_tax_language` and `starmus_tax_dialect` object_type arrays.
 
 **Verification step:** After deployment, run `wp term list starmus_tax_language --orderby=count` to confirm terms exist with correct counts.
+**API dependency note:** Language-filtered API behavior depends on this taxonomy registration fix being present in the deployed environment; without it, language filters can return incomplete or empty results.
 
 ### Bug 2 — `aiwa_sentence_ipa` absent from SCF JSON
 

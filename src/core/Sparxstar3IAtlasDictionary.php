@@ -186,6 +186,15 @@ final class Sparxstar3IAtlasDictionary
                 }
             }
 
+            // REST API endpoints
+            if (class_exists(\Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryRestApi::class)) {
+                (new \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryRestApi())->register_hooks();
+            }
+
+            if (class_exists(\Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionarySpellChecker::class)) {
+                (new \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionarySpellChecker())->register_hooks();
+            }
+
             // Instantiate Auto Linker
             if (class_exists(Sparxstar3IAtlasAutoLinker::class)) {
                 new Sparxstar3IAtlasAutoLinker();
