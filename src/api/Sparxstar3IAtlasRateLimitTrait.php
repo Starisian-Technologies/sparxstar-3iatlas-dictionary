@@ -17,8 +17,8 @@ trait Sparxstar3IAtlasRateLimitTrait
     {
         // TODO: Replace with Helios token introspection when available.
         $ip = $this->get_client_ip();
-        $key = 'aiwa_dict_rl_' . md5($ip);
-        $lock_key = $key . '_lock';
+        $key = 'sparx_3iatlas_dict_rl_' . md5($ip);
+        $lock_key = 'sparx_3iatlas_dict_rl_lock_' . md5($ip);
 
         if (!$this->acquire_rate_limit_lock($lock_key)) {
             return false;
