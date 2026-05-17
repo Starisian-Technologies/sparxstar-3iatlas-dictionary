@@ -49,10 +49,19 @@ final class Sparxstar3IAtlasDictionarySpellChecker
             return new \WP_Error('invalid_payload', 'words must be a non-empty array.', array('status' => 400));
         }
 
-        $words = array_slice(array_map('sanitize_text_field', $words), 0, self::MAX_WORDS);
+        $normalized_words = array();
+
+        foreach (array_slice($words, 0, self::MAX_WORDS) as $word) {
+            if (!is_scalar($word)) {
+                return new \WP_Error('invalid_payload', 'Each words item must be a scalar value.', array('status' => 400));
+            }
+
+            $normalized_words[] = sanitize_text_field((string) $word);
+        }
+
         $results = array();
 
-        foreach ($words as $word) {
+        foreach ($normalized_words as $word) {
             $word = trim($word);
             if ('' === $word) {
                 continue;
