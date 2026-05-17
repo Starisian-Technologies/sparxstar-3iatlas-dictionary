@@ -20,6 +20,8 @@ final class Sparxstar3IAtlasDictionarySpellChecker
     private const REST_NAMESPACE = 'sparxstar/v1/dictionary';
     private const CPT = 'aiwa-cpt-dictionary';
     private const MAX_WORDS = 100;
+    private const RATE_LIMIT = 100;
+    private const RATE_WINDOW = 900;
 
     public function register_hooks(): void
     {
@@ -41,6 +43,15 @@ final class Sparxstar3IAtlasDictionarySpellChecker
 
     public function handle_spell(\WP_REST_Request $request): \WP_REST_Response|\WP_Error
     {
+        // TODO: Replace with Helios token introspection when available.
+        if (!$this->check_rate_limit()) {
+            return new \WP_Error(
+                'rate_limited',
+                'Too many requests. Retry after 15 minutes.',
+                array('status' => 429)
+            );
+        }
+
         $body = $request->get_json_params();
         $lang = sanitize_text_field((string) ($body['lang'] ?? ''));
         $words = $body['words'] ?? null;
@@ -67,28 +78,30 @@ final class Sparxstar3IAtlasDictionarySpellChecker
                 continue;
             }
 
-            $args = array(
-                'post_type' => self::CPT,
-                'post_status' => 'publish',
-                'posts_per_page' => 5,
-                'title' => $word,
-            );
+            $exact = get_page_by_title($word, OBJECT, self::CPT);
+            $valid = $exact instanceof \WP_Post && 'publish' === $exact->post_status;
 
-            if ('' !== $lang) {
-                $args['tax_query'] = array(
-                    array('taxonomy' => 'starmus_tax_language', 'field' => 'slug', 'terms' => $lang),
-                );
+            if ($valid && '' !== $lang) {
+                $lang_terms = wp_get_object_terms($exact->ID, 'starmus_tax_language', array('fields' => 'slugs'));
+                $valid = !is_wp_error($lang_terms) && in_array($lang, $lang_terms, true);
             }
 
-            $exact = get_posts($args);
-            $valid = !empty($exact);
             $suggestions = array();
 
             if (!$valid) {
-                $fuzzy_args = $args;
-                unset($fuzzy_args['title']);
-                $fuzzy_args['s'] = $word;
-                $fuzzy_args['posts_per_page'] = 5;
+                $fuzzy_args = array(
+                    'post_type' => self::CPT,
+                    'post_status' => 'publish',
+                    'posts_per_page' => 5,
+                    's' => $word,
+                );
+
+                if ('' !== $lang) {
+                    $fuzzy_args['tax_query'] = array(
+                        array('taxonomy' => 'starmus_tax_language', 'field' => 'slug', 'terms' => $lang),
+                    );
+                }
+
                 $fuzzy = get_posts($fuzzy_args);
                 $suggestions = array_map(
                     static fn(\WP_Post $post): string => $post->post_title,
@@ -104,5 +117,42 @@ final class Sparxstar3IAtlasDictionarySpellChecker
         }
 
         return new \WP_REST_Response(array('results' => $results), 200);
+    }
+
+    private function check_rate_limit(): bool
+    {
+        $ip = $this->get_client_ip();
+        $key = 'dict_rl_' . md5($ip);
+        $hit = (int) get_transient($key);
+
+        if ($hit >= self::RATE_LIMIT) {
+            return false;
+        }
+
+        set_transient($key, $hit + 1, self::RATE_WINDOW);
+        return true;
+    }
+
+    private function get_client_ip(): string
+    {
+        $candidates = array(
+            (string) ($_SERVER['HTTP_CF_CONNECTING_IP'] ?? ''),
+            (string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ''),
+            (string) ($_SERVER['REMOTE_ADDR'] ?? ''),
+        );
+
+        foreach ($candidates as $candidate) {
+            if ('' === $candidate) {
+                continue;
+            }
+
+            $ip = trim(explode(',', $candidate)[0] ?? '');
+
+            if (false !== filter_var($ip, FILTER_VALIDATE_IP)) {
+                return $ip;
+            }
+        }
+
+        return 'unknown';
     }
 }

@@ -70,7 +70,7 @@ final class Sparxstar3IAtlasDictionaryRestApi
     private function check_rate_limit(): bool
     {
         // TODO: Replace with Helios token introspection when available.
-        $ip = sanitize_text_field((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+        $ip = $this->get_client_ip();
         $key = 'dict_rl_' . md5($ip);
         $hit = (int) get_transient($key);
 
@@ -80,6 +80,29 @@ final class Sparxstar3IAtlasDictionaryRestApi
 
         set_transient($key, $hit + 1, self::RATE_WINDOW);
         return true;
+    }
+
+    private function get_client_ip(): string
+    {
+        $candidates = array(
+            (string) ($_SERVER['HTTP_CF_CONNECTING_IP'] ?? ''),
+            (string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ''),
+            (string) ($_SERVER['REMOTE_ADDR'] ?? ''),
+        );
+
+        foreach ($candidates as $candidate) {
+            if ('' === $candidate) {
+                continue;
+            }
+
+            $ip = trim(explode(',', $candidate)[0] ?? '');
+
+            if (false !== filter_var($ip, FILTER_VALIDATE_IP)) {
+                return $ip;
+            }
+        }
+
+        return 'unknown';
     }
 
     private function rate_limit_error(): \WP_Error
@@ -296,9 +319,6 @@ final class Sparxstar3IAtlasDictionaryRestApi
             'posts_per_page' => $per_page,
             'paged' => $page,
             'no_found_rows' => false,
-            'update_post_term_cache' => false,
-            'update_post_meta_cache' => false,
-            'fields' => 'ids',
         );
 
         if ('' !== $lang) {
@@ -310,17 +330,16 @@ final class Sparxstar3IAtlasDictionaryRestApi
         $query = new \WP_Query($args);
         $words = array();
 
-        foreach ($query->posts as $post_id) {
-            $post = get_post((int) $post_id);
+        foreach ($query->posts as $post) {
             if (!$post instanceof \WP_Post) {
                 continue;
             }
 
-            $lang_terms = wp_get_object_terms((int) $post_id, 'starmus_tax_language', array('fields' => 'slugs'));
+            $lang_terms = wp_get_object_terms($post->ID, 'starmus_tax_language', array('fields' => 'slugs'));
             $words[] = array(
                 'headword' => $post->post_title,
                 'slug' => $post->post_name,
-                'uuid' => (string) get_post_meta((int) $post_id, 'aiwa_entry_uuid', true),
+                'uuid' => (string) get_post_meta($post->ID, 'aiwa_entry_uuid', true),
                 'language' => !is_wp_error($lang_terms) && !empty($lang_terms) ? $lang_terms[0] : '',
             );
         }
@@ -335,11 +354,7 @@ final class Sparxstar3IAtlasDictionaryRestApi
             ),
         );
 
-        $response = $this->cached_response(
-            $payload,
-            3600
-        );
-
+        $response = $this->cached_response($payload, 3600);
         $etag_source = wp_json_encode($payload);
         if (!is_string($etag_source)) {
             $etag_source = serialize($payload);
@@ -469,7 +484,6 @@ final class Sparxstar3IAtlasDictionaryRestApi
                 $terms
             );
         }
-
         return $this->cached_response(
             array('success' => true, 'data' => array('domains' => $domains))
         );
