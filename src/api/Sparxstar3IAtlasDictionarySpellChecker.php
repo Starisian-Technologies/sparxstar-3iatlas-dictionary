@@ -141,32 +141,53 @@ final class Sparxstar3IAtlasDictionarySpellChecker
 
     private function find_exact_word_post(string $word, string $lang): ?\WP_Post
     {
-        $args = array(
-            'post_type' => self::CPT,
-            'post_status' => 'publish',
-            'posts_per_page' => 1,
-            's' => $word,
-        );
+        global $wpdb;
 
-        if ('' !== $lang) {
-            $args['tax_query'] = array(
-                array('taxonomy' => 'starmus_tax_language', 'field' => 'slug', 'terms' => $lang),
+        if ('' === $lang) {
+            $query = $wpdb->prepare(
+                "SELECT ID
+                FROM {$wpdb->posts}
+                WHERE post_type = %s
+                    AND post_status = %s
+                    AND post_title = %s
+                ORDER BY ID ASC
+                LIMIT 1",
+                self::CPT,
+                'publish',
+                $word
+            );
+        } else {
+            $query = $wpdb->prepare(
+                "SELECT posts.ID
+                FROM {$wpdb->posts} posts
+                INNER JOIN {$wpdb->term_relationships} term_relationships
+                    ON posts.ID = term_relationships.object_id
+                INNER JOIN {$wpdb->term_taxonomy} term_taxonomy
+                    ON term_relationships.term_taxonomy_id = term_taxonomy.term_taxonomy_id
+                INNER JOIN {$wpdb->terms} terms
+                    ON term_taxonomy.term_id = terms.term_id
+                WHERE posts.post_type = %s
+                    AND posts.post_status = %s
+                    AND posts.post_title = %s
+                    AND term_taxonomy.taxonomy = %s
+                    AND terms.slug = %s
+                ORDER BY posts.ID ASC
+                LIMIT 1",
+                self::CPT,
+                'publish',
+                $word,
+                'starmus_tax_language',
+                $lang
             );
         }
 
-        $posts = get_posts($args);
-
-        foreach ($posts as $post) {
-            if (!$post instanceof \WP_Post) {
-                continue;
-            }
-
-            if (0 === strcasecmp($post->post_title, $word)) {
-                return $post;
-            }
+        $post_id = (int) $wpdb->get_var($query);
+        if ($post_id <= 0) {
+            return null;
         }
 
-        return null;
+        $post = get_post($post_id);
+        return $post instanceof \WP_Post ? $post : null;
     }
 
 }

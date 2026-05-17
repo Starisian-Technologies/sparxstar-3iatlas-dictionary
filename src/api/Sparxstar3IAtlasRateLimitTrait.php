@@ -69,20 +69,16 @@ trait Sparxstar3IAtlasRateLimitTrait
     {
         $lock_ttl = 5;
         $attempts = 5;
+        $cache_group = 'sparx_3iatlas_rate_limit';
 
         for ($attempt = 0; $attempt < $attempts; $attempt++) {
-            $now = time();
-
-            if (add_option($lock_key, (string) $now, '', false)) {
-                return true;
-            }
-
-            $existing = (int) get_option($lock_key, 0);
-
-            if ($existing > 0 && ($now - $existing) >= $lock_ttl) {
-                delete_option($lock_key);
-
-                if (add_option($lock_key, (string) $now, '', false)) {
+            if (wp_using_ext_object_cache()) {
+                if (wp_cache_add($lock_key, '1', $cache_group, $lock_ttl)) {
+                    return true;
+                }
+            } else {
+                if (false === get_transient($lock_key)) {
+                    set_transient($lock_key, '1', $lock_ttl);
                     return true;
                 }
             }
@@ -95,7 +91,10 @@ trait Sparxstar3IAtlasRateLimitTrait
 
     private function release_rate_limit_lock(string $lock_key): void
     {
-        delete_option($lock_key);
+        if (wp_using_ext_object_cache()) {
+            wp_cache_delete($lock_key, 'sparx_3iatlas_rate_limit');
+        }
+        delete_transient($lock_key);
     }
 
     private function get_client_ip(): string

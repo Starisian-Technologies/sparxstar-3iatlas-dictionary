@@ -547,16 +547,75 @@ final class Sparxstar3IAtlasDictionaryRestApi
             $tax_query['relation'] = 'AND';
         }
 
-        $posts = get_posts(
+        $seed = hash('sha256', gmdate('Y-m-d-H') . '|' . $lang . '|' . $domain);
+        $batch_size = min(200, max($limit * 4, $limit));
+        $candidate_ids = array();
+
+        $count_query = new \WP_Query(
             array(
                 'post_type' => self::CPT,
                 'post_status' => 'publish',
-                'posts_per_page' => $limit * 3,
-                // TODO: Replace ORDER BY RAND() approach with scalable selection for large datasets.
-                'orderby' => 'rand',
+                'posts_per_page' => 1,
+                'fields' => 'ids',
+                'orderby' => 'ID',
+                'order' => 'ASC',
                 'tax_query' => $tax_query,
             )
         );
+
+        $total_candidates = (int) $count_query->found_posts;
+
+        if ($total_candidates > 0) {
+            $start_offset = (int) (hexdec(substr($seed, 0, 7)) % $total_candidates);
+
+            $candidate_ids = get_posts(
+                array(
+                    'post_type' => self::CPT,
+                    'post_status' => 'publish',
+                    'posts_per_page' => $batch_size,
+                    'offset' => $start_offset,
+                    'fields' => 'ids',
+                    'orderby' => 'ID',
+                    'order' => 'ASC',
+                    'tax_query' => $tax_query,
+                    'no_found_rows' => true,
+                )
+            );
+
+            if (count($candidate_ids) < $batch_size && $start_offset > 0) {
+                $remaining = $batch_size - count($candidate_ids);
+                $candidate_ids = array_merge(
+                    $candidate_ids,
+                    get_posts(
+                        array(
+                            'post_type' => self::CPT,
+                            'post_status' => 'publish',
+                            'posts_per_page' => $remaining,
+                            'offset' => 0,
+                            'fields' => 'ids',
+                            'orderby' => 'ID',
+                            'order' => 'ASC',
+                            'tax_query' => $tax_query,
+                            'no_found_rows' => true,
+                        )
+                    )
+                );
+            }
+        }
+
+        $candidate_ids = array_values(array_unique(array_map('absint', $candidate_ids)));
+        $posts = empty($candidate_ids)
+            ? array()
+            : get_posts(
+                array(
+                    'post_type' => self::CPT,
+                    'post_status' => 'publish',
+                    'posts_per_page' => count($candidate_ids),
+                    'post__in' => $candidate_ids,
+                    'orderby' => 'post__in',
+                    'no_found_rows' => true,
+                )
+            );
 
         $words = array();
         foreach ($posts as $post) {
@@ -626,7 +685,7 @@ final class Sparxstar3IAtlasDictionaryRestApi
         }
 
         $today = gmdate('Y-m-d');
-        $cache_key = 'dict_wod_' . $today;
+        $cache_key = 'sparx_3iatlas_dict_wod_' . $today;
         $cached = get_transient($cache_key);
 
         if (false !== $cached) {
