@@ -101,7 +101,7 @@ final class Sparxstar3IAtlasDictionaryRestApi
     private static function domain_code_from_slug(string $slug): string
     {
         if (1 === preg_match('/-([0-9]+(?:\.[0-9]+)*)$/', $slug, $matches)) {
-            return $matches[1] ?? '';
+            return $matches[1];
         }
 
         return '';
