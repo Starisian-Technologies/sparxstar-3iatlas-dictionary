@@ -60,6 +60,11 @@ final class Sparxstar3IAtlasDictionarySpellChecker
         }
 
         $body = $request->get_json_params();
+
+        if (!is_array($body)) {
+            return new \WP_Error('invalid_payload', 'Invalid JSON payload.', array('status' => 400));
+        }
+
         $lang = sanitize_text_field((string) ($body['lang'] ?? ''));
         $words = $body['words'] ?? null;
 
