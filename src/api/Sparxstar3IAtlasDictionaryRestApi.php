@@ -600,6 +600,11 @@ final class Sparxstar3IAtlasDictionaryRestApi
 
     public function handle_progress_sync(\WP_REST_Request $request): \WP_REST_Response|\WP_Error
     {
+        // TODO: Replace with Helios token introspection when available.
+        if (!$this->check_rate_limit()) {
+            return $this->rate_limit_error();
+        }
+
         $body = $request->get_json_params();
         $events = $body['events'] ?? null;
 
