@@ -98,6 +98,15 @@ final class Sparxstar3IAtlasDictionaryRestApi
         return $response;
     }
 
+    private function domain_code_from_slug(string $slug): string
+    {
+        if (1 === preg_match('/-([0-9]+(?:\.[0-9]+)*)$/', $slug, $matches)) {
+            return (string) ($matches[1] ?? '');
+        }
+
+        return '';
+    }
+
     private function build_entry(int $post_id, bool $include_audio = true): array
     {
         $post = get_post($post_id);
@@ -407,9 +416,10 @@ final class Sparxstar3IAtlasDictionaryRestApi
         }
 
         $domains = array_map(
-            static fn(\WP_Term $term): array => array(
+            fn(\WP_Term $term): array => array(
                 'slug' => $term->slug,
                 'name' => $term->name,
+                'code' => $this->domain_code_from_slug($term->slug),
                 'count' => (int) $term->count,
             ),
             $terms
@@ -450,6 +460,7 @@ final class Sparxstar3IAtlasDictionaryRestApi
                 'post_type' => self::CPT,
                 'post_status' => 'publish',
                 'posts_per_page' => $limit * 3,
+                // TODO: Replace ORDER BY RAND() approach with scalable selection for large datasets.
                 'orderby' => 'rand',
                 'tax_query' => $tax_query,
             )
