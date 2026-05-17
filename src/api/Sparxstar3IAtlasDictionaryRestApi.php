@@ -98,10 +98,10 @@ final class Sparxstar3IAtlasDictionaryRestApi
         return $response;
     }
 
-    private function domain_code_from_slug(string $slug): string
+    private static function domain_code_from_slug(string $slug): string
     {
         if (1 === preg_match('/-([0-9]+(?:\.[0-9]+)*)$/', $slug, $matches)) {
-            return (string) ($matches[1] ?? '');
+            return $matches[1] ?? '';
         }
 
         return '';
@@ -416,10 +416,10 @@ final class Sparxstar3IAtlasDictionaryRestApi
         }
 
         $domains = array_map(
-            fn(\WP_Term $term): array => array(
+            static fn(\WP_Term $term): array => array(
                 'slug' => $term->slug,
                 'name' => $term->name,
-                'code' => $this->domain_code_from_slug($term->slug),
+                'code' => self::domain_code_from_slug($term->slug),
                 'count' => (int) $term->count,
             ),
             $terms
