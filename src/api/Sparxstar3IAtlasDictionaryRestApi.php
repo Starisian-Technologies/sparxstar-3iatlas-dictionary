@@ -547,26 +547,60 @@ final class Sparxstar3IAtlasDictionaryRestApi
             $tax_query['relation'] = 'AND';
         }
 
-        $seed = hash('sha256', gmdate('Y-m-d-H') . '|' . $lang . '|' . $domain);
-        $batch_size = min(200, max($limit * 4, $limit));
+        $seed = hash('sha256', gmdate('Y-m-d') . '|' . $lang . '|' . $domain);
+        // Fetch extra candidates because entries missing required game fields are filtered out after query.
+        $batch_size = min(200, $limit * 4);
         $candidate_ids = array();
+        $total_candidates = 0;
 
-        $count_query = new \WP_Query(
-            array(
-                'post_type' => self::CPT,
-                'post_status' => 'publish',
-                'posts_per_page' => 1,
-                'fields' => 'ids',
-                'orderby' => 'ID',
-                'order' => 'ASC',
-                'tax_query' => $tax_query,
-            )
-        );
+        global $wpdb;
 
-        $total_candidates = (int) $count_query->found_posts;
+        if ('' !== $domain) {
+            $count_sql = $wpdb->prepare(
+                "SELECT COUNT(DISTINCT posts.ID)
+                FROM {$wpdb->posts} posts
+                INNER JOIN {$wpdb->term_relationships} rel_lang ON posts.ID = rel_lang.object_id
+                INNER JOIN {$wpdb->term_taxonomy} tax_lang ON rel_lang.term_taxonomy_id = tax_lang.term_taxonomy_id
+                INNER JOIN {$wpdb->terms} terms_lang ON tax_lang.term_id = terms_lang.term_id
+                INNER JOIN {$wpdb->term_relationships} rel_domain ON posts.ID = rel_domain.object_id
+                INNER JOIN {$wpdb->term_taxonomy} tax_domain ON rel_domain.term_taxonomy_id = tax_domain.term_taxonomy_id
+                INNER JOIN {$wpdb->terms} terms_domain ON tax_domain.term_id = terms_domain.term_id
+                WHERE posts.post_type = %s
+                    AND posts.post_status = %s
+                    AND tax_lang.taxonomy = %s
+                    AND terms_lang.slug = %s
+                    AND tax_domain.taxonomy = %s
+                    AND terms_domain.slug = %s",
+                self::CPT,
+                'publish',
+                'starmus_tax_language',
+                $lang,
+                'aiwa_domain',
+                $domain
+            );
+        } else {
+            $count_sql = $wpdb->prepare(
+                "SELECT COUNT(DISTINCT posts.ID)
+                FROM {$wpdb->posts} posts
+                INNER JOIN {$wpdb->term_relationships} rel_lang ON posts.ID = rel_lang.object_id
+                INNER JOIN {$wpdb->term_taxonomy} tax_lang ON rel_lang.term_taxonomy_id = tax_lang.term_taxonomy_id
+                INNER JOIN {$wpdb->terms} terms_lang ON tax_lang.term_id = terms_lang.term_id
+                WHERE posts.post_type = %s
+                    AND posts.post_status = %s
+                    AND tax_lang.taxonomy = %s
+                    AND terms_lang.slug = %s",
+                self::CPT,
+                'publish',
+                'starmus_tax_language',
+                $lang
+            );
+        }
+
+        $total_candidates = (int) $wpdb->get_var($count_sql);
 
         if ($total_candidates > 0) {
-            $start_offset = (int) (hexdec(substr($seed, 0, 7)) % $total_candidates);
+            // Use 8 hex chars (~32 bits) to keep deterministic offsets portable across PHP platforms.
+            $start_offset = (int) (hexdec(substr($seed, 0, 8)) % $total_candidates);
 
             $candidate_ids = get_posts(
                 array(

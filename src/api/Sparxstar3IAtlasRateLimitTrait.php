@@ -77,8 +77,7 @@ trait Sparxstar3IAtlasRateLimitTrait
                     return true;
                 }
             } else {
-                if (false === get_transient($lock_key)) {
-                    set_transient($lock_key, '1', $lock_ttl);
+                if ($this->acquire_mysql_lock($lock_key)) {
                     return true;
                 }
             }
@@ -93,8 +92,41 @@ trait Sparxstar3IAtlasRateLimitTrait
     {
         if (wp_using_ext_object_cache()) {
             wp_cache_delete($lock_key, 'sparx_3iatlas_rate_limit');
+            return;
         }
-        delete_transient($lock_key);
+
+        $this->release_mysql_lock($lock_key);
+    }
+
+    private function acquire_mysql_lock(string $lock_key): bool
+    {
+        global $wpdb;
+
+        if (!$wpdb instanceof \wpdb) {
+            return false;
+        }
+
+        // MySQL lock names are limited to 64 characters; prefix + md5 stays safely below that limit.
+        $mysql_lock_name = 'sparx_3iatlas_rl_' . md5($lock_key);
+        $acquired = $wpdb->get_var(
+            $wpdb->prepare('SELECT GET_LOCK(%s, 0)', $mysql_lock_name)
+        );
+
+        return 1 === (int) $acquired;
+    }
+
+    private function release_mysql_lock(string $lock_key): void
+    {
+        global $wpdb;
+
+        if (!$wpdb instanceof \wpdb) {
+            return;
+        }
+
+        $mysql_lock_name = 'sparx_3iatlas_rl_' . md5($lock_key);
+        $wpdb->get_var(
+            $wpdb->prepare('SELECT RELEASE_LOCK(%s)', $mysql_lock_name)
+        );
     }
 
     private function get_client_ip(): string
