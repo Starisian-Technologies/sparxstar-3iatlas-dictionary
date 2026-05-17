@@ -61,11 +61,14 @@ final class Sparxstar3IAtlasDictionaryRestApi
         return true;
     }
 
-    public function permission_helios(\WP_REST_Request $_request): bool
+    public function permission_helios(\WP_REST_Request $request): bool
     {
-        // Helios token introspection is not yet available. Until then, use
-        // authenticated WordPress user context and an explicit capability check.
-        return is_user_logged_in() && current_user_can('read');
+        // TODO: Replace with Helios token introspection when available.
+        $auth = $request->get_header('Authorization');
+        $token = $auth ? str_replace('Bearer ', '', $auth) : '';
+
+        // Temporary guard: require a bearer token and an elevated WP capability.
+        return '' !== $token && is_user_logged_in() && current_user_can('edit_posts');
     }
 
     private function rate_limit_error(): \WP_Error
@@ -371,7 +374,7 @@ final class Sparxstar3IAtlasDictionaryRestApi
 
         if ('' !== $lang) {
             global $wpdb;
-            $wpdb->flush();
+            $wpdb->last_error = '';
 
             $query = $wpdb->prepare(
                 "
@@ -406,7 +409,7 @@ final class Sparxstar3IAtlasDictionaryRestApi
 
             $term_rows = $wpdb->get_results($query);
 
-            if (null === $term_rows) {
+            if ('' !== $wpdb->last_error) {
                 return new \WP_Error('taxonomy_error', 'Failed to retrieve domains.', array('status' => 500));
             }
 
