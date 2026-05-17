@@ -548,8 +548,8 @@ final class Sparxstar3IAtlasDictionaryRestApi
             return new \WP_Error('no_entries', 'No dictionary entries available.', array('status' => 404));
         }
 
-        srand((int) str_replace('-', '', $today));
-        $offset = rand(0, (int) $total - 1);
+        $hash = hash('sha256', $today);
+        $offset = (int) (hexdec(substr($hash, 0, 7)) % (int) $total);
 
         $posts = get_posts(
             array(
