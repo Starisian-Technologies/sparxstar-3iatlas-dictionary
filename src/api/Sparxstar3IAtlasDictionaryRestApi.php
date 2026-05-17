@@ -61,14 +61,29 @@ final class Sparxstar3IAtlasDictionaryRestApi
         return true;
     }
 
+    private function parse_bearer_token(string $authorization_header): ?string
+    {
+        $authorization_header = trim($authorization_header);
+
+        if ('' === $authorization_header) {
+            return null;
+        }
+
+        if (1 !== preg_match('/^Bearer[ \t]+(\S+)$/i', $authorization_header, $matches)) {
+            return null;
+        }
+
+        return $matches[1];
+    }
+
     public function permission_helios(\WP_REST_Request $request): bool
     {
         // TODO: Replace with Helios token introspection when available.
         $auth = $request->get_header('Authorization');
-        $token = $auth ? str_replace('Bearer ', '', $auth) : '';
+        $token = $this->parse_bearer_token($auth);
 
         // Temporary guard: require a bearer token and an elevated WP capability.
-        return '' !== $token && is_user_logged_in() && current_user_can('edit_posts');
+        return null !== $token && is_user_logged_in() && current_user_can('edit_posts');
     }
 
     private function rate_limit_error(): \WP_Error
