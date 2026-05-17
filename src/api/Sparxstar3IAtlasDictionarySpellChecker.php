@@ -50,7 +50,12 @@ final class Sparxstar3IAtlasDictionarySpellChecker
             return new \WP_Error(
                 'rate_limited',
                 'Too many requests. Retry after 15 minutes.',
-                array('status' => 429)
+                array(
+                    'status' => 429,
+                    'headers' => array(
+                        'Retry-After' => (string) self::RATE_WINDOW,
+                    ),
+                )
             );
         }
 
