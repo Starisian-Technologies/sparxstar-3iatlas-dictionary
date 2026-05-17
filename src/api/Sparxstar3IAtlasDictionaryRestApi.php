@@ -63,10 +63,11 @@ final class Sparxstar3IAtlasDictionaryRestApi
 
     public function permission_helios(\WP_REST_Request $request): bool
     {
-        // TODO: Replace with Helios token introspection when available.
-        $auth = $request->get_header('Authorization');
-        $token = $auth ? str_replace('Bearer ', '', $auth) : '';
-        return '' !== $token && is_user_logged_in();
+        unset($request);
+
+        // Helios token introspection is not yet available. Until then, use
+        // authenticated WordPress user context and an explicit capability check.
+        return is_user_logged_in() && current_user_can('read');
     }
 
     private function rate_limit_error(): \WP_Error
