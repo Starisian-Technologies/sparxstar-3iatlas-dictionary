@@ -394,43 +394,81 @@ final class Sparxstar3IAtlasDictionaryRestApi
         }
 
         $lang = sanitize_text_field((string) ($request->get_param('lang_source') ?? ''));
-
-        $args = array(
-            'taxonomy' => 'aiwa_domain',
-            'hide_empty' => true,
-            'orderby' => 'name',
-            'order' => 'ASC',
-        );
+        $domains = array();
 
         if ('' !== $lang) {
-            $args['object_ids'] = get_posts(
+            global $wpdb;
+
+            $query = $wpdb->prepare(
+                "
+                SELECT domain_terms.slug, domain_terms.name, COUNT(DISTINCT posts.ID) AS count
+                FROM {$wpdb->posts} AS posts
+                INNER JOIN {$wpdb->term_relationships} AS domain_relationships
+                    ON domain_relationships.object_id = posts.ID
+                INNER JOIN {$wpdb->term_taxonomy} AS domain_taxonomy
+                    ON domain_taxonomy.term_taxonomy_id = domain_relationships.term_taxonomy_id
+                    AND domain_taxonomy.taxonomy = %s
+                INNER JOIN {$wpdb->terms} AS domain_terms
+                    ON domain_terms.term_id = domain_taxonomy.term_id
+                INNER JOIN {$wpdb->term_relationships} AS language_relationships
+                    ON language_relationships.object_id = posts.ID
+                INNER JOIN {$wpdb->term_taxonomy} AS language_taxonomy
+                    ON language_taxonomy.term_taxonomy_id = language_relationships.term_taxonomy_id
+                    AND language_taxonomy.taxonomy = %s
+                INNER JOIN {$wpdb->terms} AS language_terms
+                    ON language_terms.term_id = language_taxonomy.term_id
+                WHERE posts.post_type = %s
+                    AND posts.post_status = %s
+                    AND language_terms.slug = %s
+                GROUP BY domain_terms.term_id, domain_terms.slug, domain_terms.name
+                ORDER BY domain_terms.name ASC
+                ",
+                'aiwa_domain',
+                'starmus_tax_language',
+                self::CPT,
+                'publish',
+                $lang
+            );
+
+            $term_rows = $wpdb->get_results($query);
+
+            if ('' !== $wpdb->last_error) {
+                return new \WP_Error('taxonomy_error', 'Failed to retrieve domains.', array('status' => 500));
+            }
+
+            $domains = array_map(
+                static fn(object $term_row): array => array(
+                    'slug' => (string) $term_row->slug,
+                    'name' => (string) $term_row->name,
+                    'code' => self::domain_code_from_slug((string) $term_row->slug),
+                    'count' => (int) $term_row->count,
+                ),
+                is_array($term_rows) ? $term_rows : array()
+            );
+        } else {
+            $terms = get_terms(
                 array(
-                    'post_type' => self::CPT,
-                    'post_status' => 'publish',
-                    'posts_per_page' => -1,
-                    'fields' => 'ids',
-                    'tax_query' => array(
-                        array('taxonomy' => 'starmus_tax_language', 'field' => 'slug', 'terms' => $lang),
-                    ),
+                    'taxonomy' => 'aiwa_domain',
+                    'hide_empty' => true,
+                    'orderby' => 'name',
+                    'order' => 'ASC',
                 )
             );
+
+            if (is_wp_error($terms)) {
+                return new \WP_Error('taxonomy_error', 'Failed to retrieve domains.', array('status' => 500));
+            }
+
+            $domains = array_map(
+                static fn(\WP_Term $term): array => array(
+                    'slug' => $term->slug,
+                    'name' => $term->name,
+                    'code' => self::domain_code_from_slug($term->slug),
+                    'count' => (int) $term->count,
+                ),
+                $terms
+            );
         }
-
-        $terms = get_terms($args);
-
-        if (is_wp_error($terms)) {
-            return new \WP_Error('taxonomy_error', 'Failed to retrieve domains.', array('status' => 500));
-        }
-
-        $domains = array_map(
-            static fn(\WP_Term $term): array => array(
-                'slug' => $term->slug,
-                'name' => $term->name,
-                'code' => self::domain_code_from_slug($term->slug),
-                'count' => (int) $term->count,
-            ),
-            $terms
-        );
 
         return $this->cached_response(
             array('success' => true, 'data' => array('domains' => $domains))
