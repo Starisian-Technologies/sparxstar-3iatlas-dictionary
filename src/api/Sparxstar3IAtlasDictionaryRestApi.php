@@ -355,12 +355,7 @@ final class Sparxstar3IAtlasDictionaryRestApi
         );
 
         $response = $this->cached_response($payload, 3600);
-        $etag_source = wp_json_encode($payload);
-        if (!is_string($etag_source)) {
-            $etag_source = serialize($payload);
-        }
-
-        $etag = hash('sha256', $etag_source);
+        $etag = hash('sha256', (string) wp_json_encode($payload));
         $response->header('ETag', '"' . $etag . '"');
 
         return $response;
