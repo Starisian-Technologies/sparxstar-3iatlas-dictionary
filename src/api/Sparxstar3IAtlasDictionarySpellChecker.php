@@ -80,8 +80,8 @@ final class Sparxstar3IAtlasDictionarySpellChecker
                 continue;
             }
 
-            $exact = get_page_by_title($word, OBJECT, self::CPT);
-            $valid = $exact instanceof \WP_Post && 'publish' === $exact->post_status;
+            $exact = $this->find_exact_word_post($word, $lang);
+            $valid = $exact instanceof \WP_Post;
 
             if ($valid && '' !== $lang) {
                 $lang_terms = wp_get_object_terms($exact->ID, 'starmus_tax_language', array('fields' => 'slugs'));
@@ -119,6 +119,36 @@ final class Sparxstar3IAtlasDictionarySpellChecker
         }
 
         return new \WP_REST_Response(array('results' => $results), 200);
+    }
+
+    private function find_exact_word_post(string $word, string $lang): ?\WP_Post
+    {
+        $args = array(
+            'post_type' => self::CPT,
+            'post_status' => 'publish',
+            'posts_per_page' => 20,
+            's' => $word,
+        );
+
+        if ('' !== $lang) {
+            $args['tax_query'] = array(
+                array('taxonomy' => 'starmus_tax_language', 'field' => 'slug', 'terms' => $lang),
+            );
+        }
+
+        $posts = get_posts($args);
+
+        foreach ($posts as $post) {
+            if (!$post instanceof \WP_Post) {
+                continue;
+            }
+
+            if (0 === strcasecmp($post->post_title, $word)) {
+                return $post;
+            }
+        }
+
+        return null;
     }
 
 }
