@@ -78,6 +78,7 @@ final class Sparxstar3IAtlasDictionarySpellChecker
         }
 
         $results = array();
+        $checked_words = array();
 
         foreach ($normalized_words as $word) {
             $word = trim($word);
@@ -85,41 +86,48 @@ final class Sparxstar3IAtlasDictionarySpellChecker
                 continue;
             }
 
-            $exact = $this->find_exact_word_post($word, $lang);
-            $valid = $exact instanceof \WP_Post;
+            if (!isset($checked_words[$word])) {
+                $exact = $this->find_exact_word_post($word, $lang);
+                $valid = $exact instanceof \WP_Post;
 
-            if ($valid && '' !== $lang) {
-                $lang_terms = wp_get_object_terms($exact->ID, 'starmus_tax_language', array('fields' => 'slugs'));
-                $valid = !is_wp_error($lang_terms) && in_array($lang, $lang_terms, true);
-            }
+                if ($valid && '' !== $lang) {
+                    $lang_terms = wp_get_object_terms($exact->ID, 'starmus_tax_language', array('fields' => 'slugs'));
+                    $valid = !is_wp_error($lang_terms) && in_array($lang, $lang_terms, true);
+                }
 
-            $suggestions = array();
+                $suggestions = array();
 
-            if (!$valid) {
-                $fuzzy_args = array(
-                    'post_type' => self::CPT,
-                    'post_status' => 'publish',
-                    'posts_per_page' => 5,
-                    's' => $word,
-                );
+                if (!$valid) {
+                    $fuzzy_args = array(
+                        'post_type' => self::CPT,
+                        'post_status' => 'publish',
+                        'posts_per_page' => 5,
+                        's' => $word,
+                    );
 
-                if ('' !== $lang) {
-                    $fuzzy_args['tax_query'] = array(
-                        array('taxonomy' => 'starmus_tax_language', 'field' => 'slug', 'terms' => $lang),
+                    if ('' !== $lang) {
+                        $fuzzy_args['tax_query'] = array(
+                            array('taxonomy' => 'starmus_tax_language', 'field' => 'slug', 'terms' => $lang),
+                        );
+                    }
+
+                    $fuzzy = get_posts($fuzzy_args);
+                    $suggestions = array_map(
+                        static fn(\WP_Post $post): string => $post->post_title,
+                        $fuzzy
                     );
                 }
 
-                $fuzzy = get_posts($fuzzy_args);
-                $suggestions = array_map(
-                    static fn(\WP_Post $post): string => $post->post_title,
-                    $fuzzy
+                $checked_words[$word] = array(
+                    'valid' => $valid,
+                    'suggestions' => $suggestions,
                 );
             }
 
             $results[] = array(
                 'word' => $word,
-                'valid' => $valid,
-                'suggestions' => $suggestions,
+                'valid' => $checked_words[$word]['valid'],
+                'suggestions' => $checked_words[$word]['suggestions'],
             );
         }
 
@@ -131,7 +139,7 @@ final class Sparxstar3IAtlasDictionarySpellChecker
         $args = array(
             'post_type' => self::CPT,
             'post_status' => 'publish',
-            'posts_per_page' => 20,
+            'posts_per_page' => 5,
             's' => $word,
         );
 

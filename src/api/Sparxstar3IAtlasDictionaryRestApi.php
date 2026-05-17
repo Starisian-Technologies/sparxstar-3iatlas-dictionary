@@ -295,18 +295,40 @@ final class Sparxstar3IAtlasDictionaryRestApi
 
         $query = new \WP_Query($args);
         $words = array();
+        $post_ids = array();
+
+        foreach ($query->posts as $post) {
+            if ($post instanceof \WP_Post) {
+                $post_ids[] = $post->ID;
+            }
+        }
+
+        $language_map = array();
+        if (!empty($post_ids)) {
+            $language_terms = wp_get_object_terms($post_ids, 'starmus_tax_language', array('fields' => 'all_with_object_id'));
+            if (!is_wp_error($language_terms) && is_array($language_terms)) {
+                foreach ($language_terms as $language_term) {
+                    if (!isset($language_term->object_id) || !isset($language_term->slug)) {
+                        continue;
+                    }
+                    $object_id = (int) $language_term->object_id;
+                    if (!isset($language_map[$object_id])) {
+                        $language_map[$object_id] = (string) $language_term->slug;
+                    }
+                }
+            }
+        }
 
         foreach ($query->posts as $post) {
             if (!$post instanceof \WP_Post) {
                 continue;
             }
 
-            $lang_terms = wp_get_object_terms($post->ID, 'starmus_tax_language', array('fields' => 'slugs'));
             $words[] = array(
                 'headword' => $post->post_title,
                 'slug' => $post->post_name,
                 'uuid' => (string) get_post_meta($post->ID, 'aiwa_entry_uuid', true),
-                'language' => !is_wp_error($lang_terms) && !empty($lang_terms) ? $lang_terms[0] : '',
+                'language' => $language_map[$post->ID] ?? '',
             );
         }
 
@@ -323,7 +345,15 @@ final class Sparxstar3IAtlasDictionaryRestApi
         $response = $this->cached_response($payload, 3600);
         $word_uuids = array_column($words, 'uuid');
         $etag = md5($lang . ':' . $page . ':' . $per_page . ':' . (string) $query->found_posts . ':' . implode(',', $word_uuids));
-        $response->header('ETag', '"' . $etag . '"');
+        $etag_value = '"' . $etag . '"';
+        $if_none_match = trim((string) $request->get_header('If-None-Match'));
+        if ($if_none_match === $etag_value || trim($if_none_match, '"') === $etag) {
+            $not_modified = new \WP_REST_Response(null, 304);
+            $not_modified->header('Cache-Control', 'public, max-age=3600');
+            $not_modified->header('ETag', $etag_value);
+            return $not_modified;
+        }
+        $response->header('ETag', $etag_value);
 
         return $response;
     }

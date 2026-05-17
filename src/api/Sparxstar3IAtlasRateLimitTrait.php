@@ -17,7 +17,7 @@ trait Sparxstar3IAtlasRateLimitTrait
     {
         // TODO: Replace with Helios token introspection when available.
         $ip = $this->get_client_ip();
-        $key = 'dict_rl_' . md5($ip);
+        $key = 'aiwa_dict_rl_' . md5($ip);
         $lock_key = $key . '_lock';
 
         if (!$this->acquire_rate_limit_lock($lock_key)) {
@@ -100,11 +100,21 @@ trait Sparxstar3IAtlasRateLimitTrait
 
     private function get_client_ip(): string
     {
-        $candidates = array(
-            (string) ($_SERVER['HTTP_CF_CONNECTING_IP'] ?? ''),
-            (string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ''),
-            (string) ($_SERVER['REMOTE_ADDR'] ?? ''),
-        );
+        $remote_addr = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+        $remote_addr = sanitize_text_field($remote_addr);
+        $remote_addr = trim($remote_addr);
+
+        $remote_ip = false !== filter_var($remote_addr, FILTER_VALIDATE_IP) ? $remote_addr : '';
+        $trust_proxy_headers = defined('SPARX_3IATLAS_TRUST_PROXY_HEADERS')
+            && true === constant('SPARX_3IATLAS_TRUST_PROXY_HEADERS');
+
+        $candidates = $trust_proxy_headers
+            ? array(
+                (string) ($_SERVER['HTTP_CF_CONNECTING_IP'] ?? ''),
+                (string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ''),
+                $remote_ip,
+            )
+            : array($remote_ip);
 
         foreach ($candidates as $candidate) {
             if ('' === $candidate) {
