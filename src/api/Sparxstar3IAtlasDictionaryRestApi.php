@@ -374,7 +374,7 @@ final class Sparxstar3IAtlasDictionaryRestApi
 
         if ('' !== $lang) {
             global $wpdb;
-            $wpdb->last_error = '';
+            $last_error_before = $wpdb->last_error;
 
             $query = $wpdb->prepare(
                 "
@@ -409,7 +409,7 @@ final class Sparxstar3IAtlasDictionaryRestApi
 
             $term_rows = $wpdb->get_results($query);
 
-            if ('' !== $wpdb->last_error) {
+            if (false === $query || ('' !== $wpdb->last_error && $wpdb->last_error !== $last_error_before)) {
                 return new \WP_Error('taxonomy_error', 'Failed to retrieve domains.', array('status' => 500));
             }
 
@@ -542,7 +542,7 @@ final class Sparxstar3IAtlasDictionaryRestApi
         );
         $response->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
         $response->header('Pragma', 'no-cache');
-        $response->header('Expires', '0');
+        $response->header('Expires', '-1');
 
         return $response;
     }
