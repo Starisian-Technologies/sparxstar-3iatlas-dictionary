@@ -124,7 +124,10 @@ trait Sparxstar3IAtlasRateLimitTrait
                 continue;
             }
 
-            if (false !== filter_var($ip, FILTER_VALIDATE_IP)) {
+            $is_forwarded_header_ip = $trust_proxy_headers && $ip !== $remote_ip;
+            $flags = $is_forwarded_header_ip ? (FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) : 0;
+
+            if (false !== filter_var($ip, FILTER_VALIDATE_IP, array('flags' => $flags))) {
                 return $ip;
             }
         }
