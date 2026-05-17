@@ -139,7 +139,7 @@ final class Sparxstar3IAtlasDictionarySpellChecker
         $args = array(
             'post_type' => self::CPT,
             'post_status' => 'publish',
-            'posts_per_page' => 5,
+            'posts_per_page' => 1,
             's' => $word,
         );
 
