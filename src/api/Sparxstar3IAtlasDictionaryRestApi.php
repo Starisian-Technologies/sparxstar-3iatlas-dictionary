@@ -362,7 +362,7 @@ final class Sparxstar3IAtlasDictionaryRestApi
         $etag = md5($lang . ':' . $page . ':' . $per_page . ':' . (string) $query->found_posts . ':' . implode(',', $word_uuids));
         $etag_value = '"' . $etag . '"';
         $if_none_match = trim((string) $request->get_header('If-None-Match'));
-        if ($if_none_match === $etag_value || trim($if_none_match, '"') === $etag) {
+        if ($if_none_match === $etag_value) {
             $not_modified = new \WP_REST_Response(null, 304);
             $not_modified->header('Cache-Control', 'public, max-age=3600');
             $not_modified->header('ETag', $etag_value);
