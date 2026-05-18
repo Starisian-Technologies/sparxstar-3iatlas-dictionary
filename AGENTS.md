@@ -157,52 +157,39 @@ AGENTS.md                                   ← this file
 
 ---
 
-## Current Task — Phase 0: Bug Fixes
+## Current State — Phases 0 and 1 Complete
 
-**This is a prerequisite for all other work. Deliver as a single PR.**
+### Phase 0 — Bug Fixes ✅ Done
+- `starmus_tax_language` and `starmus_tax_dialect` both registered on `aiwa-cpt-dictionary`
+- `DictionaryForm.php` language taxonomy set on submission
+- `aiwa_sentence_ipa` SCF discrepancy documented — PostTypes.php is authoritative, do not add to SCF JSON
 
-### Bug 1 — `starmus_tax_language` not registered on dictionary CPT
+### Phase 1 — REST API ✅ Done
+All eight endpoints live under `sparxstar/v1/dictionary`:
+- GET /lookup
+- GET /search
+- GET /wordlist (with ETag)
+- GET /languages
+- GET /domains
+- GET /game-set (with ETag)
+- GET /word-of-day
+- POST /progress/sync (Helios auth)
 
-**File:** `src/includes/Sparxstar3IAtlasPostTypes.php`
+Spell check endpoint live: POST /sparxstar/v1/dictionary/spell
 
-**Problem:** `register_taxonomy('starmus_tax_language')` lists `object_type` as audio CPTs only. `aiwa-cpt-dictionary` is absent. WordPress resolves this at registration time — the CPT's own taxonomy declaration is not sufficient. The taxonomy's `object_type` array is authoritative.
+Rate limiting extracted to `Sparxstar3IAtlasRateLimitTrait` — used by both RestApi and SpellChecker.
 
-**Fix:** ✅ Added `aiwa-cpt-dictionary` to `starmus_tax_language` and `starmus_tax_dialect` object_type arrays.
+### Phase 2 — React Frontend Rebuild ⏸ Waiting for spec
 
-**Verification step:** After deployment, run `wp term list starmus_tax_language --orderby=count` to confirm terms exist with correct counts.
-**API dependency note:** Language-filtered API behavior depends on this taxonomy registration fix being present in the deployed environment; without it, language filters can return incomplete or empty results.
+**Do not begin Phase 2 until a UI specification is provided.**
 
-### Bug 2 — `aiwa_sentence_ipa` absent from SCF JSON
+The existing `src/js/app.jsx` must not be patched. It requires a full rebuild. The specification will be provided as a separate document. Wait for it.
 
-**No code change needed.** See SCF DISCREPANCY section above.
-
-### Bug 3 — `DictionaryForm.php` creates entries with no language taxonomy
-
-**File:** `src/frontend/Sparxstar3IAtlasDictionaryForm.php`
-
-**Blocked by:** Bug 1 must be fixed and deployed first.
-
-**Fix:** ✅ Added language `<select>` field populated from `starmus_tax_language` terms. Validates that the submitted value is a real term slug. Calls `wp_set_object_terms()` after `wp_insert_post()`.
-
----
-
-## Phase 1 — After Phase 0 Merges
-
-1. Write `src/api/Sparxstar3IAtlasDictionaryRestApi.php` — all eight endpoints listed above
-2. Write `src/gamification/Sparxstar3IAtlasDictionaryProgress.php` — `/progress/sync` handler + myCred hook firing
-3. Register both classes in `Sparxstar3IAtlasDictionary::sparxIAtlas_load_dependencies()`
-4. Add rate-limit transient logic to every public GET endpoint
-5. Add `Cache-Control` and `ETag` headers to `/wordlist` and `/game-set`
-
-Do not begin Phase 1 until Phase 0 PR is merged.
-
----
-
-## Phase 2 — React Frontend Rebuild
-
-**Do not begin until Phase 1 is complete and a separate UI spec is provided.**
-
-The React frontend (`src/js/app.jsx`) requires a full rebuild. Do not patch the existing file. Wait for the UI specification before touching this file.
+Phase 2 will cover:
+- Public-facing dictionary experience (Browse mode)
+- Word games (Play mode)
+- AIWA brand design
+- Source-language browsing by registered users
 
 ---
 
