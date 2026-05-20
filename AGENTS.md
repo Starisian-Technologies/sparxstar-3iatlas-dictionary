@@ -162,7 +162,7 @@ AGENTS.md                                   ← this file
 ### Phase 0 — Bug Fixes ✅ Done
 - `starmus_tax_language` and `starmus_tax_dialect` both registered on `aiwa-cpt-dictionary`
 - `src/frontend/Sparxstar3IAtlasDictionaryForm.php` language taxonomy set on submission
-- `aiwa_sentence_ipa` SCF discrepancy documented — PostTypes.php is authoritative, do not add to SCF JSON
+- `aiwa_sentence_ipa` SCF discrepancy documented — `src/includes/Sparxstar3IAtlasPostTypes.php` is authoritative, do not add to SCF JSON
 
 ### Phase 1 — REST API ✅ Done
 All eight endpoints live under `sparxstar/v1/dictionary`:
