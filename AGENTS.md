@@ -28,8 +28,8 @@ This is the authoritative lexical data store and REST API service for the entire
 
 ## What Exists (Do Not Rebuild)
 
-- `src/includes/Sparxstar3IAtlasPostTypes.php` — CPT and taxonomy registrations (has known bugs — see Phase 0)
-- `src/frontend/Sparxstar3IAtlasDictionaryForm.php` — community word submission form (has known bugs — see Phase 0)
+- `src/includes/Sparxstar3IAtlasPostTypes.php` — CPT and taxonomy registrations
+- `src/frontend/Sparxstar3IAtlasDictionaryForm.php` — community word submission form
 - `src/js/app.jsx` — React frontend (needs full rebuild in Phase 2 — do not patch, wait for spec)
 - `src/core/Sparxstar3IAtlasDictionary.php` — main plugin class
 - `tailwind.config.js` — Tailwind config (needs AIWA brand colors in Phase 2)
@@ -140,13 +140,13 @@ do_action('aiwa_game_return_visit',      $user_id);                            /
 ```
 src/
   api/
-    Sparxstar3IAtlasDictionaryRestApi.php   ← Phase 1: create this
+    Sparxstar3IAtlasDictionaryRestApi.php   ← Phase 1: implemented
   gamification/
-    Sparxstar3IAtlasDictionaryProgress.php  ← Phase 1: create this
+    Sparxstar3IAtlasDictionaryProgress.php  ← Phase 1: implemented
   includes/
-    Sparxstar3IAtlasPostTypes.php           ← Phase 0: bug fixes here
+    Sparxstar3IAtlasPostTypes.php           ← Phase 0 bug fixes completed
   frontend/
-    Sparxstar3IAtlasDictionaryForm.php      ← Phase 0: bug fix here
+    Sparxstar3IAtlasDictionaryForm.php      ← Phase 0 bug fix completed
   core/
     Sparxstar3IAtlasDictionary.php          ← register new classes here
   js/
