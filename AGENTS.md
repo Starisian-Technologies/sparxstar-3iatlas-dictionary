@@ -79,7 +79,7 @@ Do not add this field to the SCF JSON. Do not remove it from PostTypes.php.
 { "success": true, "data": {}, "meta": { "total": 0, "page": 1, "per_page": 20 } }
 ```
 
-**Core Phase 1 endpoints:**
+**Core Phase 1 endpoints (implemented):**
 
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
