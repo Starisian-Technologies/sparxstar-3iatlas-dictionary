@@ -171,7 +171,7 @@ All eight endpoints live under `sparxstar/v1/dictionary`:
 - GET /wordlist (with ETag)
 - GET /languages
 - GET /domains
-- GET /game-set (with ETag)
+- GET /game-set
 - GET /word-of-day
 - POST /progress/sync (Helios auth)
 
