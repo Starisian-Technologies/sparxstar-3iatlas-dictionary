@@ -177,7 +177,7 @@ All eight endpoints live under `sparxstar/v1/dictionary`:
 
 Note: Do not describe `/progress/sync` as complete Helios auth until `permission_helios()` validates Helios tokens via the real introspection/verification path instead of the current stub guard.
 
-Spell check endpoint live: POST /sparxstar/v1/dictionary/spell
+Spell check endpoint is live: POST /sparxstar/v1/dictionary/spell
 
 Rate limiting extracted to `Sparxstar3IAtlasRateLimitTrait` — used by both RestApi and SpellChecker.
 
