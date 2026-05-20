@@ -173,7 +173,9 @@ All eight endpoints live under `sparxstar/v1/dictionary`:
 - GET /domains
 - GET /game-set
 - GET /word-of-day
-- POST /progress/sync (Helios auth)
+- POST /progress/sync (temporary Bearer + WordPress capability guard; full Helios token introspection still TODO)
+
+Note: Do not describe `/progress/sync` as complete Helios auth until `permission_helios()` validates Helios tokens via the real introspection/verification path instead of the current stub guard.
 
 Spell check endpoint live: POST /sparxstar/v1/dictionary/spell
 
