@@ -91,8 +91,7 @@ Do not add this field to the SCF JSON. Do not remove it from PostTypes.php.
 | GET | `/game-set` | Public | Curated word set for game use (richer than wordlist) |
 | GET | `/word-of-day` | Public | Single deterministic daily entry |
 | POST | `/progress/sync` | Temporary non-Helios guard | Batch game event sync → myCred points |
-
-Additional endpoint under the same namespace: `POST /spell`.
+| POST | `/spell` | Public (rate-limited) | Spell-checking service for dictionary entries |
 
 **`/game-set` parameters:** `lang_source` (required), `domain` (optional), `limit` (default 20, max 50), `include_audio` (bool)
 **`/game-set` exclusion rule:** Exclude entries missing headword, translation_en, or IPA. Games require all three.
@@ -176,7 +175,7 @@ Endpoints live under `sparxstar/v1/dictionary`:
 - GET /game-set
 - GET /word-of-day
 - POST /progress/sync (temporary non-Helios guard: Bearer token presence + logged-in user + WordPress capability check; full Helios token introspection still TODO)
-- POST /spell
+- POST /spell (public, rate-limited spell-check endpoint)
 
 Note: Do not describe `/progress/sync` as complete Helios auth until `permission_helios()` validates Helios tokens via the real introspection/verification path instead of the current stub guard.
 
