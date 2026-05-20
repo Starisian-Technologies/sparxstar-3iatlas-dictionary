@@ -71,7 +71,7 @@ Do not add this field to the SCF JSON. Do not remove it from PostTypes.php.
 
 **Auth model:**
 - All GET endpoints: public, no auth required, rate-limited (100 requests / 15 min / IP via WordPress transients)
-- POST `/progress/sync`: requires Helios Bearer token (not WordPress session)
+- POST `/progress/sync`: temporary non-Helios guard (Bearer token presence + logged-in user + capability check) until Helios token introspection is implemented
 - Add `// TODO: Replace with Helios token introspection` comment on every rate-limit check
 
 **Response envelope (all endpoints):**
@@ -79,7 +79,7 @@ Do not add this field to the SCF JSON. Do not remove it from PostTypes.php.
 { "success": true, "data": {}, "meta": { "total": 0, "page": 1, "per_page": 20 } }
 ```
 
-**Endpoints to implement (Phase 1):**
+**Core Phase 1 endpoints:**
 
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
@@ -90,7 +90,9 @@ Do not add this field to the SCF JSON. Do not remove it from PostTypes.php.
 | GET | `/domains` | Public | Semantic domain taxonomy terms with counts |
 | GET | `/game-set` | Public | Curated word set for game use (richer than wordlist) |
 | GET | `/word-of-day` | Public | Single deterministic daily entry |
-| POST | `/progress/sync` | Helios token | Batch game event sync → myCred points |
+| POST | `/progress/sync` | Temporary non-Helios guard | Batch game event sync → myCred points |
+
+Additional endpoint under the same namespace: `POST /spell`.
 
 **`/game-set` parameters:** `lang_source` (required), `domain` (optional), `limit` (default 20, max 50), `include_audio` (bool)
 **`/game-set` exclusion rule:** Exclude entries missing headword, translation_en, or IPA. Games require all three.
@@ -165,7 +167,7 @@ AGENTS.md                                   ← this file
 - `aiwa_sentence_ipa` SCF discrepancy documented — `src/includes/Sparxstar3IAtlasPostTypes.php` is authoritative, do not add to SCF JSON
 
 ### Phase 1 — REST API ✅ Done
-All eight endpoints live under `sparxstar/v1/dictionary`:
+Endpoints live under `sparxstar/v1/dictionary`:
 - GET /lookup
 - GET /search
 - GET /wordlist (with ETag)
@@ -174,10 +176,9 @@ All eight endpoints live under `sparxstar/v1/dictionary`:
 - GET /game-set
 - GET /word-of-day
 - POST /progress/sync (temporary non-Helios guard: Bearer token presence + logged-in user + WordPress capability check; full Helios token introspection still TODO)
+- POST /spell
 
 Note: Do not describe `/progress/sync` as complete Helios auth until `permission_helios()` validates Helios tokens via the real introspection/verification path instead of the current stub guard.
-
-Spell check endpoint is live: POST /sparxstar/v1/dictionary/spell
 
 Rate limiting extracted to `Sparxstar3IAtlasRateLimitTrait` — used by both RestApi and SpellChecker.
 
