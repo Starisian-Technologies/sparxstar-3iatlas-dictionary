@@ -39,7 +39,7 @@ body {
 
 /* Design approach: Editorial magazine style with clean typography and organized sections */
 
-/* Note: Crimson Pro and Work Sans are loaded only by the form entry bundle (form-entry.jsx), not here. */
+/* Note: No external web fonts are loaded; form typography uses local/system font stacks. */
 
 :root {
     --color-primary: #1a472a;
@@ -53,8 +53,8 @@ body {
     --color-bg-section: #fff;
     --color-text: #1f2937;
     --color-text-light: #6b7280;
-    --font-serif: 'Crimson Pro', serif;
-    --font-sans: 'Work Sans', sans-serif;
+    --font-serif: ui-serif, georgia, cambria, 'Times New Roman', times, serif;
+    --font-sans: system-ui, -apple-system, 'Segoe UI', roboto, 'Noto Sans', arial, sans-serif;
     --shadow-sm: 0 1px 3px rgb(0 0 0 / 5%);
     --shadow-md: 0 4px 12px rgb(0 0 0 / 8%);
     --shadow-lg: 0 8px 24px rgb(0 0 0 / 12%);
