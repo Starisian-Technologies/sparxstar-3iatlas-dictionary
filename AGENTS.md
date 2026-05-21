@@ -183,7 +183,7 @@ Rate limiting extracted to `Sparxstar3IAtlasRateLimitTrait` — used by both Res
 
 ### Phase 2 — React Frontend Rebuild ✅ Done
 
-Specification: `DICTIONARY-DIRECTION-v2.md` Sections 4 and 6.
+Specification: `DICTIONARY-DIRECTION-v2.md` Sections 4 and 6 — with voting/corrections removed per `3IATLAS-SUITE-ARCHITECTURE-v1.0.md`. See **Spec Version History** section below for full context.
 
 **Completed:**
 - `tailwind.config.js`: AIWA brand colours (brand.pink `#E91E8C`, brand.purple `#7B3FA0`), POS colour map, surface colours, `darkMode: 'class'`. Old `primary` blue palette removed.
@@ -207,9 +207,54 @@ Specification: `DICTIONARY-DIRECTION-v2.md` Sections 4 and 6.
 - Correction submission UI (removed by design)
 - Correction display in detail view (removed by design)
 
+---
+
+## Spec Version History and Decision Record
+
+> **READ THIS BEFORE STARTING ANY NEW SPRINT.** This section documents the decision trail so future sessions do not re-introduce removed features.
+
+### What Copilot Built Against in Each Phase
+
+| Phase | Spec used | Status |
+|---|---|---|
+| Phase 0 (bug fixes) | `DICTIONARY-DIRECTION-v2.md` | Correct |
+| Phase 1 (REST API) | `DICTIONARY-DIRECTION-v2.md` | Mostly correct — endpoints align |
+| Phase 2 (React rebuild) | `DICTIONARY-DIRECTION-v2.md` Sections 4 & 6 | UI correct; voting/corrections correctly omitted |
+
+### The v2 / Architecture Doc Conflict
+
+`DICTIONARY-DIRECTION-v2.md` still exists in this repo. **It should be treated as partially superseded.** Specifically:
+
+- **Section 2 (Community Corrections & Voting)** is **fully removed** from the product. The decision to remove it was made in the May 14, 2026 session and captured in `3IATLAS-SUITE-ARCHITECTURE-v1.0.md` (stored at `.github/instructions/`). Games replace community voting as the quality/engagement signal.
+- **Sections 4 and 6** (UI and work plan) remain broadly correct for Phase 2, with the voting UI removed.
+
+The AGENTS.md Absolute Rule "Never add community voting, correction CPTs, or AJAX voting endpoints" is **correct** and takes precedence over anything written in v2.
+
+### Authoritative Spec for Future Work
+
+For anything beyond Phase 2, the authoritative reference is **`3IATLAS-SUITE-ARCHITECTURE-v1.0.md`** at `.github/instructions/`. Key decisions recorded there:
+
+- Community voting and corrections: **removed**. Games replace them.
+- The `aiwa-cpt-correction` CPT was designed in v2 but **must not be created**.
+- The `user_vote`, `vote_counts`, and `corrections` fields were designed for `/lookup` in v2 but **must not be added**.
+- No community AJAX endpoints — these were v2 designs that did not ship.
+
+### What v3 of Dictionary Direction Will Add
+
+The architecture doc specifies a v3 of the direction document that will:
+- Remove Section 2 entirely
+- Add games as a first-class feature: Browse ↔ Play tab navigation, five game types
+- Specify IndexedDB caching (not localStorage) for game-set and wordlist data
+- Add a Play mode UI spec
+
+**Until that v3 spec is committed to this repo, do not build the games UI.** Wait for the spec document, same as Phase 2 waited for the UI spec.
+
 ### Phase 3 — Integration Tests ⏸ Pending
 
-Phase 3 covers cross-tool REST integration tests (WordPad, S2S, RLC). Spec: `DICTIONARY-DIRECTION-v2.md` Section 6 Phase 3.
+Phase 3 covers cross-tool REST integration verification. The authoritative scope is in `3IATLAS-SUITE-ARCHITECTURE-v1.0.md`:
+- WordPad → `/lookup` and `/spell` endpoints
+- S2S → `/wordlist` with `lang_source`
+- RLC → offline `/wordlist` with `lang_source` filter and fallback
 
 ---
 
