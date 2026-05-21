@@ -139,6 +139,10 @@ final class Sparxstar3IAtlasDictionary {
                 array(
                     'root_id'    => 'sparxstar-dictionary-root',
                     'graphqlUrl' => $graphql_url,
+                    'ajaxUrl'    => \admin_url( 'admin-ajax.php' ),
+                    'restUrl'    => \rest_url( 'sparxstar/v1/dictionary' ),
+                    'isLoggedIn' => \is_user_logged_in(),
+                    'userId'     => \get_current_user_id(),
                 )
             );
             // Ensure assets are enqueued (in case they weren't caught by the global check, e.g., in a widget)

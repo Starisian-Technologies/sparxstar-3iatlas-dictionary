@@ -39,7 +39,7 @@ body {
 
 /* Design approach: Editorial magazine style with clean typography and organized sections */
 
-@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600&family=Work+Sans:wght@400;500;600&display=swap');
+/* Note: Crimson Pro and Work Sans are loaded only by the form entry bundle (form-entry.jsx), not here. */
 
 :root {
     --color-primary: #1a472a;

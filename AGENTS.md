@@ -181,17 +181,35 @@ Note: Do not describe `/progress/sync` as complete Helios auth until `permission
 
 Rate limiting extracted to `Sparxstar3IAtlasRateLimitTrait` — used by both RestApi and SpellChecker.
 
-### Phase 2 — React Frontend Rebuild ⏸ Waiting for spec
+### Phase 2 — React Frontend Rebuild ✅ Done
 
-**Do not begin Phase 2 until a UI specification is provided.**
+Specification: `DICTIONARY-DIRECTION-v2.md` Sections 4 and 6.
 
-The existing `src/js/app.jsx` must not be patched. It requires a full rebuild. The specification will be provided as a separate document. Wait for it.
+**Completed:**
+- `tailwind.config.js`: AIWA brand colours (brand.pink `#E91E8C`, brand.purple `#7B3FA0`), POS colour map, surface colours, `darkMode: 'class'`. Old `primary` blue palette removed.
+- `src/css/sparxstar-3iatlas-dictionary-style.css`: Crimson Pro / Work Sans Google Font `@import` removed from app bundle. Form bundle is unaffected.
+- `src/core/Sparxstar3IAtlasDictionary.php`: `wp_localize_script` now passes `ajaxUrl`, `restUrl`, `isLoggedIn`, `userId` in addition to existing keys.
+- `src/js/app.jsx`: **Full rebuild** — the old patched file has been replaced. Key features delivered:
+  - Three-state responsive layout: mobile (< 1024 px) and desktop (≥ 1024 px). Mobile uses bottom-nav (Home / Explore / Saved / Recent) + bottom-sheet detail. Desktop uses a three-column layout (240 px sidebar, flexible word list, 420 px persistent detail panel).
+  - Source-language selector: fetched from REST `GET /languages`; persisted in `localStorage('aiwa-dict-source-lang')`. Renders as horizontal pills on mobile, vertical list in desktop sidebar.
+  - Filter pills: All / Noun / Verb / Phrase / Audio / Image — applied client-side.
+  - Word list row: deterministic avatar circle (26-colour map), title, POS pill (AIWA brand colours), IPA, translation, audio/image icons, heart (save) button, chevron.
+  - Detail view with four tabs: Overview / Examples N / Related / Origin. Desktop: persistent right panel. Mobile/tablet: animated bottom sheet.
+  - Word of the Day card: client-side deterministic (`Math.floor(Date.now() / 86400000) % count`). Displayed above word list on mobile home tab and in desktop empty-state panel.
+  - Favorites: `localStorage('aiwa-dict-favorites')`. Heart toggle on every row and detail header.
+  - History: `localStorage('aiwa-dict-history')` — last 50 viewed words. Shown in "Recent" nav tab.
+  - Dark mode: `localStorage('aiwa-dict-theme')`. `dark` class applied to root container; all components carry `dark:` Tailwind variants.
+  - Language filter: `localStorage('aiwa-dict-source-lang')`. Words fetched via GraphQL; filtered client-side using `languages { nodes { slug } }` included in the list query.
+  - Explore tab: language-card grid; selecting a language sets the source-language filter and switches to Home tab.
 
-Phase 2 will cover:
-- Public-facing dictionary experience (Browse mode)
-- Word games (Play mode)
-- AIWA brand design
-- Source-language browsing by registered users
+**Not implemented (per AGENTS.md absolute rules):**
+- Vote UI (removed by design — see Absolute Rules)
+- Correction submission UI (removed by design)
+- Correction display in detail view (removed by design)
+
+### Phase 3 — Integration Tests ⏸ Pending
+
+Phase 3 covers cross-tool REST integration tests (WordPad, S2S, RLC). Spec: `DICTIONARY-DIRECTION-v2.md` Section 6 Phase 3.
 
 ---
 

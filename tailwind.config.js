@@ -9,6 +9,7 @@ module.exports = {
         './src/templates/**/*.php',
         './*.php',
     ],
+    darkMode: 'class',
     theme: {
         extend: {
             fontFamily: {
@@ -34,18 +35,27 @@ module.exports = {
                 'slide-up': 'slideUp 0.3s ease-out',
             },
             colors: {
-                primary: {
-                    50: '#f0f9ff',
-                    100: '#e0f2fe',
-                    200: '#bae6fd',
-                    300: '#7dd3fc',
-                    400: '#38bdf8',
-                    500: '#0ea5e9',
-                    600: '#0284c7',
-                    700: '#0369a1',
-                    800: '#075985',
-                    900: '#0c4a6e',
-                    950: '#082f49',
+                brand: {
+                    pink: '#E91E8C',
+                    purple: '#7B3FA0',
+                },
+                surface: {
+                    light: '#F8F8F8',
+                    dark: '#1A1A1A',
+                },
+                pos: {
+                    'noun-bg': '#FCE4F3',
+                    'noun-text': '#C2185B',
+                    'verb-bg': '#E8F5E9',
+                    'verb-text': '#2E7D32',
+                    'adj-bg': '#E3F2FD',
+                    'adj-text': '#1565C0',
+                    'phrase-bg': '#E0F7FA',
+                    'phrase-text': '#00796B',
+                    'adv-bg': '#FFF8E1',
+                    'adv-text': '#F57F17',
+                    'other-bg': '#F3E5F5',
+                    'other-text': '#6A1B9A',
                 },
             },
         },
