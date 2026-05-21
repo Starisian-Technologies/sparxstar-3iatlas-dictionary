@@ -209,6 +209,39 @@ Specification: `DICTIONARY-DIRECTION-v2.md` Sections 4 and 6 — with voting/cor
 
 ---
 
+### Phase 4 — Games / Play Tab ✅ Done
+
+Specification: `.github/instructions/dictionary-game-spec-v1.md`
+
+**New files:**
+```
+src/js/hooks/idbUtils.js           — shared IndexedDB helper (openDB, getRecord, putRecord, getAllRecords, deleteRecord)
+src/js/hooks/useGameSet.js         — /game-set fetch + 3-day IndexedDB TTL cache
+src/js/hooks/useGameSession.js     — session state (currentIndex, results, xpEarned, checkpoint resume)
+src/js/hooks/useProgressSync.js    — event outbox → POST /progress/sync on connect
+src/js/games/AccessoryBar.jsx      — Mandinka character bar (ŋ ɓ ɗ ñ ɲ ʔ á é í ó ú), visualViewport positioning
+src/js/games/SessionComplete.jsx   — post-session summary (stats, cumulative word count, action buttons)
+src/js/games/GameShell.jsx         — session setup (domain/game/word-count selectors), game router, phase management
+src/js/games/games/DomainFlash.jsx — Game 4.6: flashcard reveal, "I knew it" / "Still learning"
+src/js/games/games/MeaningMatch.jsx — Game 4.3: 3-option meaning selection, same-domain distractors
+src/js/games/games/ArrangeWord.jsx — Game 4.2: scrambled letter tiles, tap-to-place, auto-check
+src/js/games/games/LetterReveal.jsx — Game 4.5: alphabet pool, 5 wrong = word skipped, pottery vessel tilt
+src/js/games/games/CompleteSentence.jsx — Game 4.4: sentence with word blanked, typed input, AccessoryBar
+src/js/games/games/ListenWrite.jsx — Game 4.1: auto-play audio, typed response, AccessoryBar, +10 XP
+```
+
+**Changes to existing files:**
+- `src/js/app.jsx`: Play tab added to mobile bottom nav (5th item, Gamepad2 icon). Desktop gets Browse/Play tab bar above the content area. GameShell rendered when Play is active.
+- `webpack.config.js`: Added `javascript/auto` rule for `src/**/*.js` to allow ESM import/export with `"type":"commonjs"` in package.json.
+
+**Open questions carried forward:**
+| ID | Question | Blocking |
+|---|---|---|
+| OQ-G3 | Animation asset for Letter Reveal — pottery vessel emoji (🏺) used as placeholder; replace with AIWA-approved cultural visual | Letter Reveal polish |
+| OQ-G4 | Domain Flash "I knew it" — currently fires `aiwa_game_word_correct`; confirm if a separate hook is needed | MyCred hook map |
+
+---
+
 ## Spec Version History and Decision Record
 
 > **READ THIS BEFORE STARTING ANY NEW SPRINT.** This section documents the decision trail so future sessions do not re-introduce removed features.

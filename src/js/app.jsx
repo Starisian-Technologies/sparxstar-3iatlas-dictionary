@@ -1,10 +1,4 @@
-import React, {
-    useState,
-    useMemo,
-    useRef,
-    useEffect,
-    useCallback,
-} from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
     ApolloClient,
@@ -30,8 +24,10 @@ import {
     Home,
     Sun,
     Moon,
+    Gamepad2,
 } from 'lucide-react';
 import '../css/sparxstar-3iatlas-dictionary-style.css';
+import GameShell from './games/GameShell.jsx';
 
 // ---------------------------------------------------------------------------
 // Settings
@@ -80,30 +76,51 @@ const client = new ApolloClient({
 
 /** POS colour map per AIWA brand spec. */
 const POS_STYLE = {
-    noun:      { background: '#FCE4F3', color: '#C2185B' },
-    verb:      { background: '#E8F5E9', color: '#2E7D32' },
+    noun: { background: '#FCE4F3', color: '#C2185B' },
+    verb: { background: '#E8F5E9', color: '#2E7D32' },
     adjective: { background: '#E3F2FD', color: '#1565C0' },
-    phrase:    { background: '#E0F7FA', color: '#00796B' },
-    adverb:    { background: '#FFF8E1', color: '#F57F17' },
+    phrase: { background: '#E0F7FA', color: '#00796B' },
+    adverb: { background: '#FFF8E1', color: '#F57F17' },
 };
 
 /** 26 deterministic avatar background colours — A to Z. */
 const AVATAR_COLORS = [
-    '#E91E8C', '#7B3FA0', '#009688', '#F44336', '#FF9800',
-    '#4CAF50', '#2196F3', '#9C27B0', '#00BCD4', '#FF5722',
-    '#607D8B', '#795548', '#3F51B5', '#8BC34A', '#FFC107',
-    '#E91E63', '#03A9F4', '#CDDC39', '#FF4081', '#00E676',
-    '#FF6D00', '#651FFF', '#00B0FF', '#1DE9B6', '#FFD600',
+    '#E91E8C',
+    '#7B3FA0',
+    '#009688',
+    '#F44336',
+    '#FF9800',
+    '#4CAF50',
+    '#2196F3',
+    '#9C27B0',
+    '#00BCD4',
+    '#FF5722',
+    '#607D8B',
+    '#795548',
+    '#3F51B5',
+    '#8BC34A',
+    '#FFC107',
+    '#E91E63',
+    '#03A9F4',
+    '#CDDC39',
+    '#FF4081',
+    '#00E676',
+    '#FF6D00',
+    '#651FFF',
+    '#00B0FF',
+    '#1DE9B6',
+    '#FFD600',
     '#D500F9',
 ];
 
 const FILTER_LABELS = ['All', 'Noun', 'Verb', 'Phrase', 'Audio', 'Image'];
 
 const NAV_ITEMS = [
-    { id: 'home',      label: 'Home',    Icon: Home },
-    { id: 'explore',   label: 'Explore', Icon: Compass },
-    { id: 'favorites', label: 'Saved',   Icon: Heart },
-    { id: 'history',   label: 'Recent',  Icon: Clock },
+    { id: 'home', label: 'Home', Icon: Home },
+    { id: 'explore', label: 'Explore', Icon: Compass },
+    { id: 'favorites', label: 'Saved', Icon: Heart },
+    { id: 'history', label: 'Recent', Icon: Clock },
+    { id: 'play', label: 'Play', Icon: Gamepad2 },
 ];
 
 // ---------------------------------------------------------------------------
@@ -117,7 +134,12 @@ const GET_ALL_WORDS_INDEX = gql`
                     id
                     title
                     slug
-                    languages { nodes { slug name } }
+                    languages {
+                        nodes {
+                            slug
+                            name
+                        }
+                    }
                     dictionaryEntryDetails {
                         aiwaTranslationEnglish
                         aiwaTranslationFrench
@@ -125,8 +147,16 @@ const GET_ALL_WORDS_INDEX = gql`
                         aiwaSearchStringEnglish
                         aiwaSearchStringFrench
                         aiwaIpaPronunciation
-                        aiwaAudioFile { node { mediaItemUrl } }
-                        aiwaWordPhoto  { node { id } }
+                        aiwaAudioFile {
+                            node {
+                                mediaItemUrl
+                            }
+                        }
+                        aiwaWordPhoto {
+                            node {
+                                id
+                            }
+                        }
                     }
                 }
             }
@@ -147,8 +177,16 @@ const GET_SINGLE_WORD_DETAILS = gql`
                 phoneticProunciation
                 aiwaOrigin
                 aiwaExtract
-                aiwaAudioFile { node { mediaItemUrl } }
-                aiwaWordPhoto  { node { sourceUrl } }
+                aiwaAudioFile {
+                    node {
+                        mediaItemUrl
+                    }
+                }
+                aiwaWordPhoto {
+                    node {
+                        sourceUrl
+                    }
+                }
                 aiwaExampleSentences {
                     sentenceExample
                     sentenceIpaPronounciation
@@ -156,9 +194,33 @@ const GET_SINGLE_WORD_DETAILS = gql`
                     sentenceEnglishTranslation
                     sentenceFrenchTranslation
                 }
-                aiwaSynonyms        { nodes { ... on Dictionary { id title slug } } }
-                aiwaAntonyms        { nodes { ... on Dictionary { id title slug } } }
-                aiwaPhoneticVariants { nodes { ... on Dictionary { id title slug } } }
+                aiwaSynonyms {
+                    nodes {
+                        ... on Dictionary {
+                            id
+                            title
+                            slug
+                        }
+                    }
+                }
+                aiwaAntonyms {
+                    nodes {
+                        ... on Dictionary {
+                            id
+                            title
+                            slug
+                        }
+                    }
+                }
+                aiwaPhoneticVariants {
+                    nodes {
+                        ... on Dictionary {
+                            id
+                            title
+                            slug
+                        }
+                    }
+                }
             }
         }
     }
@@ -184,9 +246,11 @@ function useLocalStorage(key, defaultValue) {
             setValue(resolved);
             try {
                 localStorage.setItem(key, JSON.stringify(resolved));
-            } catch { /* quota exceeded — degrade silently */ }
+            } catch {
+                /* quota exceeded — degrade silently */
+            }
         },
-        [key, value],
+        [key, value]
     );
 
     return [value, set];
@@ -248,10 +312,7 @@ const AvatarCircle = ({ title }) => {
 const POSPill = ({ pos }) => {
     if (!pos) return null;
     return (
-        <span
-            className="text-xs font-semibold px-2 py-0.5 rounded-full"
-            style={posStyle(pos)}
-        >
+        <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={posStyle(pos)}>
             {pos}
         </span>
     );
@@ -348,22 +409,15 @@ const WordListRow = ({ word, language, onSelect, onPrefetch, isFavorite, onFavor
             </div>
 
             <div className="flex items-center gap-1 shrink-0">
-                {hasAudio && (
-                    <Volume2
-                        size={14}
-                        className="text-pink-400"
-                        aria-label="Has audio"
-                    />
-                )}
+                {hasAudio && <Volume2 size={14} className="text-pink-400" aria-label="Has audio" />}
                 {hasImage && (
-                    <ImageIcon
-                        size={14}
-                        className="text-purple-400"
-                        aria-label="Has image"
-                    />
+                    <ImageIcon size={14} className="text-purple-400" aria-label="Has image" />
                 )}
                 <button
-                    onClick={(e) => { e.stopPropagation(); onFavoriteToggle(word.slug); }}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onFavoriteToggle(word.slug);
+                    }}
                     className={`p-1 rounded-full transition-colors ${isFavorite ? 'text-pink-500' : 'text-gray-300 hover:text-pink-400'}`}
                     aria-label={isFavorite ? 'Remove from saved' : 'Save word'}
                     type="button"
@@ -392,7 +446,9 @@ const WordOfDayCard = ({ word, language, onSelect }) => {
             role="button"
             tabIndex={0}
             onClick={() => onSelect(word.slug, word.title)}
-            onKeyDown={(e) => { if (e.key === 'Enter') onSelect(word.slug, word.title); }}
+            onKeyDown={(e) => {
+                if (e.key === 'Enter') onSelect(word.slug, word.title);
+            }}
             aria-label={`Word of the day: ${word.title}`}
         >
             {d.aiwaWordPhoto?.node?.sourceUrl && (
@@ -418,9 +474,7 @@ const WordOfDayCard = ({ word, language, onSelect }) => {
                 {translation && (
                     <p className="text-white/90 text-sm mt-2 line-clamp-2">{translation}</p>
                 )}
-                <span className="inline-block mt-3 text-white/70 text-xs">
-                    Learn more &rarr;
-                </span>
+                <span className="inline-block mt-3 text-white/70 text-xs">Learn more &rarr;</span>
             </div>
         </div>
     );
@@ -435,9 +489,11 @@ const LanguageSelectorPills = ({ languages, selected, onSelect }) => (
         <button
             onClick={() => onSelect(null)}
             className="shrink-0 px-3 py-1 rounded-full text-sm font-medium border transition-colors"
-            style={!selected
-                ? { background: '#E91E8C', color: 'white', borderColor: 'transparent' }
-                : { background: 'white', color: '#6b7280', borderColor: '#e5e7eb' }}
+            style={
+                !selected
+                    ? { background: '#E91E8C', color: 'white', borderColor: 'transparent' }
+                    : { background: 'white', color: '#6b7280', borderColor: '#e5e7eb' }
+            }
             type="button"
         >
             All
@@ -447,9 +503,11 @@ const LanguageSelectorPills = ({ languages, selected, onSelect }) => (
                 key={lang.slug}
                 onClick={() => onSelect(lang.slug)}
                 className="shrink-0 px-3 py-1 rounded-full text-sm font-medium border transition-colors"
-                style={selected === lang.slug
-                    ? { background: '#E91E8C', color: 'white', borderColor: 'transparent' }
-                    : { background: 'white', color: '#6b7280', borderColor: '#e5e7eb' }}
+                style={
+                    selected === lang.slug
+                        ? { background: '#E91E8C', color: 'white', borderColor: 'transparent' }
+                        : { background: 'white', color: '#6b7280', borderColor: '#e5e7eb' }
+                }
                 type="button"
             >
                 {lang.name}
@@ -478,7 +536,11 @@ const LanguageSelectorList = ({ languages, selected, onSelect }) => (
                 key={lang.slug}
                 onClick={() => onSelect(lang.slug)}
                 className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex justify-between items-center"
-                style={selected === lang.slug ? { background: '#E91E8C', color: 'white' } : { color: '#374151' }}
+                style={
+                    selected === lang.slug
+                        ? { background: '#E91E8C', color: 'white' }
+                        : { color: '#374151' }
+                }
                 type="button"
             >
                 <span>{lang.name}</span>
@@ -504,9 +566,11 @@ const FilterPills = ({ active, onChange }) => (
                     key={label}
                     onClick={() => onChange(key)}
                     className="shrink-0 px-3 py-1 rounded-full text-sm font-medium border transition-colors"
-                    style={isActive
-                        ? { background: '#7B3FA0', color: 'white', borderColor: 'transparent' }
-                        : { background: 'white', color: '#6b7280', borderColor: '#e5e7eb' }}
+                    style={
+                        isActive
+                            ? { background: '#7B3FA0', color: 'white', borderColor: 'transparent' }
+                            : { background: 'white', color: '#6b7280', borderColor: '#e5e7eb' }
+                    }
                     type="button"
                 >
                     {label}
@@ -548,14 +612,25 @@ const AlphaBar = ({ onSelect }) => {
 
 const DETAIL_TABS = ['overview', 'examples', 'related', 'origin'];
 
-const DetailView = ({ slug, initialTitle, language, onClose, onSelectWord, favorites, onFavoriteToggle, isSheet = false }) => {
+const DetailView = ({
+    slug,
+    initialTitle,
+    language,
+    onClose,
+    onSelectWord,
+    favorites,
+    onFavoriteToggle,
+    isSheet = false,
+}) => {
     const [activeTab, setActiveTab] = useState('overview');
     const { loading, error, data } = useQuery(GET_SINGLE_WORD_DETAILS, { variables: { slug } });
 
     const word = data?.dictionaryBy;
     const d = word?.dictionaryEntryDetails;
     const translation = d
-        ? (language === 'fr' ? d.aiwaTranslationFrench : d.aiwaTranslationEnglish)
+        ? language === 'fr'
+            ? d.aiwaTranslationFrench
+            : d.aiwaTranslationEnglish
         : null;
     const exampleCount = d?.aiwaExampleSentences?.length || 0;
     const isFav = favorites.includes(slug);
@@ -609,7 +684,10 @@ const DetailView = ({ slug, initialTitle, language, onClose, onSelectWord, favor
                                     {word.title}
                                 </h2>
                                 {d.aiwaAudioFile?.node?.mediaItemUrl && (
-                                    <AudioButton url={d.aiwaAudioFile.node.mediaItemUrl} size={18} />
+                                    <AudioButton
+                                        url={d.aiwaAudioFile.node.mediaItemUrl}
+                                        size={18}
+                                    />
                                 )}
                                 <button
                                     onClick={() => onFavoriteToggle(slug)}
@@ -658,9 +736,11 @@ const DetailView = ({ slug, initialTitle, language, onClose, onSelectWord, favor
                                 aria-selected={activeTab === tab}
                                 onClick={() => setActiveTab(tab)}
                                 className="px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors"
-                                style={activeTab === tab
-                                    ? { borderColor: '#E91E8C', color: '#E91E8C' }
-                                    : { borderColor: 'transparent', color: '#9ca3af' }}
+                                style={
+                                    activeTab === tab
+                                        ? { borderColor: '#E91E8C', color: '#E91E8C' }
+                                        : { borderColor: 'transparent', color: '#9ca3af' }
+                                }
                                 type="button"
                             >
                                 {tabLabel(tab)}
@@ -673,7 +753,10 @@ const DetailView = ({ slug, initialTitle, language, onClose, onSelectWord, favor
                         {activeTab === 'overview' && (
                             <>
                                 {translation && (
-                                    <div className="p-4 rounded-xl" style={{ background: '#FCE4F3' }}>
+                                    <div
+                                        className="p-4 rounded-xl"
+                                        style={{ background: '#FCE4F3' }}
+                                    >
                                         <h3
                                             className="text-xs font-bold uppercase tracking-wider mb-1"
                                             style={{ color: '#E91E8C' }}
@@ -709,8 +792,10 @@ const DetailView = ({ slug, initialTitle, language, onClose, onSelectWord, favor
                                             </p>
                                             <p className="text-sm text-gray-500 dark:text-gray-400 italic mt-1">
                                                 {language === 'fr'
-                                                    ? d.aiwaExampleSentences[0].sentenceFrenchTranslation
-                                                    : d.aiwaExampleSentences[0].sentenceEnglishTranslation}
+                                                    ? d.aiwaExampleSentences[0]
+                                                          .sentenceFrenchTranslation
+                                                    : d.aiwaExampleSentences[0]
+                                                          .sentenceEnglishTranslation}
                                             </p>
                                         </div>
                                     </div>
@@ -721,31 +806,37 @@ const DetailView = ({ slug, initialTitle, language, onClose, onSelectWord, favor
                         {activeTab === 'examples' && (
                             <div>
                                 {exampleCount === 0 && (
-                                    <p className="text-gray-400 text-sm italic">No examples recorded yet.</p>
+                                    <p className="text-gray-400 text-sm italic">
+                                        No examples recorded yet.
+                                    </p>
                                 )}
                                 <div className="space-y-5">
-                                    {d.aiwaExampleSentences && d.aiwaExampleSentences.map((ex, idx) => (
-                                        <div key={idx} className="pl-4 border-l-4 border-gray-200 dark:border-gray-700">
-                                            <p className="text-base text-gray-900 dark:text-gray-100">
-                                                {ex.sentenceExample}
-                                            </p>
-                                            {ex.sentenceIpaPronounciation && (
-                                                <p className="text-xs text-gray-400 font-mono mt-0.5">
-                                                    /{ex.sentenceIpaPronounciation}/
+                                    {d.aiwaExampleSentences &&
+                                        d.aiwaExampleSentences.map((ex, idx) => (
+                                            <div
+                                                key={idx}
+                                                className="pl-4 border-l-4 border-gray-200 dark:border-gray-700"
+                                            >
+                                                <p className="text-base text-gray-900 dark:text-gray-100">
+                                                    {ex.sentenceExample}
                                                 </p>
-                                            )}
-                                            {ex.sentencePhoneticPronunciation && (
-                                                <p className="text-xs text-gray-400 mt-0.5">
-                                                    [{ex.sentencePhoneticPronunciation}]
+                                                {ex.sentenceIpaPronounciation && (
+                                                    <p className="text-xs text-gray-400 font-mono mt-0.5">
+                                                        /{ex.sentenceIpaPronounciation}/
+                                                    </p>
+                                                )}
+                                                {ex.sentencePhoneticPronunciation && (
+                                                    <p className="text-xs text-gray-400 mt-0.5">
+                                                        [{ex.sentencePhoneticPronunciation}]
+                                                    </p>
+                                                )}
+                                                <p className="text-sm text-gray-500 dark:text-gray-400 italic mt-1">
+                                                    {language === 'fr'
+                                                        ? ex.sentenceFrenchTranslation
+                                                        : ex.sentenceEnglishTranslation}
                                                 </p>
-                                            )}
-                                            <p className="text-sm text-gray-500 dark:text-gray-400 italic mt-1">
-                                                {language === 'fr'
-                                                    ? ex.sentenceFrenchTranslation
-                                                    : ex.sentenceEnglishTranslation}
-                                            </p>
-                                        </div>
-                                    ))}
+                                            </div>
+                                        ))}
                                 </div>
                             </div>
                         )}
@@ -770,10 +861,10 @@ const DetailView = ({ slug, initialTitle, language, onClose, onSelectWord, favor
                                 {!d.aiwaSynonyms?.nodes?.length &&
                                     !d.aiwaAntonyms?.nodes?.length &&
                                     !d.aiwaPhoneticVariants?.nodes?.length && (
-                                    <p className="text-gray-400 text-sm italic">
-                                        No related words recorded.
-                                    </p>
-                                )}
+                                        <p className="text-gray-400 text-sm italic">
+                                            No related words recorded.
+                                        </p>
+                                    )}
                             </div>
                         )}
 
@@ -826,7 +917,7 @@ const DetailBottomSheet = (props) => (
 const FavoritesView = ({ words, favorites, language, onSelect, onFavoriteToggle, onPrefetch }) => {
     const favWords = useMemo(
         () => words.filter((w) => favorites.includes(w.slug)),
-        [words, favorites],
+        [words, favorites]
     );
     if (!favWords.length) {
         return (
@@ -856,21 +947,25 @@ const FavoritesView = ({ words, favorites, language, onSelect, onFavoriteToggle,
     );
 };
 
-const HistoryView = ({ words, history, language, onSelect, favorites, onFavoriteToggle, onPrefetch }) => {
+const HistoryView = ({
+    words,
+    history,
+    language,
+    onSelect,
+    favorites,
+    onFavoriteToggle,
+    onPrefetch,
+}) => {
     const histWords = useMemo(
-        () => history
-            .map((slug) => words.find((w) => w.slug === slug))
-            .filter(Boolean),
-        [words, history],
+        () => history.map((slug) => words.find((w) => w.slug === slug)).filter(Boolean),
+        [words, history]
     );
     if (!histWords.length) {
         return (
             <div className="flex flex-col items-center justify-center h-full text-center p-8">
                 <Clock size={48} className="text-gray-200 mb-4" />
                 <p className="text-gray-500 font-medium">No recently viewed words.</p>
-                <p className="text-gray-400 text-sm mt-1">
-                    Words you open will appear here.
-                </p>
+                <p className="text-gray-400 text-sm mt-1">Words you open will appear here.</p>
             </div>
         );
     }
@@ -909,9 +1004,15 @@ const ExploreView = ({ languages, sourceLanguage, onSelectLanguage }) => (
                     key={lang.slug}
                     onClick={() => onSelectLanguage(lang.slug)}
                     className="p-4 rounded-xl text-left border-2 transition-all"
-                    style={sourceLanguage === lang.slug
-                        ? { background: 'linear-gradient(135deg,#E91E8C,#7B3FA0)', color: 'white', borderColor: 'transparent' }
-                        : { borderColor: '#f3f4f6' }}
+                    style={
+                        sourceLanguage === lang.slug
+                            ? {
+                                  background: 'linear-gradient(135deg,#E91E8C,#7B3FA0)',
+                                  color: 'white',
+                                  borderColor: 'transparent',
+                              }
+                            : { borderColor: '#f3f4f6' }
+                    }
                     type="button"
                 >
                     <span
@@ -920,7 +1021,13 @@ const ExploreView = ({ languages, sourceLanguage, onSelectLanguage }) => (
                     >
                         {lang.name}
                     </span>
-                    <span style={{ fontSize: '0.85rem', color: sourceLanguage === lang.slug ? 'rgba(255,255,255,0.7)' : '#9ca3af' }}>
+                    <span
+                        style={{
+                            fontSize: '0.85rem',
+                            color:
+                                sourceLanguage === lang.slug ? 'rgba(255,255,255,0.7)' : '#9ca3af',
+                        }}
+                    >
                         {lang.count} words
                     </span>
                 </button>
@@ -962,15 +1069,21 @@ const BottomNav = ({ active, onChange }) => (
 // Components — Desktop sidebar
 // ---------------------------------------------------------------------------
 
-const DesktopSidebar = ({ language, onLanguageToggle, isDark, onThemeToggle, languages, sourceLanguage, onSourceLanguage }) => (
+const DesktopSidebar = ({
+    language,
+    onLanguageToggle,
+    isDark,
+    onThemeToggle,
+    languages,
+    sourceLanguage,
+    onSourceLanguage,
+}) => (
     <aside className="flex flex-col h-full bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 p-5 overflow-y-auto">
         <div className="mb-6">
             <h1 className="text-xl font-bold" style={{ color: '#E91E8C' }}>
                 AIWA
             </h1>
-            <p className="text-xs text-gray-400 mt-0.5">
-                African Indigenous Words Archive
-            </p>
+            <p className="text-xs text-gray-400 mt-0.5">African Indigenous Words Archive</p>
         </div>
 
         <div className="flex items-center gap-2 mb-4">
@@ -988,7 +1101,11 @@ const DesktopSidebar = ({ language, onLanguageToggle, isDark, onThemeToggle, lan
                 aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
                 type="button"
             >
-                {isDark ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
+                {isDark ? (
+                    <Sun size={16} aria-hidden="true" />
+                ) : (
+                    <Moon size={16} aria-hidden="true" />
+                )}
             </button>
         </div>
 
@@ -1024,12 +1141,10 @@ const DesktopEmptyPanel = ({ wordOfDay, language, onSelect }) => (
             >
                 &#128218;
             </div>
-            <h2 className="font-bold text-gray-700 dark:text-gray-300 text-lg">
-                Select a word
-            </h2>
+            <h2 className="font-bold text-gray-700 dark:text-gray-300 text-lg">Select a word</h2>
             <p className="text-sm text-gray-400 mt-2 leading-relaxed max-w-xs">
-                Explore its meaning, pronunciation, and cultural context from our growing
-                archive of African indigenous words.
+                Explore its meaning, pronunciation, and cultural context from our growing archive of
+                African indigenous words.
             </p>
         </div>
     </div>
@@ -1040,27 +1155,28 @@ const DesktopEmptyPanel = ({ wordOfDay, language, onSelect }) => (
 // ---------------------------------------------------------------------------
 
 export default function DictionaryApp() {
-    const [language, setLanguage]             = useLocalStorage('aiwa-dict-lang', 'en');
+    const [language, setLanguage] = useLocalStorage('aiwa-dict-lang', 'en');
     const [sourceLanguage, setSourceLanguage] = useLocalStorage('aiwa-dict-source-lang', null);
-    const [isDark, setIsDark]                 = useLocalStorage('aiwa-dict-theme', false);
-    const [favorites, setFavorites]           = useLocalStorage('aiwa-dict-favorites', []);
-    const [history, setHistory]               = useLocalStorage('aiwa-dict-history', []);
+    const [isDark, setIsDark] = useLocalStorage('aiwa-dict-theme', false);
+    const [favorites, setFavorites] = useLocalStorage('aiwa-dict-favorites', []);
+    const [history, setHistory] = useLocalStorage('aiwa-dict-history', []);
 
-    const [searchTerm, setSearchTerm]       = useState('');
-    const [activeFilter, setActiveFilter]   = useState('all');
-    const [selectedSlug, setSelectedSlug]   = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [activeFilter, setActiveFilter] = useState('all');
+    const [selectedSlug, setSelectedSlug] = useState(null);
     const [selectedTitle, setSelectedTitle] = useState('');
-    const [activeNav, setActiveNav]         = useState('home');
-    const [scrollState, setScrollState]     = useState({ atTop: true, atBottom: false });
-    const [languages, setLanguages]         = useState([]);
+    const [activeNav, setActiveNav] = useState('home');
+    const [scrollState, setScrollState] = useState({ atTop: true, atBottom: false });
+    const [languages, setLanguages] = useState([]);
+    const [topTab, setTopTab] = useState('browse');
 
     const virtuosoRef = useRef(null);
-    const isDesktop   = useIsDesktop();
+    const isDesktop = useIsDesktop();
 
     // Fetch source languages from REST API
     useEffect(() => {
         fetch(`${REST_URL}/languages`)
-            .then((r) => r.ok ? r.json() : null)
+            .then((r) => (r.ok ? r.json() : null))
             .then((json) => {
                 if (json && json.success && Array.isArray(json.data?.languages)) {
                     setLanguages(json.data.languages);
@@ -1071,14 +1187,11 @@ export default function DictionaryApp() {
 
     const { loading, error, data } = useQuery(GET_ALL_WORDS_INDEX, { client });
 
-    const allWords = useMemo(
-        () => (data?.dictionaries?.edges || []).map((e) => e.node),
-        [data],
-    );
+    const allWords = useMemo(() => (data?.dictionaries?.edges || []).map((e) => e.node), [data]);
 
     const wordOfDay = useMemo(
         () => (allWords.length ? allWords[wordOfDayIndex(allWords.length)] : null),
-        [allWords],
+        [allWords]
     );
 
     const filteredWords = useMemo(() => {
@@ -1086,7 +1199,7 @@ export default function DictionaryApp() {
 
         if (sourceLanguage) {
             entries = entries.filter((w) =>
-                (w.languages?.nodes || []).some((l) => l.slug === sourceLanguage),
+                (w.languages?.nodes || []).some((l) => l.slug === sourceLanguage)
             );
         }
 
@@ -1103,13 +1216,21 @@ export default function DictionaryApp() {
         }
 
         if (activeFilter === 'noun') {
-            entries = entries.filter((w) => posKey(w.dictionaryEntryDetails.aiwaPartOfSpeech) === 'noun');
+            entries = entries.filter(
+                (w) => posKey(w.dictionaryEntryDetails.aiwaPartOfSpeech) === 'noun'
+            );
         } else if (activeFilter === 'verb') {
-            entries = entries.filter((w) => posKey(w.dictionaryEntryDetails.aiwaPartOfSpeech) === 'verb');
+            entries = entries.filter(
+                (w) => posKey(w.dictionaryEntryDetails.aiwaPartOfSpeech) === 'verb'
+            );
         } else if (activeFilter === 'phrase') {
-            entries = entries.filter((w) => posKey(w.dictionaryEntryDetails.aiwaPartOfSpeech) === 'phrase');
+            entries = entries.filter(
+                (w) => posKey(w.dictionaryEntryDetails.aiwaPartOfSpeech) === 'phrase'
+            );
         } else if (activeFilter === 'audio') {
-            entries = entries.filter((w) => !!w.dictionaryEntryDetails.aiwaAudioFile?.node?.mediaItemUrl);
+            entries = entries.filter(
+                (w) => !!w.dictionaryEntryDetails.aiwaAudioFile?.node?.mediaItemUrl
+            );
         } else if (activeFilter === 'image') {
             entries = entries.filter((w) => !!w.dictionaryEntryDetails.aiwaWordPhoto?.node?.id);
         }
@@ -1125,36 +1246,45 @@ export default function DictionaryApp() {
         });
     }, []);
 
-    const handleSelectWord = useCallback((slug, title) => {
-        setSelectedSlug(slug);
-        setSelectedTitle(title);
-        setHistory((prev) =>
-            [slug, ...prev.filter((s) => s !== slug)].slice(0, 50),
-        );
-    }, [setHistory]);
+    const handleSelectWord = useCallback(
+        (slug, title) => {
+            setSelectedSlug(slug);
+            setSelectedTitle(title);
+            setHistory((prev) => [slug, ...prev.filter((s) => s !== slug)].slice(0, 50));
+        },
+        [setHistory]
+    );
 
-    const handleFavoriteToggle = useCallback((slug) => {
-        setFavorites((prev) =>
-            prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug],
-        );
-    }, [setFavorites]);
+    const handleFavoriteToggle = useCallback(
+        (slug) => {
+            setFavorites((prev) =>
+                prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
+            );
+        },
+        [setFavorites]
+    );
 
-    const handleScrollToLetter = useCallback((char) => {
-        if (!virtuosoRef.current) return;
-        const idx = filteredWords.findIndex((w) =>
-            (w.title || '').trim().toUpperCase().startsWith(char),
-        );
-        if (idx !== -1) {
-            virtuosoRef.current.scrollToIndex({ index: idx, align: 'start', behavior: 'auto' });
-        }
-    }, [filteredWords]);
+    const handleScrollToLetter = useCallback(
+        (char) => {
+            if (!virtuosoRef.current) return;
+            const idx = filteredWords.findIndex((w) =>
+                (w.title || '').trim().toUpperCase().startsWith(char)
+            );
+            if (idx !== -1) {
+                virtuosoRef.current.scrollToIndex({ index: idx, align: 'start', behavior: 'auto' });
+            }
+        },
+        [filteredWords]
+    );
 
     // Shared word-list area (used by both desktop center and mobile home tab)
     const wordListArea = (
         <div className="flex-1 flex flex-col overflow-hidden">
             <div className="px-4 py-2 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 shrink-0">
                 <div className="relative">
-                    <label htmlFor="aiwa-dict-search" className="sr-only">Search dictionary words</label>
+                    <label htmlFor="aiwa-dict-search" className="sr-only">
+                        Search dictionary words
+                    </label>
                     <Search
                         className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                         size={18}
@@ -1191,12 +1321,7 @@ export default function DictionaryApp() {
 
             {!loading && !error && (
                 <div className="relative flex-1 overflow-hidden">
-                    <div
-                        className="sr-only"
-                        role="status"
-                        aria-live="polite"
-                        aria-atomic="true"
-                    >
+                    <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
                         {filteredWords.length} words found
                     </div>
                     <div
@@ -1213,7 +1338,9 @@ export default function DictionaryApp() {
                         className="scrollbar-hide"
                         style={{ height: '100%' }}
                         atTopStateChange={(atTop) => setScrollState((s) => ({ ...s, atTop }))}
-                        atBottomStateChange={(atBottom) => setScrollState((s) => ({ ...s, atBottom }))}
+                        atBottomStateChange={(atBottom) =>
+                            setScrollState((s) => ({ ...s, atBottom }))
+                        }
                         itemContent={(_, word) => (
                             <WordListRow
                                 word={word}
@@ -1245,45 +1372,122 @@ export default function DictionaryApp() {
         return (
             <div
                 className={`${isDark ? 'dark' : ''}`}
-                style={{ display: 'flex', height: '100vh', overflow: 'hidden', fontFamily: '"Noto Sans", system-ui, sans-serif', background: isDark ? '#1A1A1A' : '#F8F8F8' }}
+                style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: '100vh',
+                    overflow: 'hidden',
+                    fontFamily: '"Noto Sans", system-ui, sans-serif',
+                    background: isDark ? '#1A1A1A' : '#F8F8F8',
+                }}
             >
-                <div style={{ width: 240, flexShrink: 0 }}>
-                    <DesktopSidebar
-                        language={language}
-                        onLanguageToggle={() => setLanguage((l) => (l === 'en' ? 'fr' : 'en'))}
-                        isDark={isDark}
-                        onThemeToggle={() => setIsDark((d) => !d)}
-                        languages={languages}
-                        sourceLanguage={sourceLanguage}
-                        onSourceLanguage={setSourceLanguage}
-                    />
+                {/* Top-level Browse / Play tab bar */}
+                <div
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        height: 48,
+                        flexShrink: 0,
+                        borderBottom: '1px solid #f3f4f6',
+                        background: isDark ? '#111827' : 'white',
+                    }}
+                >
+                    {['browse', 'play'].map((tab) => {
+                        const isActive = topTab === tab;
+                        const Icon = tab === 'play' ? Gamepad2 : BookOpen;
+                        return (
+                            <button
+                                key={tab}
+                                type="button"
+                                onClick={() => setTopTab(tab)}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    padding: '0 20px',
+                                    height: '100%',
+                                    fontWeight: isActive ? 700 : 500,
+                                    fontSize: '0.9rem',
+                                    color: isActive ? '#E91E8C' : '#9ca3af',
+                                    borderBottom: isActive
+                                        ? '2px solid #E91E8C'
+                                        : '2px solid transparent',
+                                    background: 'none',
+                                    cursor: 'pointer',
+                                    transition: 'color 0.15s',
+                                }}
+                                aria-current={isActive ? 'page' : undefined}
+                            >
+                                <Icon size={16} aria-hidden="true" />
+                                {tab === 'play' ? 'Play' : 'Browse'}
+                            </button>
+                        );
+                    })}
                 </div>
 
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid #f3f4f6' }}>
-                    {wordListArea}
-                    <AlphaBar onSelect={handleScrollToLetter} />
-                </div>
+                {/* Content area */}
+                {topTab === 'browse' ? (
+                    <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+                        <div style={{ width: 240, flexShrink: 0 }}>
+                            <DesktopSidebar
+                                language={language}
+                                onLanguageToggle={() =>
+                                    setLanguage((l) => (l === 'en' ? 'fr' : 'en'))
+                                }
+                                isDark={isDark}
+                                onThemeToggle={() => setIsDark((d) => !d)}
+                                languages={languages}
+                                sourceLanguage={sourceLanguage}
+                                onSourceLanguage={setSourceLanguage}
+                            />
+                        </div>
 
-                <div style={{ width: 420, flexShrink: 0, overflow: 'hidden' }}>
-                    {selectedSlug ? (
-                        <DetailView
-                            key={selectedSlug}
-                            slug={selectedSlug}
-                            initialTitle={selectedTitle}
+                        <div
+                            style={{
+                                flex: 1,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                overflow: 'hidden',
+                                borderRight: '1px solid #f3f4f6',
+                            }}
+                        >
+                            {wordListArea}
+                            <AlphaBar onSelect={handleScrollToLetter} />
+                        </div>
+
+                        <div style={{ width: 420, flexShrink: 0, overflow: 'hidden' }}>
+                            {selectedSlug ? (
+                                <DetailView
+                                    key={selectedSlug}
+                                    slug={selectedSlug}
+                                    initialTitle={selectedTitle}
+                                    language={language}
+                                    onClose={null}
+                                    onSelectWord={handleSelectWord}
+                                    favorites={favorites}
+                                    onFavoriteToggle={handleFavoriteToggle}
+                                />
+                            ) : (
+                                <DesktopEmptyPanel
+                                    wordOfDay={wordOfDay}
+                                    language={language}
+                                    onSelect={handleSelectWord}
+                                />
+                            )}
+                        </div>
+                    </div>
+                ) : (
+                    <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+                        <GameShell
+                            restUrl={REST_URL}
                             language={language}
-                            onClose={null}
-                            onSelectWord={handleSelectWord}
-                            favorites={favorites}
-                            onFavoriteToggle={handleFavoriteToggle}
+                            sourceLanguage={sourceLanguage}
+                            languages={languages}
+                            onSourceLanguage={setSourceLanguage}
+                            onBrowseDomain={() => setTopTab('browse')}
                         />
-                    ) : (
-                        <DesktopEmptyPanel
-                            wordOfDay={wordOfDay}
-                            language={language}
-                            onSelect={handleSelectWord}
-                        />
-                    )}
-                </div>
+                    </div>
+                )}
             </div>
         );
     }
@@ -1296,25 +1500,56 @@ export default function DictionaryApp() {
     return (
         <div
             className={`${isDark ? 'dark' : ''}`}
-            style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', fontFamily: '"Noto Sans", system-ui, sans-serif', background: isDark ? '#1A1A1A' : '#F8F8F8' }}
+            style={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100vh',
+                overflow: 'hidden',
+                fontFamily: '"Noto Sans", system-ui, sans-serif',
+                background: isDark ? '#1A1A1A' : '#F8F8F8',
+            }}
         >
             {/* Top bar */}
             <header
                 className="shrink-0 z-20"
-                style={{ background: isDark ? '#111827' : 'white', borderBottom: '1px solid #f3f4f6' }}
+                style={{
+                    background: isDark ? '#111827' : 'white',
+                    borderBottom: '1px solid #f3f4f6',
+                }}
             >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px' }}>
-                    <h1 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#E91E8C', margin: 0 }}>
+                <div
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '12px 16px',
+                    }}
+                >
+                    <h1
+                        style={{
+                            fontSize: '1.15rem',
+                            fontWeight: 700,
+                            color: '#E91E8C',
+                            margin: 0,
+                        }}
+                    >
                         AIWA
                     </h1>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <button
                             onClick={() => setLanguage((l) => (l === 'en' ? 'fr' : 'en'))}
                             style={{
-                                display: 'flex', alignItems: 'center', gap: 4,
-                                background: '#f3f4f6', borderRadius: '999px',
-                                padding: '4px 10px', fontSize: '0.75rem', fontWeight: 600,
-                                color: '#374151', border: 'none', cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                background: '#f3f4f6',
+                                borderRadius: '999px',
+                                padding: '4px 10px',
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                color: '#374151',
+                                border: 'none',
+                                cursor: 'pointer',
                             }}
                             type="button"
                         >
@@ -1324,13 +1559,21 @@ export default function DictionaryApp() {
                         <button
                             onClick={() => setIsDark((d) => !d)}
                             style={{
-                                background: '#f3f4f6', border: 'none', borderRadius: '999px',
-                                padding: 6, cursor: 'pointer', color: '#6b7280',
+                                background: '#f3f4f6',
+                                border: 'none',
+                                borderRadius: '999px',
+                                padding: 6,
+                                cursor: 'pointer',
+                                color: '#6b7280',
                             }}
                             aria-label={isDark ? 'Light mode' : 'Dark mode'}
                             type="button"
                         >
-                            {isDark ? <Sun size={14} aria-hidden="true" /> : <Moon size={14} aria-hidden="true" />}
+                            {isDark ? (
+                                <Sun size={14} aria-hidden="true" />
+                            ) : (
+                                <Moon size={14} aria-hidden="true" />
+                            )}
                         </button>
                     </div>
                 </div>
@@ -1388,12 +1631,20 @@ export default function DictionaryApp() {
                         onPrefetch={prefetchWord}
                     />
                 )}
+                {activeNav === 'play' && (
+                    <GameShell
+                        restUrl={REST_URL}
+                        language={language}
+                        sourceLanguage={sourceLanguage}
+                        languages={languages}
+                        onSourceLanguage={setSourceLanguage}
+                        onBrowseDomain={() => setActiveNav('home')}
+                    />
+                )}
             </main>
 
             {/* Alpha bar (home tab only) */}
-            {activeNav === 'home' && (
-                <AlphaBar onSelect={handleScrollToLetter} />
-            )}
+            {activeNav === 'home' && <AlphaBar onSelect={handleScrollToLetter} />}
 
             {/* Bottom navigation */}
             <BottomNav active={activeNav} onChange={setActiveNav} />
@@ -1427,6 +1678,6 @@ document.addEventListener('DOMContentLoaded', () => {
     createRoot(container).render(
         <ApolloProvider client={client}>
             <DictionaryApp />
-        </ApolloProvider>,
+        </ApolloProvider>
     );
 });

@@ -1,0 +1,99 @@
+/**
+ * useGameSet — fetches /game-set and caches in IndexedDB with a 3-day TTL.
+ *
+ * Usage:
+ *   const { words, loading, error } = useGameSet({ restUrl, langSource, domain, limit, includeAudio });
+ */
+
+import { useState, useEffect } from 'react';
+import { getRecord, putRecord } from './idbUtils.js';
+
+/** 3-day TTL in milliseconds. */
+const TTL_MS = 3 * 24 * 60 * 60 * 1000;
+
+/**
+ * @param {object} opts
+ * @param {string} opts.restUrl       Base REST URL (sparxstar/v1/dictionary)
+ * @param {string} opts.langSource    Language taxonomy slug (required)
+ * @param {string} [opts.domain]      Domain slug (optional)
+ * @param {number} [opts.limit]       Max words, default 20
+ * @param {boolean} [opts.includeAudio] Whether to include audio URLs
+ * @returns {{ words: Array, loading: boolean, error: string|null }}
+ */
+export function useGameSet({ restUrl, langSource, domain = '', limit = 20, includeAudio = false }) {
+    const [words, setWords] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    const cacheKey = `game-set:${langSource}:${domain || 'all'}`;
+
+    useEffect(() => {
+        if (!langSource) {
+            setWords([]);
+            setLoading(false);
+            setError(null);
+            return;
+        }
+
+        let cancelled = false;
+
+        async function load() {
+            setLoading(true);
+            setError(null);
+
+            try {
+                /* --- Check IndexedDB cache --- */
+                const cached = await getRecord('game-sets', cacheKey);
+                const now = Date.now();
+
+                if (cached && Array.isArray(cached.data) && now - cached.fetchedAt < TTL_MS) {
+                    if (!cancelled) {
+                        setWords(cached.data);
+                        setLoading(false);
+                    }
+                    return;
+                }
+
+                /* --- Fetch from server --- */
+                const params = new URLSearchParams({
+                    lang_source: langSource,
+                    limit: String(Math.min(50, Math.max(1, limit))),
+                    include_audio: includeAudio ? 'true' : 'false',
+                });
+                if (domain) params.set('domain', domain);
+
+                const res = await fetch(`${restUrl}/game-set?${params}`);
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}`);
+                }
+
+                const json = await res.json();
+                const data = Array.isArray(json?.data?.words) ? json.data.words : [];
+
+                await putRecord('game-sets', {
+                    key: cacheKey,
+                    data,
+                    fetchedAt: now,
+                    ttlMs: TTL_MS,
+                });
+
+                if (!cancelled) {
+                    setWords(data);
+                    setLoading(false);
+                }
+            } catch (err) {
+                if (!cancelled) {
+                    setError(err.message ?? 'Failed to load game set');
+                    setLoading(false);
+                }
+            }
+        }
+
+        load();
+        return () => {
+            cancelled = true;
+        };
+    }, [restUrl, langSource, domain, limit, includeAudio, cacheKey]);
+
+    return { words, loading, error };
+}
