@@ -8,3 +8,6 @@ Mockups
 
 - [Dictionary Direction v3](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/edit/main/.github/AIWA-Dictionary-Direction-v3.md)
 - [Dictionary Game Spec v1](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/blob/main/.github/instructions/dictionary-game-spec-v1.md)
+
+- [Gameplay Mockup UI](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/blob/main/.github/instructions/Gameplay%20view.png)
+- [Gameplay Mokup UI 2](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/blob/main/.github/instructions/Gameplay2.png)
