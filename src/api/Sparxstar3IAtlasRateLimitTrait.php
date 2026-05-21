@@ -157,7 +157,6 @@ trait Sparxstar3IAtlasRateLimitTrait {
      */
     private function get_client_ip(): string {
         $remote_addr = trim( (string) ( $_SERVER['REMOTE_ADDR'] ?? '' ) ); // phpcs:ignore WordPressVIPMinimum.Variables.ServerVariables.UserControlledHeaders,WordPressVIPMinimum.Variables.RestrictedVariables.cache_constraints___SERVER__REMOTE_ADDR__ -- Value is validated with filter_var( FILTER_VALIDATE_IP ) below.
-        $remote_addr = trim( $remote_addr );
 
         $remote_ip           = false !== filter_var( $remote_addr, FILTER_VALIDATE_IP ) ? $remote_addr : '';
         $trust_proxy_headers = defined( 'SPARX_3IATLAS_TRUST_PROXY_HEADERS' )

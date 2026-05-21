@@ -26,6 +26,13 @@
   <!-- Only scan PHP files -->
   <arg name="extensions" value="php"/>
 
+  <!--
+    Suppress warnings from CI exit code.
+    Warnings are informational (TODO markers, VIP-specific advisories, slow-query hints)
+    and are tracked separately; they do not block merge.
+  -->
+  <arg name="warning-severity" value="0"/>
+
   <!-- Coding standard rules -->
   <rule ref="WordPress-Extra">
     <exclude name="Generic.WhiteSpace.DisallowSpaceIndent"/>

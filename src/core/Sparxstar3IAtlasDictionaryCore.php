@@ -160,7 +160,7 @@ final class Sparxstar3IAtlasDictionaryCore {
         _doing_it_wrong(
             __FUNCTION__,
             'Cloning this object is forbidden.',
-            esc_html( SPARX_3IATLAS_VERSION )
+            SPARX_3IATLAS_VERSION // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- _doing_it_wrong() is not HTML output; version string is an internal constant.
         );
         throw new \RuntimeException( 'Cloning is not allowed.' );
     }
@@ -174,7 +174,7 @@ final class Sparxstar3IAtlasDictionaryCore {
         _doing_it_wrong(
             __FUNCTION__,
             'Serializing this object is forbidden.',
-            esc_html( SPARX_3IATLAS_VERSION )
+            SPARX_3IATLAS_VERSION // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- _doing_it_wrong() is not HTML output; version string is an internal constant.
         );
         throw new \RuntimeException( 'Serializing is not allowed.' );
     }
@@ -190,7 +190,7 @@ final class Sparxstar3IAtlasDictionaryCore {
         _doing_it_wrong(
             __FUNCTION__,
             'Unserializing this object is forbidden.',
-            esc_html( SPARX_3IATLAS_VERSION )
+            SPARX_3IATLAS_VERSION // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- _doing_it_wrong() is not HTML output; version string is an internal constant.
         );
         throw new \RuntimeException( 'Unserializing is not allowed.' );
     }
