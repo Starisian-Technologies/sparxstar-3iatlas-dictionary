@@ -36,6 +36,13 @@ module.exports = {
                     fullySpecified: false,
                 },
             },
+            // Allow ESM syntax in .js source files (package.json "type":"commonjs" would
+            // otherwise force webpack to treat all .js as CJS, preventing import/export).
+            {
+                test: /\.js$/,
+                include: path.resolve( __dirname, 'src' ),
+                type: 'javascript/auto',
+            },
             {
                 test: /\.(js|jsx)$/,
                 exclude: /node_modules/,

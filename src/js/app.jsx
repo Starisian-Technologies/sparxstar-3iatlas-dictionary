@@ -30,7 +30,9 @@ import {
     Home,
     Sun,
     Moon,
+    Gamepad2,
 } from 'lucide-react';
+import GameShell from './games/GameShell.jsx';
 import '../css/sparxstar-3iatlas-dictionary-style.css';
 
 // ---------------------------------------------------------------------------
@@ -380,23 +382,25 @@ const WordListRow = ({ word, language, onSelect, onPrefetch, isFavorite, onFavor
 // Components — Word of the Day card
 // ---------------------------------------------------------------------------
 
-const WordOfDayCard = ({ word, language, onSelect }) => {
+const WordOfDayCard = ({ word, language, onSelect, onPractice }) => {
     if (!word) return null;
     const d = word.dictionaryEntryDetails;
     const translation = language === 'fr' ? d.aiwaTranslationFrench : d.aiwaTranslationEnglish;
 
     return (
         <div
-            className="mx-4 my-3 rounded-2xl overflow-hidden cursor-pointer shadow-md"
+            className="mx-4 my-3 rounded-2xl overflow-hidden shadow-md"
             style={{ background: 'linear-gradient(135deg, #E91E8C 0%, #7B3FA0 100%)' }}
-            role="button"
-            tabIndex={0}
-            onClick={() => onSelect(word.slug, word.title)}
-            onKeyDown={(e) => { if (e.key === 'Enter') onSelect(word.slug, word.title); }}
-            aria-label={`Word of the day: ${word.title}`}
         >
             {d.aiwaWordPhoto?.node?.sourceUrl && (
-                <div className="relative h-28">
+                <div
+                    className="relative h-28 cursor-pointer"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => onSelect(word.slug, word.title)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') onSelect(word.slug, word.title); }}
+                    aria-label={`Word of the day: ${word.title}`}
+                >
                     <img
                         src={d.aiwaWordPhoto.node.sourceUrl}
                         alt={word.title}
@@ -409,7 +413,15 @@ const WordOfDayCard = ({ word, language, onSelect }) => {
                 <span className="text-white/70 text-xs font-semibold uppercase tracking-wider">
                     Word of the day
                 </span>
-                <h2 className="text-white text-2xl font-bold mt-1">{word.title}</h2>
+                <h2
+                    className="text-white text-2xl font-bold mt-1 cursor-pointer"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => onSelect(word.slug, word.title)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') onSelect(word.slug, word.title); }}
+                >
+                    {word.title}
+                </h2>
                 {d.aiwaIpaPronunciation && (
                     <p className="text-white/60 text-xs font-mono mt-0.5">
                         /{d.aiwaIpaPronunciation}/
@@ -418,9 +430,26 @@ const WordOfDayCard = ({ word, language, onSelect }) => {
                 {translation && (
                     <p className="text-white/90 text-sm mt-2 line-clamp-2">{translation}</p>
                 )}
-                <span className="inline-block mt-3 text-white/70 text-xs">
-                    Learn more &rarr;
-                </span>
+                <div className="flex items-center gap-3 mt-3">
+                    <button
+                        type="button"
+                        onClick={() => onSelect(word.slug, word.title)}
+                        className="text-white/70 text-xs hover:text-white transition-colors"
+                    >
+                        Learn more &rarr;
+                    </button>
+                    {onPractice && (
+                        <button
+                            type="button"
+                            onClick={onPractice}
+                            className="ml-auto flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors"
+                            style={{ background: 'rgba(255,255,255,0.2)', color: 'white' }}
+                        >
+                            <Gamepad2 size={12} aria-hidden="true" />
+                            Practice this word
+                        </button>
+                    )}
+                </div>
             </div>
         </div>
     );
@@ -1009,11 +1038,11 @@ const DesktopSidebar = ({ language, onLanguageToggle, isDark, onThemeToggle, lan
 // Components — Desktop right panel empty state
 // ---------------------------------------------------------------------------
 
-const DesktopEmptyPanel = ({ wordOfDay, language, onSelect }) => (
+const DesktopEmptyPanel = ({ wordOfDay, language, onSelect, onPractice }) => (
     <div className="flex flex-col h-full overflow-y-auto">
         {wordOfDay && (
             <div className="p-4">
-                <WordOfDayCard word={wordOfDay} language={language} onSelect={onSelect} />
+                <WordOfDayCard word={wordOfDay} language={language} onSelect={onSelect} onPractice={onPractice} />
             </div>
         )}
         <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
@@ -1039,12 +1068,54 @@ const DesktopEmptyPanel = ({ wordOfDay, language, onSelect }) => (
 // Main DictionaryApp
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Top-level Browse / Play tab bar
+// ---------------------------------------------------------------------------
+
+const TopTabBar = ({ active, onChange }) => (
+    <div
+        className="flex shrink-0 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900"
+        role="tablist"
+        aria-label="Main sections"
+    >
+        <button
+            role="tab"
+            aria-selected={active === 'browse'}
+            type="button"
+            onClick={() => onChange('browse')}
+            className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold border-b-2 transition-colors"
+            style={active === 'browse'
+                ? { borderColor: '#E91E8C', color: '#E91E8C' }
+                : { borderColor: 'transparent', color: '#9ca3af' }}
+        >
+            <BookOpen size={16} aria-hidden="true" />
+            Browse
+        </button>
+        <button
+            role="tab"
+            aria-selected={active === 'play'}
+            type="button"
+            onClick={() => onChange('play')}
+            className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold border-b-2 transition-colors"
+            style={active === 'play'
+                ? { borderColor: '#E91E8C', color: '#E91E8C' }
+                : { borderColor: 'transparent', color: '#9ca3af' }}
+        >
+            <Gamepad2 size={16} aria-hidden="true" />
+            Play
+        </button>
+    </div>
+);
+
 export default function DictionaryApp() {
     const [language, setLanguage]             = useLocalStorage('aiwa-dict-lang', 'en');
     const [sourceLanguage, setSourceLanguage] = useLocalStorage('aiwa-dict-source-lang', null);
     const [isDark, setIsDark]                 = useLocalStorage('aiwa-dict-theme', false);
     const [favorites, setFavorites]           = useLocalStorage('aiwa-dict-favorites', []);
     const [history, setHistory]               = useLocalStorage('aiwa-dict-history', []);
+
+    const [topTab, setTopTab]               = useState('browse'); // 'browse' | 'play'
+    const [practiceConfig, setPracticeConfig] = useState(null);  // { langSource, domain }
 
     const [searchTerm, setSearchTerm]       = useState('');
     const [activeFilter, setActiveFilter]   = useState('all');
@@ -1132,6 +1203,15 @@ export default function DictionaryApp() {
             [slug, ...prev.filter((s) => s !== slug)].slice(0, 50),
         );
     }, [setHistory]);
+
+    const handlePracticeWotD = useCallback(() => {
+        setPracticeConfig({ langSource: sourceLanguage, domain: '' });
+        setTopTab('play');
+    }, [sourceLanguage]);
+
+    const handleBrowseDomainFromGame = useCallback((domain) => {
+        setTopTab('browse');
+    }, []);
 
     const handleFavoriteToggle = useCallback((slug) => {
         setFavorites((prev) =>
@@ -1259,35 +1339,59 @@ export default function DictionaryApp() {
                     />
                 </div>
 
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid #f3f4f6' }}>
-                    {wordListArea}
-                    <AlphaBar onSelect={handleScrollToLetter} />
-                </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                    {/* Browse / Play top tabs */}
+                    <TopTabBar active={topTab} onChange={setTopTab} />
 
-                <div style={{ width: 420, flexShrink: 0, overflow: 'hidden' }}>
-                    {selectedSlug ? (
-                        <DetailView
-                            key={selectedSlug}
-                            slug={selectedSlug}
-                            initialTitle={selectedTitle}
-                            language={language}
-                            onClose={null}
-                            onSelectWord={handleSelectWord}
-                            favorites={favorites}
-                            onFavoriteToggle={handleFavoriteToggle}
-                        />
+                    {topTab === 'browse' ? (
+                        <>
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid #f3f4f6' }}>
+                                {wordListArea}
+                                <AlphaBar onSelect={handleScrollToLetter} />
+                            </div>
+                        </>
                     ) : (
-                        <DesktopEmptyPanel
-                            wordOfDay={wordOfDay}
-                            language={language}
-                            onSelect={handleSelectWord}
-                        />
+                        <div style={{ flex: 1, overflow: 'hidden' }}>
+                            <GameShell
+                                key={JSON.stringify(practiceConfig)}
+                                languages={languages}
+                                initialLangSource={practiceConfig?.langSource || sourceLanguage}
+                                initialDomain={practiceConfig?.domain || ''}
+                                onBrowseDomain={handleBrowseDomainFromGame}
+                            />
+                        </div>
                     )}
                 </div>
+
+                {topTab === 'browse' && (
+                    <div style={{ width: 420, flexShrink: 0, overflow: 'hidden' }}>
+                        {selectedSlug ? (
+                            <DetailView
+                                key={selectedSlug}
+                                slug={selectedSlug}
+                                initialTitle={selectedTitle}
+                                language={language}
+                                onClose={null}
+                                onSelectWord={handleSelectWord}
+                                favorites={favorites}
+                                onFavoriteToggle={handleFavoriteToggle}
+                            />
+                        ) : (
+                            <DesktopEmptyPanel
+                                wordOfDay={wordOfDay}
+                                language={language}
+                                onSelect={handleSelectWord}
+                                onPractice={handlePracticeWotD}
+                            />
+                        )}
+                    </div>
+                )}
             </div>
         );
     }
 
+    // -------------------------------------------------------------------------
+    // Mobile / tablet layout
     // -------------------------------------------------------------------------
     // Mobile / tablet layout
     // -------------------------------------------------------------------------
@@ -1334,7 +1438,9 @@ export default function DictionaryApp() {
                         </button>
                     </div>
                 </div>
-                {languages.length > 0 && (
+                {/* Browse / Play top tabs */}
+                <TopTabBar active={topTab} onChange={setTopTab} />
+                {topTab === 'browse' && languages.length > 0 && (
                     <LanguageSelectorPills
                         languages={languages}
                         selected={sourceLanguage}
@@ -1343,73 +1449,92 @@ export default function DictionaryApp() {
                 )}
             </header>
 
-            {/* Main content area */}
-            <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                {activeNav === 'home' && (
-                    <>
-                        {showWordOfDay && wordOfDay && (
-                            <WordOfDayCard
-                                word={wordOfDay}
-                                language={language}
-                                onSelect={handleSelectWord}
-                            />
-                        )}
-                        {wordListArea}
-                    </>
-                )}
-                {activeNav === 'explore' && (
-                    <ExploreView
+            {/* Play tab */}
+            {topTab === 'play' && (
+                <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                    <GameShell
+                        key={JSON.stringify(practiceConfig)}
                         languages={languages}
-                        sourceLanguage={sourceLanguage}
-                        onSelectLanguage={(slug) => {
-                            setSourceLanguage(slug);
-                            setActiveNav('home');
-                        }}
+                        initialLangSource={practiceConfig?.langSource || sourceLanguage}
+                        initialDomain={practiceConfig?.domain || ''}
+                        onBrowseDomain={handleBrowseDomainFromGame}
                     />
-                )}
-                {activeNav === 'favorites' && (
-                    <FavoritesView
-                        words={allWords}
-                        favorites={favorites}
-                        language={language}
-                        onSelect={handleSelectWord}
-                        onFavoriteToggle={handleFavoriteToggle}
-                        onPrefetch={prefetchWord}
-                    />
-                )}
-                {activeNav === 'history' && (
-                    <HistoryView
-                        words={allWords}
-                        history={history}
-                        language={language}
-                        onSelect={handleSelectWord}
-                        favorites={favorites}
-                        onFavoriteToggle={handleFavoriteToggle}
-                        onPrefetch={prefetchWord}
-                    />
-                )}
-            </main>
-
-            {/* Alpha bar (home tab only) */}
-            {activeNav === 'home' && (
-                <AlphaBar onSelect={handleScrollToLetter} />
+                </main>
             )}
 
-            {/* Bottom navigation */}
-            <BottomNav active={activeNav} onChange={setActiveNav} />
+            {/* Browse tab */}
+            {topTab === 'browse' && (
+                <>
+                    {/* Main content area */}
+                    <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                        {activeNav === 'home' && (
+                            <>
+                                {showWordOfDay && wordOfDay && (
+                                    <WordOfDayCard
+                                        word={wordOfDay}
+                                        language={language}
+                                        onSelect={handleSelectWord}
+                                        onPractice={handlePracticeWotD}
+                                    />
+                                )}
+                                {wordListArea}
+                            </>
+                        )}
+                        {activeNav === 'explore' && (
+                            <ExploreView
+                                languages={languages}
+                                sourceLanguage={sourceLanguage}
+                                onSelectLanguage={(slug) => {
+                                    setSourceLanguage(slug);
+                                    setActiveNav('home');
+                                }}
+                            />
+                        )}
+                        {activeNav === 'favorites' && (
+                            <FavoritesView
+                                words={allWords}
+                                favorites={favorites}
+                                language={language}
+                                onSelect={handleSelectWord}
+                                onFavoriteToggle={handleFavoriteToggle}
+                                onPrefetch={prefetchWord}
+                            />
+                        )}
+                        {activeNav === 'history' && (
+                            <HistoryView
+                                words={allWords}
+                                history={history}
+                                language={language}
+                                onSelect={handleSelectWord}
+                                favorites={favorites}
+                                onFavoriteToggle={handleFavoriteToggle}
+                                onPrefetch={prefetchWord}
+                            />
+                        )}
+                    </main>
 
-            {/* Detail bottom sheet */}
-            {selectedSlug && (
-                <DetailBottomSheet
-                    key={selectedSlug}
-                    slug={selectedSlug}
-                    initialTitle={selectedTitle}
-                    language={language}
-                    onClose={() => setSelectedSlug(null)}
-                    onSelectWord={handleSelectWord}
-                    favorites={favorites}
-                    onFavoriteToggle={handleFavoriteToggle}
-                />
+                    {/* Alpha bar (home tab only) */}
+                    {activeNav === 'home' && (
+                        <AlphaBar onSelect={handleScrollToLetter} />
+                    )}
+
+                    {/* Bottom navigation */}
+                    <BottomNav active={activeNav} onChange={setActiveNav} />
+
+                    {/* Detail bottom sheet */}
+                    {selectedSlug && (
+                        <DetailBottomSheet
+                            key={selectedSlug}
+                            slug={selectedSlug}
+                            initialTitle={selectedTitle}
+                            language={language}
+                            onClose={() => setSelectedSlug(null)}
+                            onSelectWord={handleSelectWord}
+                            favorites={favorites}
+                            onFavoriteToggle={handleFavoriteToggle}
+                        />
+                    )}
+                </>
             )}
         </div>
     );

@@ -209,6 +209,46 @@ Specification: `DICTIONARY-DIRECTION-v2.md` Sections 4 and 6 — with voting/cor
 
 ---
 
+### Phase 4 — Games (Play Tab) ✅ Done
+
+Specification: `.github/instructions/dictionary-game-spec-v1.md`
+
+**Completed:**
+- `src/js/app.jsx`: Added top-level **Browse / Play** tab bar (both mobile and desktop). Play tab renders `GameShell`. "Practice this word" button added to Word of the Day card — pre-populates GameShell with the current source language.
+- `webpack.config.js`: Added `javascript/auto` rule for `src/**/*.js` files so ESM hooks are parsed correctly under `"type": "commonjs"` package.json.
+- `src/js/hooks/useGameSet.js`: Fetches `/game-set` from REST API and caches result in IndexedDB (`aiwa-games-db` / `game-sets` store) with a 3-day TTL. Offline-first — games run from cache after first load.
+- `src/js/hooks/useGameSession.js`: Persists full session state in IndexedDB (`game-sessions` store). Resumes from last checkpoint if app closes mid-session. Tracks words, currentIndex, results, xpEarned, startedAt, completedAt.
+- `src/js/hooks/useProgressSync.js`: Maintains an offline outbox in IndexedDB (`progress-outbox` store). Flushes to `POST /progress/sync` immediately on session complete (if online) or on next `window.online` event.
+- `src/js/games/AccessoryBar.jsx`: Mandinka special character bar (ŋ ɓ ɗ ñ ɲ ʔ á é í ó ú). Inserts at cursor position. Pinned above the soft keyboard via `window.visualViewport` resize events. AIWA pink background.
+- `src/js/games/SessionComplete.jsx`: End-of-session summary — correct count, accuracy %, XP earned. Buttons: "Practice missed words", "Play again", "Browse this domain".
+- `src/js/games/GameShell.jsx`: Session setup screen (language, domain, game type, word count), game rendering, session orchestration, progress event emission.
+- `src/js/games/games/DomainFlash.jsx`: Game 4.6 — flashcard with reveal, self-reported "I knew it" / "Still learning". +5 XP on correct.
+- `src/js/games/games/MeaningMatch.jsx`: Game 4.3 — headword shown, choose from 3 meaning cards (2 distractors from same game set). +5 XP on correct.
+- `src/js/games/games/ArrangeWord.jsx`: Game 4.2 — scrambled letter tiles, tap to assemble. Audio plays on correct. +5 XP.
+- `src/js/games/games/LetterReveal.jsx`: Game 4.5 — hangman-style letter pool including Mandinka specials (AIWA pink row). 5 wrong guesses = session over for that word. +5 XP.
+- `src/js/games/games/CompleteSentence.jsx`: Game 4.4 — real example sentence with headword blanked, type to fill. AccessoryBar required. Progressive letter reveal on wrong attempts. +8 XP.
+- `src/js/games/games/ListenWrite.jsx`: Game 4.1 — audio plays automatically, player types the word. AccessoryBar required. Progressive letter reveal on wrong attempts. +10 XP (harder game, higher reward).
+
+**IndexedDB schema (shared `aiwa-games-db` database):**
+- `game-sets` store: `{ key, data, fetchedAt, ttlMs }` — keyed by `game-set:${lang_source}:${domain||'all'}`
+- `game-sessions` store: `{ key, gameType, langSource, domain, words, currentIndex, results, xpEarned, startedAt, completedAt }` — single current session at key `game-session:current`
+- `progress-outbox` store: `{ id (autoincrement), events, ts }` — pending sync events
+
+**MyCred hooks fired via `/progress/sync`:**
+- `aiwa_game_word_correct` — any correct answer
+- `aiwa_game_listen_write` — correct in Listen & Write specifically
+- `aiwa_game_sentence_correct` — correct in Complete the Sentence
+- `aiwa_game_session_complete` — full session done
+- `aiwa_game_streak_3` — 3+ correct answers in a row
+
+**Not built (per spec §9 "What Is NOT in This Spec"):**
+- Real-time multiplayer
+- Teacher dashboard
+- In-game leaderboard
+- Audio recording within games
+
+---
+
 ## Spec Version History and Decision Record
 
 > **READ THIS BEFORE STARTING ANY NEW SPRINT.** This section documents the decision trail so future sessions do not re-introduce removed features.
@@ -220,6 +260,7 @@ Specification: `DICTIONARY-DIRECTION-v2.md` Sections 4 and 6 — with voting/cor
 | Phase 0 (bug fixes) | `DICTIONARY-DIRECTION-v2.md` | Correct |
 | Phase 1 (REST API) | `DICTIONARY-DIRECTION-v2.md` | Mostly correct — endpoints align |
 | Phase 2 (React rebuild) | `DICTIONARY-DIRECTION-v2.md` Sections 4 & 6 | UI correct; voting/corrections correctly omitted |
+| Phase 4 (Games / Play tab) | `.github/instructions/dictionary-game-spec-v1.md` | All six games implemented |
 
 ### The v2 / Architecture Doc Conflict
 
@@ -247,7 +288,7 @@ The architecture doc specifies a v3 of the direction document that will:
 - Specify IndexedDB caching (not localStorage) for game-set and wordlist data
 - Add a Play mode UI spec
 
-**Until that v3 spec is committed to this repo, do not build the games UI.** Wait for the spec document, same as Phase 2 waited for the UI spec.
+**Phase 4 (games) has been shipped** against the committed `.github/instructions/dictionary-game-spec-v1.md` spec. Future extensions to the game UI should be based on a new spec document committed to `.github/instructions/`.
 
 ### Phase 3 — Integration Tests ⏸ Pending
 
