@@ -4,3 +4,6 @@
 Mockups
 - [Mockup Mobile](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/blob/main/.github/instructions/Dictionary.png)
 - [Mockup Web View](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/blob/main/.github/instructions/Dictionary-web.png)
+
+
+- [Dictionary Direction v3](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/edit/main/.github/AIWA-Dictionary-Direction-v3.md)
