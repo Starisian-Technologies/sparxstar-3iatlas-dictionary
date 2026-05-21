@@ -187,7 +187,7 @@ Specification: `DICTIONARY-DIRECTION-v2.md` Sections 4 and 6 — with voting/cor
 
 **Completed:**
 - `tailwind.config.js`: AIWA brand colours (brand.pink `#E91E8C`, brand.purple `#7B3FA0`), POS colour map, surface colours, `darkMode: 'class'`. Old `primary` blue palette removed.
-- `src/css/sparxstar-3iatlas-dictionary-style.css`: Crimson Pro / Work Sans Google Font `@import` removed from app bundle. Form bundle is unaffected.
+- `src/css/sparxstar-3iatlas-dictionary-style.css`: Crimson Pro / Work Sans Google Font `@import` removed from the app bundle. This entry does not imply those fonts are still loaded elsewhere for the form bundle.
 - `src/core/Sparxstar3IAtlasDictionary.php`: `wp_localize_script` now passes `ajaxUrl`, `restUrl`, `isLoggedIn`, `userId` in addition to existing keys.
 - `src/js/app.jsx`: **Full rebuild** — the old patched file has been replaced. Key features delivered:
   - Three-state responsive layout: mobile (< 1024 px) and desktop (≥ 1024 px). Mobile uses bottom-nav (Home / Explore / Saved / Recent) + bottom-sheet detail. Desktop uses a three-column layout (240 px sidebar, flexible word list, 420 px persistent detail panel).
