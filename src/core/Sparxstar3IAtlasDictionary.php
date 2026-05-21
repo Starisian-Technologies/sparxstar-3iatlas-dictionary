@@ -139,6 +139,7 @@ final class Sparxstar3IAtlasDictionary {
                 array(
                     'root_id'    => 'sparxstar-dictionary-root',
                     'graphqlUrl' => $graphql_url,
+                    'restUrl'    => \untrailingslashit( \rest_url( 'sparxstar/v1/dictionary' ) ),
                 )
             );
             // Ensure assets are enqueued (in case they weren't caught by the global check, e.g., in a widget)
