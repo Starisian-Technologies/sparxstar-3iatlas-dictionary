@@ -1,11 +1,15 @@
 <?php
-declare( strict_types=1 );
 /**
  * Plugin Name: AIWA Dictionary Form
  * Description: Frontend form for adding/editing dictionary entries
  * Version: 1.0
  * Author: AIWA
+ *
+ * @package Starisian\Sparxstar\IAtlas\frontend
  */
+
+declare( strict_types=1 );
+
 namespace Starisian\Sparxstar\IAtlas\frontend;
 
 use WP_Query;
@@ -27,7 +31,7 @@ use function is_string;
 use function wp_get_object_terms;
 use function wp_set_object_terms;
 
-// Prevent direct access
+// Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
     exit();
 }
@@ -110,7 +114,7 @@ final class Sparxstar3IAtlasDictionaryForm {
      * @return string rendered HTML of the form.
      */
     public function sparxIAtlas_dictionary_render_form( array $atts ): string {
-        // Check if user is logged in
+        // Check if user is logged in.
         if ( ! is_user_logged_in() ) {
             return '<div class="sparxstar-dict-notice error" role="alert">You must be logged in to access this form.</div>';
         }
@@ -127,7 +131,7 @@ final class Sparxstar3IAtlasDictionaryForm {
         $is_editor      = current_user_can( 'edit_others_posts' );
         $is_contributor = current_user_can( 'edit_posts' );
     
-        // Check permissions
+        // Check permissions.
         if ( $entry_id && ! $is_editor ) {
             return '<div class="sparxstar-dict-notice error" role="alert">Only editors can edit existing entries.</div>';
         }
@@ -136,11 +140,11 @@ final class Sparxstar3IAtlasDictionaryForm {
             return '<div class="sparxstar-dict-notice error" role="alert">You do not have permission to add dictionary entries.</div>';
         }
     
-        // Get existing entry data if editing
+        // Get existing entry data if editing.
         $entry_data = array();
         if ( $entry_id ) {
             $post = get_post( $entry_id );
-            if ( ! $post || $post->post_type !== 'aiwa-cpt-dictionary' ) {
+            if ( ! $post || 'aiwa-cpt-dictionary' !== $post->post_type ) {
                 return '<div class="sparxstar-dict-notice error" role="alert">Invalid entry ID.</div>';
             }
 
@@ -200,7 +204,7 @@ final class Sparxstar3IAtlasDictionaryForm {
                         if ( ! is_wp_error( $language_terms ) && is_array( $language_terms ) ) {
                             foreach ( $language_terms as $lang_term ) {
                                 $selected = ( ( $entry_data['language'] ?? '' ) === $lang_term->slug ) ? ' selected' : '';
-                                echo '<option value="' . esc_attr( $lang_term->slug ) . '"' . $selected . '>' . esc_html( $lang_term->name ) . '</option>';
+                                echo '<option value="' . esc_attr( $lang_term->slug ) . '"' . esc_attr( $selected ) . '>' . esc_html( $lang_term->name ) . '</option>';
                             }
                         }
                         ?>
@@ -422,12 +426,12 @@ final class Sparxstar3IAtlasDictionaryForm {
      * AJAX handler for form submission
      */
     public function sparxIAtlas_dict_submit_form(): void {
-        // Verify nonce
+        // Verify nonce.
         if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'sparxstar_dict_form_nonce' ) ) {
             wp_send_json_error( array( 'message' => 'Security check failed.' ) );
         }
     
-        // Check if user is logged in
+        // Check if user is logged in.
         if ( ! is_user_logged_in() ) {
             wp_send_json_error( array( 'message' => 'You must be logged in.' ) );
         }
@@ -436,24 +440,24 @@ final class Sparxstar3IAtlasDictionaryForm {
         $is_editor      = current_user_can( 'edit_others_posts' );
         $is_contributor = current_user_can( 'edit_posts' );
     
-        // Check permissions
+        // Check permissions.
         if ( ! $is_contributor && ! $is_editor ) {
             wp_send_json_error( array( 'message' => 'You do not have permission to add entries.' ) );
         }
     
         $entry_id = intval( $_POST['entry_id'] ?? 0 );
     
-        // If editing, check editor permission
+        // If editing, check editor permission.
         if ( $entry_id && ! $is_editor ) {
             wp_send_json_error( array( 'message' => 'Only editors can edit entries.' ) );
         }
     
-        // Validate required fields
+        // Validate required fields.
         if ( empty( $_POST['aiwa_title'] ) ) {
             wp_send_json_error( array( 'message' => 'Word/Term is required.' ) );
         }
 
-        // Validate language taxonomy term
+        // Validate language taxonomy term.
         $language_slug = sanitize_text_field( wp_unslash( $_POST['aiwa_language'] ?? '' ) );
         if ( empty( $language_slug ) ) {
             wp_send_json_error( array( 'message' => 'Source language is required.' ) );
@@ -463,7 +467,7 @@ final class Sparxstar3IAtlasDictionaryForm {
             wp_send_json_error( array( 'message' => 'Invalid language selection.' ) );
         }
 
-        // Create new post (always draft, never update existing)
+        // Create new post (always draft, never update existing).
         $post_data = array(
             'post_title'  => sanitize_text_field( $_POST['aiwa_title'] ),
             'post_type'   => 'aiwa-cpt-dictionary',
@@ -484,7 +488,7 @@ final class Sparxstar3IAtlasDictionaryForm {
             wp_send_json_error( array( 'message' => 'Failed to assign language: ' . $term_result->get_error_message() ) );
         }
     
-        // Save meta fields
+        // Save meta fields.
         $meta_fields = array(
             'aiwa_translation',
             'aiwa_translation_english',
@@ -506,7 +510,7 @@ final class Sparxstar3IAtlasDictionaryForm {
             }
         }
     
-        // Save example sentences
+        // Save example sentences.
         // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Values are sanitized inside the loop
         if ( isset( $_POST['sentences'] ) && is_array( $_POST['sentences'] ) ) {
             $sentences = array();
@@ -522,14 +526,14 @@ final class Sparxstar3IAtlasDictionaryForm {
             update_post_meta( $new_post_id, 'aiwa_example_sentences', $sentences );
         }
     
-        // Save synonyms
+        // Save synonyms.
         if ( isset( $_POST['aiwa_synonyms'] ) ) {
             // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Array map intval ensures safety
             $synonym_ids = array_filter( array_map( 'intval', explode( ',', $_POST['aiwa_synonyms'] ) ) );
             update_post_meta( $new_post_id, 'aiwa_synonyms', $synonym_ids );
         }
     
-        // Add note if this was edited from an existing entry
+        // Add note if this was edited from an existing entry.
         if ( $entry_id ) {
             update_post_meta( $new_post_id, '_aiwa_edited_from', $entry_id );
         }
@@ -547,7 +551,7 @@ final class Sparxstar3IAtlasDictionaryForm {
      * AJAX handler for synonym search
      */
     public function sparxIAtlas_dict_search_synonyms(): void {
-        // Verify nonce
+        // Verify nonce.
         if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'sparxstar_dict_form_nonce' ) ) {
             wp_send_json_error( array( 'message' => 'Security check failed.' ) );
         }
@@ -592,7 +596,7 @@ final class Sparxstar3IAtlasDictionaryForm {
      * @return void
      */
     public function sparxIAtlas_dict_get_synonym_details(): void {
-        // Verify nonce
+        // Verify nonce.
         if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'sparxstar_dict_form_nonce' ) ) {
             wp_send_json_error( array( 'message' => 'Security check failed.' ) );
         }
@@ -609,7 +613,7 @@ final class Sparxstar3IAtlasDictionaryForm {
     
         $post = get_post( $syn_id );
     
-        if ( ! $post || $post->post_type !== 'aiwa-cpt-dictionary' ) {
+        if ( ! $post || 'aiwa-cpt-dictionary' !== $post->post_type ) {
             wp_send_json_error( array( 'message' => 'Synonym not found.' ) );
         }
     
@@ -626,7 +630,7 @@ final class Sparxstar3IAtlasDictionaryForm {
      * @return void
      */
     public function sparxIAtlas_dict_get_entry_details(): void {
-        // Verify nonce
+        // Verify nonce.
         if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'sparxstar_dict_form_nonce' ) ) {
             wp_send_json_error( array( 'message' => 'Security check failed.' ) );
         }
@@ -643,7 +647,7 @@ final class Sparxstar3IAtlasDictionaryForm {
     
         $post = get_post( $entry_id );
     
-        if ( ! $post || $post->post_type !== 'aiwa-cpt-dictionary' ) {
+        if ( ! $post || 'aiwa-cpt-dictionary' !== $post->post_type ) {
             wp_send_json_error( array( 'message' => 'Entry not found.' ) );
         }
     

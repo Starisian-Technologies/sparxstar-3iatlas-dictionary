@@ -1,7 +1,4 @@
 <?php
-
-declare(strict_types=1);
-
 /**
  * Shared client IP and transient-based rate limiting helper.
  *
@@ -9,10 +6,17 @@ declare(strict_types=1);
  * @license Starisian Technologies Proprietary License (STPL)
  */
 
+declare(strict_types=1);
+
 namespace Starisian\Sparxstar\IAtlas\api;
 
 trait Sparxstar3IAtlasRateLimitTrait {
 
+    /**
+     * Checks whether the current client has exceeded the rate limit.
+     *
+     * @return bool True if the request is allowed, false if rate-limited.
+     */
     private function check_rate_limit(): bool {
         // TODO: Replace with Helios token introspection when available.
         $ip       = $this->get_client_ip();
@@ -64,6 +68,12 @@ trait Sparxstar3IAtlasRateLimitTrait {
         }
     }
 
+    /**
+     * Attempts to acquire a named lock to prevent race conditions.
+     *
+     * @param string $lock_key The lock key.
+     * @return bool True if the lock was acquired.
+     */
     private function acquire_rate_limit_lock( string $lock_key ): bool {
         $lock_ttl    = 5;
         $attempts    = 5;
@@ -84,6 +94,12 @@ trait Sparxstar3IAtlasRateLimitTrait {
         return false;
     }
 
+    /**
+     * Releases a previously acquired rate-limit lock.
+     *
+     * @param string $lock_key The lock key.
+     * @return void
+     */
     private function release_rate_limit_lock( string $lock_key ): void {
         if ( wp_using_ext_object_cache() ) {
             wp_cache_delete( $lock_key, 'sparx_3iatlas_rate_limit' );
@@ -93,6 +109,12 @@ trait Sparxstar3IAtlasRateLimitTrait {
         $this->release_mysql_lock( $lock_key );
     }
 
+    /**
+     * Acquires a MySQL GET_LOCK for rate-limit synchronisation.
+     *
+     * @param string $lock_key The lock key.
+     * @return bool True if the lock was acquired.
+     */
     private function acquire_mysql_lock( string $lock_key ): bool {
         global $wpdb;
 
@@ -109,6 +131,12 @@ trait Sparxstar3IAtlasRateLimitTrait {
         return 1 === (int) $acquired;
     }
 
+    /**
+     * Releases a MySQL GET_LOCK for rate-limit synchronisation.
+     *
+     * @param string $lock_key The lock key.
+     * @return void
+     */
     private function release_mysql_lock( string $lock_key ): void {
         global $wpdb;
 
@@ -122,8 +150,14 @@ trait Sparxstar3IAtlasRateLimitTrait {
         );
     }
 
+    /**
+     * Returns the client IP address, respecting proxy headers when configured.
+     *
+     * @return string The validated client IP address, or 'unknown'.
+     */
     private function get_client_ip(): string {
-        $remote_addr = trim( (string) ( $_SERVER['REMOTE_ADDR'] ?? '' ) );
+        $remote_addr = sanitize_text_field( (string) ( $_SERVER['REMOTE_ADDR'] ?? '' ) ); // phpcs:ignore WordPressVIPMinimum.Variables.ServerVariables.UserControlledHeaders,WordPressVIPMinimum.Variables.RestrictedVariables.cache_constraints___SERVER__REMOTE_ADDR__
+        $remote_addr = trim( $remote_addr );
 
         $remote_ip           = false !== filter_var( $remote_addr, FILTER_VALIDATE_IP ) ? $remote_addr : '';
         $trust_proxy_headers = defined( 'SPARX_3IATLAS_TRUST_PROXY_HEADERS' )
@@ -131,8 +165,8 @@ trait Sparxstar3IAtlasRateLimitTrait {
 
         $candidates = $trust_proxy_headers
             ? array(
-                (string) ( $_SERVER['HTTP_CF_CONNECTING_IP'] ?? '' ),
-                (string) ( $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '' ),
+                sanitize_text_field( (string) ( $_SERVER['HTTP_CF_CONNECTING_IP'] ?? '' ) ), // phpcs:ignore WordPressVIPMinimum.Variables.ServerVariables.UserControlledHeaders
+                sanitize_text_field( (string) ( $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '' ) ), // phpcs:ignore WordPressVIPMinimum.Variables.ServerVariables.UserControlledHeaders
                 $remote_ip,
             )
             : array( $remote_ip );

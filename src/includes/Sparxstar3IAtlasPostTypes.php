@@ -1,10 +1,12 @@
 <?php
-declare(strict_types=1);
 /**
  * Post Types registration file.
  *
  * @package Starisian\Sparxstar\IAtlas\includes
  */
+
+declare(strict_types=1);
+
 namespace Starisian\Sparxstar\IAtlas\includes;
 
 use function defined;
@@ -1003,6 +1005,6 @@ class Sparxstar3IAtlasPostTypes {
             } 
         );
 
-        // End of registering custom fields for Dictionary Entry Details
+        // End of registering custom fields for Dictionary Entry Details.
     }
 }

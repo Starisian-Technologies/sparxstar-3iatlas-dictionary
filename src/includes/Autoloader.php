@@ -1,12 +1,10 @@
 <?php
-namespace Starisian\Sparxstar\IAtlas\includes;
-
 /**
  * Simple PSR-4 class autoloader for Starisian plugins.
  *
  * This autoloader supports OOP plugin development without requiring Composer.
  * It expects classes to be within the defined STARISIAN_NAMESPACE and located in /src/.
- * 
+ *
  * @package Starisian\Sparxstar\IAtlas\includes
  * @author Starisian Technologies (Max Barrett) <support@starisian.com>
  * @version 0.6.5
@@ -14,6 +12,10 @@ namespace Starisian\Sparxstar\IAtlas\includes;
  * @license Starisian Technologies Proprietary License (STPL)
  * @copyright Copyright (c) 2024 Starisian Technologies. All rights reserved.
  */
+
+declare(strict_types=1);
+
+namespace Starisian\Sparxstar\IAtlas\includes;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -48,26 +50,25 @@ class Autoloader {
     /**
      * PSR-4 autoload implementation.
      *
-     * @param string $className Fully qualified class name.
+     * @param string $class_name Fully qualified class name.
      * @return void
      */
-    public static function sparxIAtlas_loadClass( string $className ): void {
-        // Ensure required constants are defined
+    public static function sparxIAtlas_loadClass( string $class_name ): void {
+        // Ensure required constants are defined.
         if ( ! defined( 'STARISIAN_NAMESPACE' ) || ! defined( 'STARISIAN_PATH' ) ) {
-            error_log( 'Autoloader error: STARISIAN_NAMESPACE or STARISIAN_PATH is not defined.' );
             return;
         }
 
-        $baseNamespace = STARISIAN_NAMESPACE;
-        $baseDir       = STARISIAN_PATH . 'src/';
+        $base_namespace = STARISIAN_NAMESPACE;
+        $base_dir       = STARISIAN_PATH . 'src/';
 
-        $len = strlen( $baseNamespace );
-        if ( strncmp( $className, $baseNamespace, $len ) !== 0 ) {
+        $len = strlen( $base_namespace );
+        if ( strncmp( $class_name, $base_namespace, $len ) !== 0 ) {
             return;
         }
 
-        $relativeClass = substr( $className, $len );
-        $file          = $baseDir . str_replace( '\\', '/', $relativeClass ) . '.php';
+        $relative_class = substr( $class_name, $len );
+        $file           = $base_dir . str_replace( '\\', '/', $relative_class ) . '.php';
 
         if ( file_exists( $file ) ) {
             require_once $file;

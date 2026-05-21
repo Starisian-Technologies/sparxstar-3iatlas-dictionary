@@ -1,7 +1,4 @@
 <?php
-
-declare(strict_types=1);
-
 /**
  * Batch spell checker for the 3iAtlas Dictionary.
  *
@@ -9,12 +6,21 @@ declare(strict_types=1);
  * @license Starisian Technologies Proprietary License (STPL)
  */
 
+declare(strict_types=1);
+
 namespace Starisian\Sparxstar\IAtlas\api;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit( 1 );
 }
 
+/**
+ * Class Sparxstar3IAtlasDictionarySpellChecker
+ *
+ * Handles batch spell-checking requests against dictionary entries.
+ *
+ * @package Starisian\Sparxstar\IAtlas\api
+ */
 final class Sparxstar3IAtlasDictionarySpellChecker {
 
     use Sparxstar3IAtlasRateLimitTrait;
@@ -25,10 +31,20 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
     private const RATE_LIMIT     = 100;
     private const RATE_WINDOW    = 900;
 
+    /**
+     * Registers WordPress hooks.
+     *
+     * @return void
+     */
     public function register_hooks(): void {
         add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
     }
 
+    /**
+     * Registers the /spell REST route.
+     *
+     * @return void
+     */
     public function register_rest_routes(): void {
         register_rest_route(
             self::REST_NAMESPACE,
@@ -41,6 +57,12 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
         );
     }
 
+    /**
+     * Handles the POST /spell request.
+     *
+     * @param \WP_REST_Request $request The REST request object.
+     * @return \WP_REST_Response|\WP_Error The REST response or error.
+     */
     public function handle_spell( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
         // TODO: Replace with Helios token introspection when available.
         if ( ! $this->check_rate_limit() ) {
@@ -140,6 +162,13 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
         return new \WP_REST_Response( array( 'results' => $results ), 200 );
     }
 
+    /**
+     * Finds an exact matching post for the given word, optionally filtered by language.
+     *
+     * @param string $word The word to look up.
+     * @param string $lang The language slug to filter by (empty string for any).
+     * @return \WP_Post|null The matching post or null if not found.
+     */
     private function find_exact_word_post( string $word, string $lang ): ?\WP_Post {
         global $wpdb;
 
@@ -181,7 +210,7 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
             );
         }
 
-        $post_id = (int) $wpdb->get_var( $query );
+        $post_id = (int) $wpdb->get_var( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $query is the output of $wpdb->prepare() above.
         if ( $post_id <= 0 ) {
             return null;
         }

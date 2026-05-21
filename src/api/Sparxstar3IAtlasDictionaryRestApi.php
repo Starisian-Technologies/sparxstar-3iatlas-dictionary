@@ -1,7 +1,4 @@
 <?php
-
-declare(strict_types=1);
-
 /**
  * REST API controller for the 3iAtlas Dictionary.
  *
@@ -9,12 +6,21 @@ declare(strict_types=1);
  * @license Starisian Technologies Proprietary License (STPL)
  */
 
+declare(strict_types=1);
+
 namespace Starisian\Sparxstar\IAtlas\api;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit( 1 );
 }
 
+/**
+ * Class Sparxstar3IAtlasDictionaryRestApi
+ *
+ * Registers and handles the dictionary REST API endpoints.
+ *
+ * @package Starisian\Sparxstar\IAtlas\api
+ */
 final class Sparxstar3IAtlasDictionaryRestApi {
 
     use Sparxstar3IAtlasRateLimitTrait;
@@ -24,10 +30,20 @@ final class Sparxstar3IAtlasDictionaryRestApi {
     private const RATE_LIMIT    = 100;
     private const RATE_WINDOW   = 900;
 
+    /**
+     * Registers WordPress hooks.
+     *
+     * @return void
+     */
     public function register_hooks(): void {
         add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
     }
 
+    /**
+     * Registers all REST routes for the dictionary API.
+     *
+     * @return void
+     */
     public function register_rest_routes(): void {
         $routes = array(
             array( 'GET', '/lookup', 'handle_lookup' ),
@@ -54,10 +70,21 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         }
     }
 
+    /**
+     * Permission callback that allows all requests.
+     *
+     * @return bool Always true.
+     */
     public function permission_open(): bool {
         return true;
     }
 
+    /**
+     * Extracts a bearer token from an Authorization header value.
+     *
+     * @param string $authorization_header The raw Authorization header value.
+     * @return string|null The extracted token or null if not found.
+     */
     private function parse_bearer_token( string $authorization_header ): ?string {
         $authorization_header = trim( $authorization_header );
 
@@ -72,6 +99,12 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         return $matches[1];
     }
 
+    /**
+     * Permission callback for Helios-guarded endpoints.
+     *
+     * @param \WP_REST_Request $request The REST request object.
+     * @return bool True if permission is granted.
+     */
     public function permission_helios( \WP_REST_Request $request ): bool {
         // TODO: Replace with Helios token introspection when available.
         $auth  = $request->get_header( 'Authorization' );
@@ -81,6 +114,11 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         return null !== $token && is_user_logged_in() && current_user_can( 'edit_posts' );
     }
 
+    /**
+     * Returns a standardised rate-limit WP_Error response.
+     *
+     * @return \WP_Error The rate-limited error.
+     */
     private function rate_limit_error(): \WP_Error {
         return new \WP_Error(
             'rate_limited',
@@ -89,12 +127,26 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         );
     }
 
+    /**
+     * Returns a WP_REST_Response with appropriate Cache-Control headers.
+     *
+     * @param array $data    The response data.
+     * @param int   $max_age Cache max-age in seconds.
+     * @return \WP_REST_Response The response with cache headers.
+     */
     private function cached_response( array $data, int $max_age = 3600 ): \WP_REST_Response {
         $response = new \WP_REST_Response( $data, 200 );
         $response->header( 'Cache-Control', 'public, max-age=' . $max_age );
         return $response;
     }
 
+    /**
+     * Checks whether an If-None-Match header contains the given ETag value.
+     *
+     * @param string $if_none_match The If-None-Match header value.
+     * @param string $etag_value    The ETag value to look for.
+     * @return bool True if the ETag is present in the header.
+     */
     private function if_none_match_contains( string $if_none_match, string $etag_value ): bool {
         $if_none_match = trim( $if_none_match );
         if ( '' === $if_none_match ) {
@@ -119,6 +171,12 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         return false;
     }
 
+    /**
+     * Extracts a numeric domain code from a taxonomy slug.
+     *
+     * @param string $slug The taxonomy slug.
+     * @return string The extracted numeric code, or empty string.
+     */
     private static function domain_code_from_slug( string $slug ): string {
         if ( 1 === preg_match( '/-([0-9]+(?:\.[0-9]+)*)$/', $slug, $matches ) ) {
             return $matches[1];
@@ -127,6 +185,13 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         return '';
     }
 
+    /**
+     * Builds a full dictionary entry array for a given post ID.
+     *
+     * @param int  $post_id       The post ID.
+     * @param bool $include_audio Whether to include the audio URL field.
+     * @return array The entry data array.
+     */
     private function build_entry( int $post_id, bool $include_audio = true ): array {
         $post = get_post( $post_id );
         if ( ! $post ) {
@@ -188,12 +253,18 @@ final class Sparxstar3IAtlasDictionaryRestApi {
 
         if ( $include_audio ) {
             $audio              = get_field( 'aiwa_audio_file', $post_id );
-            $entry['audio_url'] = is_array( $audio ) ? ( $audio['url'] ?? null ) : ( $audio ?: null );
+            $entry['audio_url'] = is_array( $audio ) ? ( $audio['url'] ?? null ) : ( '' !== $audio ? $audio : null );
         }
 
         return $entry;
     }
 
+    /**
+     * Handles GET /lookup requests.
+     *
+     * @param \WP_REST_Request $request The REST request object.
+     * @return \WP_REST_Response|\WP_Error The response or error.
+     */
     public function handle_lookup( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
         // TODO: Replace with Helios token introspection when available.
         if ( ! $this->check_rate_limit() ) {
@@ -239,6 +310,12 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         );
     }
 
+    /**
+     * Handles GET /search requests.
+     *
+     * @param \WP_REST_Request $request The REST request object.
+     * @return \WP_REST_Response|\WP_Error The response or error.
+     */
     public function handle_search( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
         // TODO: Replace with Helios token introspection when available.
         if ( ! $this->check_rate_limit() ) {
@@ -304,6 +381,12 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         );
     }
 
+    /**
+     * Handles GET /wordlist requests.
+     *
+     * @param \WP_REST_Request $request The REST request object.
+     * @return \WP_REST_Response|\WP_Error The response or error.
+     */
     public function handle_wordlist( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
         // TODO: Replace with Helios token introspection when available.
         if ( ! $this->check_rate_limit() ) {
@@ -397,6 +480,12 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         return $response;
     }
 
+    /**
+     * Handles GET /languages requests.
+     *
+     * @param \WP_REST_Request $request The REST request object.
+     * @return \WP_REST_Response|\WP_Error The response or error.
+     */
     public function handle_languages( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
         // TODO: Replace with Helios token introspection when available.
         if ( ! $this->check_rate_limit() ) {
@@ -434,6 +523,12 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         );
     }
 
+    /**
+     * Handles GET /domains requests.
+     *
+     * @param \WP_REST_Request $request The REST request object.
+     * @return \WP_REST_Response|\WP_Error The response or error.
+     */
     public function handle_domains( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
         // TODO: Replace with Helios token introspection when available.
         if ( ! $this->check_rate_limit() ) {
@@ -478,7 +573,7 @@ final class Sparxstar3IAtlasDictionaryRestApi {
                 $lang
             );
 
-            $term_rows = $wpdb->get_results( $query );
+            $term_rows = $wpdb->get_results( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $query is the output of $wpdb->prepare() above.
 
             if ( '' !== $wpdb->last_error && $wpdb->last_error !== $last_error_before ) {
                 return new \WP_Error( 'taxonomy_error', 'Failed to retrieve domains.', array( 'status' => 500 ) );
@@ -525,6 +620,12 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         );
     }
 
+    /**
+     * Handles GET /game-set requests.
+     *
+     * @param \WP_REST_Request $request The REST request object.
+     * @return \WP_REST_Response|\WP_Error The response or error.
+     */
     public function handle_game_set( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
         // TODO: Replace with Helios token introspection when available.
         if ( ! $this->check_rate_limit() ) {
@@ -606,7 +707,7 @@ final class Sparxstar3IAtlasDictionaryRestApi {
             );
         }
 
-        $total_candidates = (int) $wpdb->get_var( $count_sql );
+        $total_candidates = (int) $wpdb->get_var( $count_sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $count_sql is the output of $wpdb->prepare() above.
 
         if ( $total_candidates > 0 ) {
             // Use 8 hex chars (~32 bits) to keep deterministic offsets portable across PHP platforms.
@@ -704,7 +805,7 @@ final class Sparxstar3IAtlasDictionaryRestApi {
 
             if ( $include_audio ) {
                 $audio             = get_field( 'aiwa_audio_file', $post->ID );
-                $word['audio_url'] = is_array( $audio ) ? ( $audio['url'] ?? null ) : ( $audio ?: null );
+                $word['audio_url'] = is_array( $audio ) ? ( $audio['url'] ?? null ) : ( '' !== $audio ? $audio : null );
             }
 
             $words[] = $word;
@@ -724,6 +825,12 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         return $response;
     }
 
+    /**
+     * Handles GET /word-of-day requests.
+     *
+     * @param \WP_REST_Request $request The REST request object.
+     * @return \WP_REST_Response|\WP_Error The response or error.
+     */
     public function handle_word_of_day( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
         // TODO: Replace with Helios token introspection when available.
         if ( ! $this->check_rate_limit() ) {
@@ -785,6 +892,12 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         );
     }
 
+    /**
+     * Handles POST /progress/sync requests.
+     *
+     * @param \WP_REST_Request $request The REST request object.
+     * @return \WP_REST_Response|\WP_Error The response or error.
+     */
     public function handle_progress_sync( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
         // TODO: Replace with Helios token introspection when available.
         if ( ! $this->check_rate_limit() ) {
