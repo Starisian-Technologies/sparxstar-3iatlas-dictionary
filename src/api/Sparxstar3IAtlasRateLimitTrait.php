@@ -156,7 +156,7 @@ trait Sparxstar3IAtlasRateLimitTrait {
      * @return string The validated client IP address, or 'unknown'.
      */
     private function get_client_ip(): string {
-        $remote_addr = sanitize_text_field( (string) ( $_SERVER['REMOTE_ADDR'] ?? '' ) ); // phpcs:ignore WordPressVIPMinimum.Variables.ServerVariables.UserControlledHeaders,WordPressVIPMinimum.Variables.RestrictedVariables.cache_constraints___SERVER__REMOTE_ADDR__
+        $remote_addr = trim( (string) ( $_SERVER['REMOTE_ADDR'] ?? '' ) ); // phpcs:ignore WordPressVIPMinimum.Variables.ServerVariables.UserControlledHeaders,WordPressVIPMinimum.Variables.RestrictedVariables.cache_constraints___SERVER__REMOTE_ADDR__ -- Value is validated with filter_var( FILTER_VALIDATE_IP ) below.
         $remote_addr = trim( $remote_addr );
 
         $remote_ip           = false !== filter_var( $remote_addr, FILTER_VALIDATE_IP ) ? $remote_addr : '';
@@ -165,8 +165,8 @@ trait Sparxstar3IAtlasRateLimitTrait {
 
         $candidates = $trust_proxy_headers
             ? array(
-                sanitize_text_field( (string) ( $_SERVER['HTTP_CF_CONNECTING_IP'] ?? '' ) ), // phpcs:ignore WordPressVIPMinimum.Variables.ServerVariables.UserControlledHeaders
-                sanitize_text_field( (string) ( $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '' ) ), // phpcs:ignore WordPressVIPMinimum.Variables.ServerVariables.UserControlledHeaders
+                (string) ( $_SERVER['HTTP_CF_CONNECTING_IP'] ?? '' ), // phpcs:ignore WordPressVIPMinimum.Variables.ServerVariables.UserControlledHeaders -- Value is validated with filter_var( FILTER_VALIDATE_IP ) below.
+                (string) ( $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '' ), // phpcs:ignore WordPressVIPMinimum.Variables.ServerVariables.UserControlledHeaders -- Value is validated with filter_var( FILTER_VALIDATE_IP ) below.
                 $remote_ip,
             )
             : array( $remote_ip );

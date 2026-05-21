@@ -1,15 +1,13 @@
 <?php
-namespace Starisian\Sparxstar\IAtlas;
-
 /**
  * SPARXSTAR 3IAtlas Dictionary
- * 
+ *
  * @file             sparxstar-3iatlas-dictionary.php
  * @package          Starisian\Sparxstar\IAtlas
  * @author           Starisian Technologies (Max Barrett) <support@starisian.com>
  * @license          Starisian Technologies Proprietary License (STPL)
  * @copyright        Copyright (c) 2024 Starisian Technologies. All rights reserved.
- * 
+ *
  * @wordpress-plugin
  * Plugin Name:       SPARXSTAR 3IAtlas Dictionary
  * Plugin URI:        https://starisian.com/sparxstar/sparxstar-3iatlas-dictionary/
@@ -20,12 +18,14 @@ namespace Starisian\Sparxstar\IAtlas;
  * Contributor:       Max Barrett
  * License:           Starisian Technologies Proprietary License (STPL)
  * License URI:
- * Text Domain:       SparxstarIAtlasDictionary
+ * Text Domain:       sparxstar-3iatlas-dictionary
  * Requires at least: 6.8
  * Requires PHP:      8.2
  * Tested up to:      6.9
  * Domain Path:       /languages
  */
+
+namespace Starisian\Sparxstar\IAtlas;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -54,7 +54,7 @@ if ( version_compare( PHP_VERSION, '8.2', '<' ) || version_compare( $GLOBALS['wp
     add_action(
         'admin_notices',
         function () {
-            echo '<div class="notice notice-error"><p>' . esc_html__( 'Sparxstar 3IAtlas Dictionary requires PHP 8.2+ and WordPress 6.4+.', 'SparxstarIAtlasDictionary' ) . '</p></div>';
+            echo '<div class="notice notice-error"><p>' . esc_html__( 'Sparxstar 3IAtlas Dictionary requires PHP 8.2+ and WordPress 6.4+.', 'sparxstar-3iatlas-dictionary' ) . '</p></div>';
         }
     );
     return;
@@ -73,7 +73,7 @@ if ( file_exists( SPARX_3IATLAS_PATH . 'vendor/autoload.php' ) ) {
         define( 'SPARX_3IATLAS_PATH', SPARX_3IATLAS_PATH );
     }
     
-    // Register the Autoloder
+    // Register the Autoloader.
     if ( class_exists( 'Starisian\Sparxstar\IAtlas\includes\Autoloader' ) ) {
         \Starisian\Sparxstar\IAtlas\includes\Autoloader::sparxIAtlas_register();
     }
@@ -93,7 +93,7 @@ register_uninstall_hook( __FILE__, 'Starisian\Sparxstar\IAtlas\sparxIAtlas_unins
  * @return void
  */
 function sparxIAtlas_activate_plugin() {
-    // Trigger CPT registration to verify rewrite rules
+    // Trigger CPT registration to verify rewrite rules.
     if ( class_exists( Sparxstar3IAtlasPostTypes::class ) ) {
         $pt = new Sparxstar3IAtlasPostTypes();
     }
@@ -115,7 +115,7 @@ function sparxIAtlas_deactivate_plugin() {
  * @return void
  */
 function sparxIAtlas_uninstall_plugin() {
-    // Clean up options or data if needed
+    // Clean up options or data if needed.
 }
 
 // 5. Run the Plugin (Orchestration)

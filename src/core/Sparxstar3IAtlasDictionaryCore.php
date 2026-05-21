@@ -141,7 +141,7 @@ final class Sparxstar3IAtlasDictionaryCore {
      */
     public function sparxIAtlas_increase_query_limit( int $amount, $source, array $args, $context, $info ): int {
         // Allow dictionary queries to fetch up to 2000 items (covering our 1000 item chunks).
-        if ( isset( $info->field_name ) && 'dictionaries' === $info->field_name ) {
+        if ( isset( $info->fieldName ) && 'dictionaries' === $info->fieldName ) { // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- WPGraphQL uses camelCase for field info properties.
             return 2000;
         }
 
