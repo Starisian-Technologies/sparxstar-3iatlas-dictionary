@@ -9,7 +9,21 @@ import { useState, useEffect, useCallback } from 'react';
 import { getRecord, putRecord, deleteRecord } from './idbUtils.js';
 
 const SESSION_KEY = 'game-session:current';
-const LEARNED_KEY = 'learned-words:set';
+const LEARNED_KEY = 'learned-words:production';
+
+/**
+ * Games that require the player to produce (write/type/arrange) the word.
+ * Only these games contribute to the "words you can write" count.
+ *
+ * Recognition-only games (domain_flash, meaning_match) measure recall but
+ * not orthographic production, so they do not increment learnedCount.
+ */
+const PRODUCTION_GAMES = new Set([
+    'listen_write',
+    'arrange_word',
+    'complete_sentence',
+    'letter_reveal',
+]);
 
 /**
  * @returns {{
@@ -80,6 +94,12 @@ export function useGameSession() {
     /**
      * Record the outcome for one word.
      *
+     * learnedCount ("words you can write") is only incremented for
+     * production games (listen_write, arrange_word, complete_sentence,
+     * letter_reveal) where the player demonstrated orthographic output.
+     * Recognition-only games (domain_flash, meaning_match) do not
+     * contribute to this count.
+     *
      * @param {string} wordUuid
      * @param {'correct'|'learning'} outcome
      * @param {number} attempts  Number of attempts (1, 2, or 3)
@@ -97,8 +117,9 @@ export function useGameSession() {
                 xpEarned: session.xpEarned + xp,
             };
 
-            /* Track cumulative learned words. */
-            if (outcome === 'correct') {
+            /* Only count toward "words you can write" for production games. */
+            const isProductionGame = PRODUCTION_GAMES.has(session.gameType);
+            if (outcome === 'correct' && isProductionGame) {
                 const learnedRecord = await getRecord('learned-words', LEARNED_KEY);
                 const existing = learnedRecord?.uuids ?? [];
                 if (!existing.includes(wordUuid)) {

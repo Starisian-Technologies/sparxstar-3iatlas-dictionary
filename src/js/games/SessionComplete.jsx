@@ -1,12 +1,20 @@
 import React from 'react';
 import { CheckCircle2, RotateCcw, List } from 'lucide-react';
 
+/** Games that require orthographic production (same set as useGameSession). */
+const PRODUCTION_GAMES = new Set([
+    'listen_write',
+    'arrange_word',
+    'complete_sentence',
+    'letter_reveal',
+]);
+
 /**
  * SessionComplete — post-session summary screen.
  *
  * Props:
  *   session        {object}   Completed session from useGameSession
- *   learnedCount   {number}   Cumulative total words marked correct ever
+ *   learnedCount   {number}   Cumulative total of uniquely written words (production games only)
  *   onPracticeMissed {Function} Re-play with "Still learning" words
  *   onBrowseDomain   {Function} Switch to Browse tab filtered by domain
  *   onPlayAgain      {Function} Start a new session with same settings
@@ -24,6 +32,7 @@ export default function SessionComplete({
     const correct = session.results.filter((r) => r.outcome === 'correct').length;
     const missed = session.results.filter((r) => r.outcome === 'learning').length;
     const xp = session.xpEarned ?? 0;
+    const isProductionGame = PRODUCTION_GAMES.has(session.gameType);
 
     return (
         <div className="flex flex-col items-center justify-center h-full p-6 text-center">
@@ -53,16 +62,23 @@ export default function SessionComplete({
                 <StatCard label="XP earned" value={`+${xp}`} color="#009688" />
             </div>
 
-            {/* Cumulative count */}
-            <div
-                className="w-full max-w-xs rounded-2xl p-4 mb-6"
-                style={{ background: 'linear-gradient(135deg, #E91E8C 0%, #7B3FA0 100%)' }}
-            >
-                <p className="text-white/80 text-xs font-semibold uppercase tracking-wider mb-1">
-                    Total words you can write
-                </p>
-                <p className="text-white text-3xl font-bold">{learnedCount}</p>
-            </div>
+            {/*
+             * Cumulative production count — only shown for games that require
+             * the player to produce (write/type/arrange) the word.
+             * DomainFlash and MeaningMatch are recognition-only; showing a
+             * "words you can write" count after them would misrepresent progress.
+             */}
+            {isProductionGame && (
+                <div
+                    className="w-full max-w-xs rounded-2xl p-4 mb-6"
+                    style={{ background: 'linear-gradient(135deg, #E91E8C 0%, #7B3FA0 100%)' }}
+                >
+                    <p className="text-white/80 text-xs font-semibold uppercase tracking-wider mb-1">
+                        Total words you can write
+                    </p>
+                    <p className="text-white text-3xl font-bold">{learnedCount}</p>
+                </div>
+            )}
 
             {/* Actions */}
             <div className="flex flex-col gap-3 w-full max-w-xs">

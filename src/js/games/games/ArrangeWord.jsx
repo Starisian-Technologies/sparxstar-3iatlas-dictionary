@@ -58,10 +58,13 @@ export default function ArrangeWord({ words, language, onResult, onComplete }) {
                     onResult(word.uuid, 'correct', 1, 5);
                     setTimeout(advance, 1200);
                 } else {
+                    /* Shake animation, then return placed tiles to pool without
+                     * reshuffling. Player keeps their mental map of which tiles
+                     * are available — only the answer row is cleared. */
                     setShake(true);
                     setTimeout(() => {
                         setShake(false);
-                        setPool(buildPool(word.headword));
+                        setPool(newAnswer); /* all tiles back to pool, order preserved */
                         setAnswer([]);
                     }, 600);
                 }
