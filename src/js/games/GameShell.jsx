@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Loader2, ChevronDown } from 'lucide-react';
-import useGameSet from '../hooks/useGameSet.js';
-import useGameSession from '../hooks/useGameSession.js';
-import useProgressSync from '../hooks/useProgressSync.js';
+import { useGameSet } from '../hooks/useGameSet.js';
+import { useGameSession } from '../hooks/useGameSession.js';
+import { useProgressSync } from '../hooks/useProgressSync.js';
 import SessionComplete from './SessionComplete.jsx';
 import DomainFlash from './games/DomainFlash.jsx';
 import MeaningMatch from './games/MeaningMatch.jsx';
@@ -102,7 +102,7 @@ export default function GameShell({
         error: gameSetError,
     } = useGameSet({
         restUrl,
-        langSource: phase === 'playing' ? sourceLanguage : null /* only fetch when starting */,
+        langSource: (phase === 'loading' || phase === 'playing') ? sourceLanguage : null,
         domain: selectedDomain,
         limit: wordCount,
         includeAudio: selectedGame === 'listen_write',
@@ -144,7 +144,7 @@ export default function GameShell({
                 setPhase('playing');
             }
         }
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps -- intentional: run only on mount to resume in-progress session
+    }, [session, phase]); // resume once session loads asynchronously; phase guard prevents re-entry
 
     /* ── When game-set loads (after Start is tapped), kick off the session ── */
     useEffect(() => {

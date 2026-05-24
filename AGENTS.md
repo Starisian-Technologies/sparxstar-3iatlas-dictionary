@@ -218,7 +218,7 @@ Specification: `.github/instructions/dictionary-game-spec-v1.md`
 src/js/hooks/idbUtils.js           — shared IndexedDB helper (openDB, getRecord, putRecord, getAllRecords, deleteRecord)
 src/js/hooks/useGameSet.js         — /game-set fetch + 3-day IndexedDB TTL cache
 src/js/hooks/useGameSession.js     — session state (currentIndex, results, xpEarned, checkpoint resume)
-src/js/hooks/useProgressSync.js    — event outbox → POST /progress/sync on connect
+src/js/hooks/useProgressSync.js    — event outbox (IndexedDB); network sync intentionally a no-op pending OQ-G1 resolution
 src/js/games/AccessoryBar.jsx      — Mandinka character bar (ŋ ɓ ɗ ñ ɲ ʔ á é í ó ú), visualViewport positioning
 src/js/games/SessionComplete.jsx   — post-session summary (stats, cumulative word count, action buttons)
 src/js/games/GameShell.jsx         — session setup (domain/game/word-count selectors), game router, phase management

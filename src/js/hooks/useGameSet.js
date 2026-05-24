@@ -25,7 +25,7 @@ export function useGameSet({ restUrl, langSource, domain = '', limit = 20, inclu
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const cacheKey = `game-set:${langSource}:${domain || 'all'}`;
+    const cacheKey = `game-set:${langSource}:${domain || 'all'}:${includeAudio ? 'audio' : 'no-audio'}`;
 
     useEffect(() => {
         if (!langSource) {
