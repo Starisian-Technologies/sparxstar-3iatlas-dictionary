@@ -1484,7 +1484,7 @@ export default function DictionaryApp() {
                             sourceLanguage={sourceLanguage}
                             languages={languages}
                             onSourceLanguage={setSourceLanguage}
-                            onBrowseDomain={() => setTopTab('browse')}
+                            onBrowse={() => setTopTab('browse')}
                         />
                     </div>
                 )}
@@ -1638,7 +1638,7 @@ export default function DictionaryApp() {
                         sourceLanguage={sourceLanguage}
                         languages={languages}
                         onSourceLanguage={setSourceLanguage}
-                        onBrowseDomain={() => setActiveNav('home')}
+                        onBrowse={() => setActiveNav('home')}
                     />
                 )}
             </main>

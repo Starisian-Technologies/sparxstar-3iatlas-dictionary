@@ -70,10 +70,13 @@ export default function AccessoryBar() {
             activeInput.value.substring(0, start) + char + activeInput.value.substring(end);
 
         /* Trigger React's synthetic onChange via the native value setter. */
-        const nativeSetter = Object.getOwnPropertyDescriptor(
-            window.HTMLInputElement.prototype,
-            'value'
-        )?.set;
+        const inputPrototype =
+            activeInput.tagName === 'TEXTAREA'
+                ? window.HTMLTextAreaElement?.prototype
+                : window.HTMLInputElement?.prototype;
+        const nativeSetter = inputPrototype
+            ? Object.getOwnPropertyDescriptor(inputPrototype, 'value')?.set
+            : null;
 
         if (nativeSetter) {
             nativeSetter.call(activeInput, newValue);

@@ -62,6 +62,29 @@ const GAME_TYPES = [
 
 const NOOP_ASYNC = async () => {};
 
+const getLocalStorageItem = (key) => {
+    try {
+        return {
+            available: true,
+            value: window.localStorage.getItem(key),
+        };
+    } catch {
+        return {
+            available: false,
+            value: null,
+        };
+    }
+};
+
+const setLocalStorageItem = (key, value) => {
+    try {
+        window.localStorage.setItem(key, value);
+        return true;
+    } catch {
+        return false;
+    }
+};
+
 /**
  * GameShell — top-level game orchestrator.
  *
@@ -74,7 +97,7 @@ const NOOP_ASYNC = async () => {};
  *   sourceLanguage {string|null}  Currently selected language slug
  *   languages      {Array}    Available languages from /languages
  *   onSourceLanguage {Function}  (slug) => void — change source language
- *   onBrowseDomain   {Function}  (domain) => void — switch to Browse tab
+ *   onBrowse         {Function}  () => void — switch to Browse tab
  */
 export default function GameShell({
     restUrl,
@@ -82,7 +105,7 @@ export default function GameShell({
     sourceLanguage,
     languages,
     onSourceLanguage,
-    onBrowseDomain,
+    onBrowse,
 }) {
     const resolvedUseGameSet = typeof useGameSetHook === 'function' ? useGameSetHook : null;
     const resolvedUseGameSession =
@@ -96,6 +119,7 @@ export default function GameShell({
     const [wordCount, setWordCount] = useState(20);
     const [domains, setDomains] = useState([]);
     const [domainsLoading, setDomainsLoading] = useState(false);
+    const [setupError, setSetupError] = useState(null);
 
     /* ── Session phase: 'setup' | 'loading' | 'playing' | 'complete' ── */
     const [phase, setPhase] = useState('setup');
@@ -139,6 +163,7 @@ export default function GameShell({
     useEffect(() => {
         if (!sourceLanguage) {
             setDomains([]);
+            setSetupError(null);
             return;
         }
         setDomainsLoading(true);
@@ -173,15 +198,18 @@ export default function GameShell({
         if (phase !== 'loading') return;
         if (gameSetLoading) return;
         if (gameSetError) {
+            setSetupError(gameSetError);
             setPhase('setup');
             return;
         }
         if (fetchedWords.length === 0) {
+            setSetupError('No words are available for this game yet.');
             setPhase('setup');
             return;
         }
 
         const sliced = fetchedWords.slice(0, wordCount);
+        setSetupError(null);
 
         initSession({
             gameType: selectedGame,
@@ -195,10 +223,12 @@ export default function GameShell({
 
         /* Fire return-visit event. */
         const today = new Date().toDateString();
-        const lastVisit = localStorage.getItem('aiwa-dict-last-play');
-        if (lastVisit !== today) {
-            localStorage.setItem('aiwa-dict-last-play', today);
-            addEvent({ type: 'aiwa_game_return_visit' });
+        const lastVisit = getLocalStorageItem('aiwa-dict-last-play');
+        if (lastVisit.available && lastVisit.value !== today) {
+            const didPersistVisit = setLocalStorageItem('aiwa-dict-last-play', today);
+            if (didPersistVisit) {
+                addEvent({ type: 'aiwa_game_return_visit' });
+            }
         }
     }, [
         phase,
@@ -222,10 +252,12 @@ export default function GameShell({
             if (outcome === 'correct') {
                 /* Check if this is the first time practicing this word. */
                 const practiceKey = `aiwa-dict-practiced:${uuid}`;
-                const firstTime = !localStorage.getItem(practiceKey);
-                if (firstTime) {
-                    localStorage.setItem(practiceKey, '1');
-                    await addEvent({ type: 'aiwa_game_new_word_practiced', word_uuid: uuid });
+                const practiceMarker = getLocalStorageItem(practiceKey);
+                if (practiceMarker.available && practiceMarker.value === null) {
+                    const didPersistPractice = setLocalStorageItem(practiceKey, '1');
+                    if (didPersistPractice) {
+                        await addEvent({ type: 'aiwa_game_new_word_practiced', word_uuid: uuid });
+                    }
                 }
 
                 if (selectedGame === 'listen_write') {
@@ -271,6 +303,7 @@ export default function GameShell({
     /* ── Start button ── */
     const handleStart = () => {
         if (!sourceLanguage) return;
+        setSetupError(null);
         setPhase('loading');
     };
 
@@ -328,7 +361,7 @@ export default function GameShell({
                     session={session}
                     learnedCount={learnedCount}
                     onPracticeMissed={handlePracticeMissed}
-                    onBrowseDomain={() => onBrowseDomain(selectedDomain)}
+                    onBrowse={onBrowse}
                     onPlayAgain={handlePlayAgain}
                 />
             </div>
@@ -339,6 +372,12 @@ export default function GameShell({
     return (
         <div className="flex-1 flex flex-col overflow-y-auto p-4 gap-5 bg-white dark:bg-gray-900">
             <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 shrink-0">Play</h2>
+
+            {setupError && (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">
+                    {setupError}
+                </div>
+            )}
 
             {/* Language check */}
             {!sourceLanguage && (

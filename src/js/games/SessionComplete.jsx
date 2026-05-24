@@ -16,14 +16,14 @@ const PRODUCTION_GAMES = new Set([
  *   session        {object}   Completed session from useGameSession
  *   learnedCount   {number}   Cumulative total of uniquely written words (production games only)
  *   onPracticeMissed {Function} Re-play with "Still learning" words
- *   onBrowseDomain   {Function} Switch to Browse tab filtered by domain
+ *   onBrowse         {Function} Switch to Browse tab
  *   onPlayAgain      {Function} Start a new session with same settings
  */
 export default function SessionComplete({
     session,
     learnedCount,
     onPracticeMissed,
-    onBrowseDomain,
+    onBrowse,
     onPlayAgain,
 }) {
     if (!session) return null;
@@ -96,11 +96,11 @@ export default function SessionComplete({
 
                 <button
                     type="button"
-                    onClick={onBrowseDomain}
+                    onClick={onBrowse}
                     className="flex items-center justify-center gap-2 w-full py-3 rounded-xl font-semibold text-sm bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 transition-colors"
                 >
                     <List size={16} aria-hidden="true" />
-                    Browse this domain
+                    Browse dictionary
                 </button>
 
                 <button
