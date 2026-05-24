@@ -94,7 +94,7 @@ export function useGameSession() {
             startedAt: Date.now(),
             completedAt: null,
         };
-        await putRecord('game-sessions', newSession);
+        await safePutRecord('game-sessions', newSession);
         setSession(newSession);
     }, []);
 
