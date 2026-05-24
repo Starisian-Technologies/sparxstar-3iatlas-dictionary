@@ -19,15 +19,15 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
 
     use Sparxstar3IAtlasRateLimitTrait;
 
-    /** @var string REST namespace shared by dictionary API routes. */
+    /** REST namespace shared by dictionary API routes. */
     private const REST_NAMESPACE = 'sparxstar/v1/dictionary';
-    /** @var string Dictionary custom post type slug. */
+    /** Dictionary custom post type slug. */
     private const CPT            = 'aiwa-cpt-dictionary';
-    /** @var int Hard cap for words validated per request. */
+    /** Hard cap for words validated per request. */
     private const MAX_WORDS      = 100;
-    /** @var int Public request budget per rate-limit window. */
+    /** Public request budget per rate-limit window. */
     private const RATE_LIMIT     = 100;
-    /** @var int Rate-limit window size in seconds (15 minutes). */
+    /** Rate-limit window size in seconds (15 minutes). */
     private const RATE_WINDOW    = 900;
 
     /**
