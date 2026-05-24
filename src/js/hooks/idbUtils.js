@@ -57,11 +57,13 @@ export async function getRecord(storeName, key) {
 export async function putRecord(storeName, record) {
     try {
         const db = await openDB();
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             const tx = db.transaction(storeName, 'readwrite');
             const req = tx.objectStore(storeName).put(record);
             req.onsuccess = () => resolve();
-            req.onerror = () => reject(req.error);
+            req.onerror = () => resolve();
+            tx.onerror = () => resolve();
+            tx.onabort = () => resolve();
         });
     } catch {
         /* quota exceeded or private-browsing — degrade silently */

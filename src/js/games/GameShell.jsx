@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Loader2, ChevronDown } from 'lucide-react';
-import { useGameSet as useGameSetHook } from '../hooks/useGameSet.js';
-import { useGameSession as useGameSessionHook } from '../hooks/useGameSession.js';
-import { useProgressSync as useProgressSyncHook } from '../hooks/useProgressSync.js';
+import { useGameSet } from '../hooks/useGameSet.js';
+import { useGameSession } from '../hooks/useGameSession.js';
+import { useProgressSync } from '../hooks/useProgressSync.js';
 import SessionComplete from './SessionComplete.jsx';
 import DomainFlash from './games/DomainFlash.jsx';
 import MeaningMatch from './games/MeaningMatch.jsx';
@@ -60,8 +60,6 @@ const GAME_TYPES = [
     },
 ];
 
-const NOOP_ASYNC = async () => {};
-
 const getLocalStorageItem = (key) => {
     try {
         return {
@@ -107,12 +105,6 @@ export default function GameShell({
     onSourceLanguage,
     onBrowse,
 }) {
-    const resolvedUseGameSet = typeof useGameSetHook === 'function' ? useGameSetHook : null;
-    const resolvedUseGameSession =
-        typeof useGameSessionHook === 'function' ? useGameSessionHook : null;
-    const resolvedUseProgressSync =
-        typeof useProgressSyncHook === 'function' ? useProgressSyncHook : null;
-
     /* ── Setup state ── */
     const [selectedDomain, setSelectedDomain] = useState('');
     const [selectedGame, setSelectedGame] = useState(GAME_TYPES[0].id);
@@ -132,32 +124,18 @@ export default function GameShell({
         words: fetchedWords,
         loading: gameSetLoading,
         error: gameSetError,
-    } = typeof resolvedUseGameSet === 'function'
-        ? resolvedUseGameSet({
-              restUrl,
-              langSource: phase === 'loading' || phase === 'playing' ? sourceLanguage : null,
-              domain: selectedDomain,
-              limit: wordCount,
-              includeAudio: selectedGame === 'listen_write',
-          })
-        : { words: [], loading: false, error: null };
+    } = useGameSet({
+        restUrl,
+        langSource: phase === 'loading' || phase === 'playing' ? sourceLanguage : null,
+        domain: selectedDomain,
+        limit: wordCount,
+        includeAudio: selectedGame === 'listen_write',
+    });
 
     const { session, learnedCount, initSession, recordResult, completeSession, clearSession } =
-        typeof resolvedUseGameSession === 'function'
-            ? resolvedUseGameSession()
-            : {
-                  session: null,
-                  learnedCount: 0,
-                  initSession: NOOP_ASYNC,
-                  recordResult: NOOP_ASYNC,
-                  completeSession: NOOP_ASYNC,
-                  clearSession: NOOP_ASYNC,
-              };
+        useGameSession();
 
-    const { addEvent, syncNow } =
-        typeof resolvedUseProgressSync === 'function'
-            ? resolvedUseProgressSync({ restUrl })
-            : { addEvent: NOOP_ASYNC, syncNow: NOOP_ASYNC };
+    const { addEvent, syncNow } = useProgressSync({ restUrl });
 
     /* ── Fetch domains when source language changes ── */
     useEffect(() => {
