@@ -119,6 +119,13 @@ export function useGameSession() {
         return putRecord(...args);
     }, []);
 
+    const safeDeleteRecord = useCallback(async (...args) => {
+        if (typeof deleteRecord !== 'function') {
+            throw new TypeError('deleteRecord is not a function');
+        }
+        return deleteRecord(...args);
+    }, []);
+
     const recordResult = useCallback(
         async (wordUuid, outcome, attempts, xp) => {
             if (!session) return;
@@ -167,9 +174,9 @@ export function useGameSession() {
      * Remove the current session from storage (e.g. after sync).
      */
     const clearSession = useCallback(async () => {
-        await deleteRecord('game-sessions', SESSION_KEY);
+        await safeDeleteRecord('game-sessions', SESSION_KEY);
         setSession(null);
-    }, []);
+    }, [safeDeleteRecord]);
 
     return { session, learnedCount, initSession, recordResult, completeSession, clearSession };
 }
