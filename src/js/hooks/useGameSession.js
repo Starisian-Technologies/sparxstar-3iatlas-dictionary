@@ -72,6 +72,21 @@ export function useGameSession() {
         };
     }, []);
 
+    /* Safe wrappers — defined before any callback that uses them to avoid TDZ. */
+    const safePutRecord = useCallback(async (...args) => {
+        if (typeof putRecord !== 'function') {
+            throw new TypeError('putRecord is not a function');
+        }
+        return putRecord(...args);
+    }, []);
+
+    const safeDeleteRecord = useCallback(async (...args) => {
+        if (typeof deleteRecord !== 'function') {
+            throw new TypeError('deleteRecord is not a function');
+        }
+        return deleteRecord(...args);
+    }, []);
+
     /**
      * Start a new session, replacing any existing one.
      *
@@ -81,22 +96,25 @@ export function useGameSession() {
      * @param {string} opts.domain
      * @param {Array}  opts.words  Shuffled game-set slice
      */
-    const initSession = useCallback(async ({ gameType, langSource, domain, words }) => {
-        const newSession = {
-            key: SESSION_KEY,
-            gameType,
-            langSource,
-            domain,
-            words,
-            currentIndex: 0,
-            results: [],
-            xpEarned: 0,
-            startedAt: Date.now(),
-            completedAt: null,
-        };
-        await safePutRecord('game-sessions', newSession);
-        setSession(newSession);
-    }, []);
+    const initSession = useCallback(
+        async ({ gameType, langSource, domain, words }) => {
+            const newSession = {
+                key: SESSION_KEY,
+                gameType,
+                langSource,
+                domain,
+                words,
+                currentIndex: 0,
+                results: [],
+                xpEarned: 0,
+                startedAt: Date.now(),
+                completedAt: null,
+            };
+            await safePutRecord('game-sessions', newSession);
+            setSession(newSession);
+        },
+        [safePutRecord]
+    );
 
     /**
      * Record the outcome for one word.
@@ -112,19 +130,6 @@ export function useGameSession() {
      * @param {number} attempts  Number of attempts (1, 2, or 3)
      * @param {number} xp        XP earned for this word
      */
-    const safePutRecord = useCallback(async (...args) => {
-        if (typeof putRecord !== 'function') {
-            throw new TypeError('putRecord is not a function');
-        }
-        return putRecord(...args);
-    }, []);
-
-    const safeDeleteRecord = useCallback(async (...args) => {
-        if (typeof deleteRecord !== 'function') {
-            throw new TypeError('deleteRecord is not a function');
-        }
-        return deleteRecord(...args);
-    }, []);
 
     const recordResult = useCallback(
         async (wordUuid, outcome, attempts, xp) => {

@@ -32,9 +32,7 @@ export function useProgressSync({ restUrl: _restUrl }) {
      */
     const addEvent = useCallback(async (event) => {
         const outbox =
-            typeof getRecord === 'function'
-                ? await getRecord('progress-outbox', OUTBOX_KEY)
-                : null;
+            typeof getRecord === 'function' ? await getRecord('progress-outbox', OUTBOX_KEY) : null;
         const events = outbox?.events ?? [];
 
         if (typeof putRecord !== 'function') {
