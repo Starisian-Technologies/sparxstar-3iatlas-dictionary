@@ -72,12 +72,14 @@ export function useGameSet({ restUrl, langSource, domain = '', limit = 20, inclu
                 const json = await res.json();
                 const data = Array.isArray(json?.data?.words) ? json.data.words : [];
 
-                await putRecord('game-sets', {
-                    key: cacheKey,
-                    data,
-                    fetchedAt: now,
-                    ttlMs: TTL_MS,
-                });
+                if (typeof putRecord === 'function') {
+                    await putRecord('game-sets', {
+                        key: cacheKey,
+                        data,
+                        fetchedAt: now,
+                        ttlMs: TTL_MS,
+                    });
+                }
 
                 if (!cancelled) {
                     setWords(data);
