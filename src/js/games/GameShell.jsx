@@ -154,7 +154,10 @@ export default function GameShell({
             setPhase('setup');
             return;
         }
-        if (fetchedWords.length === 0) return;
+        if (fetchedWords.length === 0) {
+            setPhase('setup');
+            return;
+        }
 
         const sliced = fetchedWords.slice(0, wordCount);
 
