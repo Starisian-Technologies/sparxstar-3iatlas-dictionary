@@ -19,16 +19,27 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
 
     use Sparxstar3IAtlasRateLimitTrait;
 
+    /** @var string REST namespace shared by dictionary API routes. */
     private const REST_NAMESPACE = 'sparxstar/v1/dictionary';
+    /** @var string Dictionary custom post type slug. */
     private const CPT            = 'aiwa-cpt-dictionary';
+    /** @var int Hard cap for words validated per request. */
     private const MAX_WORDS      = 100;
+    /** @var int Public request budget per rate-limit window. */
     private const RATE_LIMIT     = 100;
+    /** @var int Rate-limit window size in seconds (15 minutes). */
     private const RATE_WINDOW    = 900;
 
+    /**
+     * Register WordPress hooks for spell-check route initialization.
+     */
     public function register_hooks(): void {
         add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
     }
 
+    /**
+     * Register the public spell-checking endpoint.
+     */
     public function register_rest_routes(): void {
         register_rest_route(
             self::REST_NAMESPACE,
@@ -41,6 +52,9 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
         );
     }
 
+    /**
+     * Validate a word list and provide exact-match validity plus suggestions.
+     */
     public function handle_spell( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
         // TODO: Replace with Helios token introspection when available.
         if ( ! $this->check_rate_limit() ) {
@@ -137,11 +151,31 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
             );
         }
 
-        return new \WP_REST_Response( array( 'results' => $results ), 200 );
+        return new \WP_REST_Response(
+            array(
+                'success' => true,
+                'data'    => array(
+                    'results' => $results,
+                ),
+                'meta'    => array(
+                    'total'    => count( $results ),
+                    'page'     => 1,
+                    'per_page' => count( $results ),
+                ),
+            ),
+            200
+        );
     }
 
+    /**
+     * Find a single published dictionary post that exactly matches a word.
+     */
     private function find_exact_word_post( string $word, string $lang ): ?\WP_Post {
         global $wpdb;
+
+        if ( ! $wpdb instanceof \wpdb ) {
+            return null;
+        }
 
         if ( '' === $lang ) {
             $query = $wpdb->prepare(
