@@ -24,8 +24,9 @@ export function useGameSet({ restUrl, langSource, domain = '', limit = 20, inclu
     const [words, setWords] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const normalizedLimit = Math.min(50, Math.max(1, limit));
 
-    const cacheKey = `game-set:${langSource}:${domain || 'all'}:${includeAudio ? 'audio' : 'no-audio'}`;
+    const cacheKey = `game-set:${langSource}:${domain || 'all'}:${normalizedLimit}:${includeAudio ? 'audio' : 'no-audio'}`;
 
     useEffect(() => {
         if (!langSource) {
@@ -43,9 +44,8 @@ export function useGameSet({ restUrl, langSource, domain = '', limit = 20, inclu
 
             try {
                 /* --- Check IndexedDB cache --- */
-                const cached = (typeof getRecord === 'function')
-                    ? await getRecord('game-sets', cacheKey)
-                    : null;
+                const cached =
+                    typeof getRecord === 'function' ? await getRecord('game-sets', cacheKey) : null;
                 const now = Date.now();
 
                 if (cached && Array.isArray(cached.data) && now - cached.fetchedAt < TTL_MS) {
@@ -59,7 +59,7 @@ export function useGameSet({ restUrl, langSource, domain = '', limit = 20, inclu
                 /* --- Fetch from server --- */
                 const params = new URLSearchParams({
                     lang_source: langSource,
-                    limit: String(Math.min(50, Math.max(1, limit))),
+                    limit: String(normalizedLimit),
                     include_audio: includeAudio ? 'true' : 'false',
                 });
                 if (domain) params.set('domain', domain);
@@ -97,7 +97,7 @@ export function useGameSet({ restUrl, langSource, domain = '', limit = 20, inclu
         return () => {
             cancelled = true;
         };
-    }, [restUrl, langSource, domain, limit, includeAudio, cacheKey]);
+    }, [restUrl, langSource, domain, limit, normalizedLimit, includeAudio, cacheKey]);
 
     return { words, loading, error };
 }

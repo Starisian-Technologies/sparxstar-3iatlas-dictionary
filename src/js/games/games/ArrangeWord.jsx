@@ -17,7 +17,8 @@ export default function ArrangeWord({ words, language, onResult, onComplete }) {
     const deck = useMemo(() => shuffle(words), [words]);
     const [index, setIndex] = useState(0);
     const [answer, setAnswer] = useState([]);
-    const [pool, setPool] = useState(() => buildPool(deck[0]?.headword ?? ''));
+    const [initialPool, setInitialPool] = useState(() => buildPool(deck[0]?.headword ?? ''));
+    const [pool, setPool] = useState(initialPool);
     const [shake, setShake] = useState(false);
     const [correct, setCorrect] = useState(false);
 
@@ -30,8 +31,10 @@ export default function ArrangeWord({ words, language, onResult, onComplete }) {
             onComplete();
         } else {
             const nextIndex = index + 1;
+            const nextPool = buildPool(deck[nextIndex].headword);
             setIndex(nextIndex);
-            setPool(buildPool(deck[nextIndex].headword));
+            setInitialPool(nextPool);
+            setPool(nextPool);
             setAnswer([]);
             setCorrect(false);
         }
@@ -64,13 +67,13 @@ export default function ArrangeWord({ words, language, onResult, onComplete }) {
                     setShake(true);
                     setTimeout(() => {
                         setShake(false);
-                        setPool(newAnswer); /* all tiles back to pool, order preserved */
+                        setPool(initialPool); /* all tiles back to original pool order */
                         setAnswer([]);
                     }, 600);
                 }
             }
         },
-        [answer, correct, pool, target, word, onResult, advance]
+        [answer, correct, pool, target, word, onResult, advance, initialPool]
     );
 
     /* Return a placed tile back to the pool. */
