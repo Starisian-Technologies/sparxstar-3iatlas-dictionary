@@ -70,6 +70,16 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
             );
         }
 
+        global $wpdb;
+
+        if ( ! $wpdb instanceof \wpdb ) {
+            return new \WP_Error(
+                'database_unavailable',
+                'Dictionary service is temporarily unavailable.',
+                array( 'status' => 503 )
+            );
+        }
+
         $body = $request->get_json_params();
 
         if ( ! is_array( $body ) ) {
