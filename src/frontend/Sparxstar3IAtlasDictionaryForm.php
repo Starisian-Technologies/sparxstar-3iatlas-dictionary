@@ -29,7 +29,7 @@ use function wp_set_object_terms;
 
 // Prevent direct access
 if ( ! defined( 'ABSPATH' ) ) {
-    exit();
+    exit( 1 );
 }
 
 
@@ -90,15 +90,16 @@ final class Sparxstar3IAtlasDictionaryForm {
             if ( defined( 'SPARX_3IATLAS_URL' ) ) {
                 wp_enqueue_style( 'sparxstar-dict-form-style', SPARX_3IATLAS_URL . 'assets/css/sparxstar-3iatlas-dictionary-form-style.min.css', array(), SPARX_3IATLAS_VERSION );
                 wp_enqueue_script( 'sparxstar-dict-form-script', SPARX_3IATLAS_URL . 'assets/js/sparxstar-3iatlas-dictionary-form.min.js', array( 'jquery' ), SPARX_3IATLAS_VERSION, true );
-            } 
-            wp_localize_script(
-                'sparxstar-dict-form-script',
-                'sparxstarDict',
-                array(
-                    'ajaxurl' => admin_url( 'admin-ajax.php' ),
-                    'nonce'   => wp_create_nonce( 'sparxstar_dict_form_nonce' ),
-                )
-            );
+
+                wp_localize_script(
+                    'sparxstar-dict-form-script',
+                    'sparxstarDict',
+                    array(
+                        'ajaxurl' => admin_url( 'admin-ajax.php' ),
+                        'nonce'   => wp_create_nonce( 'sparxstar_dict_form_nonce' ),
+                    )
+                );
+            }
         }
     }
 
