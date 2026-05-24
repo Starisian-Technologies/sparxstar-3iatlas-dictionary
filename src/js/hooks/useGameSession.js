@@ -112,6 +112,13 @@ export function useGameSession() {
      * @param {number} attempts  Number of attempts (1, 2, or 3)
      * @param {number} xp        XP earned for this word
      */
+    const safePutRecord = useCallback(async (...args) => {
+        if (typeof putRecord !== 'function') {
+            throw new TypeError('putRecord is not a function');
+        }
+        return putRecord(...args);
+    }, []);
+
     const recordResult = useCallback(
         async (wordUuid, outcome, attempts, xp) => {
             if (!session) return;
@@ -134,15 +141,15 @@ export function useGameSession() {
                 const existing = learnedRecord?.uuids ?? [];
                 if (!existing.includes(wordUuid)) {
                     const next = [...existing, wordUuid];
-                    await putRecord('learned-words', { key: LEARNED_KEY, uuids: next });
+                    await safePutRecord('learned-words', { key: LEARNED_KEY, uuids: next });
                     setLearnedCount(next.length);
                 }
             }
 
-            await putRecord('game-sessions', updated);
+            await safePutRecord('game-sessions', updated);
             setSession(updated);
         },
-        [session]
+        [session, safePutRecord]
     );
 
     /**
@@ -152,9 +159,9 @@ export function useGameSession() {
         if (!session) return;
 
         const completed = { ...session, completedAt: Date.now() };
-        await putRecord('game-sessions', completed);
+        await safePutRecord('game-sessions', completed);
         setSession(completed);
-    }, [session]);
+    }, [session, safePutRecord]);
 
     /**
      * Remove the current session from storage (e.g. after sync).
