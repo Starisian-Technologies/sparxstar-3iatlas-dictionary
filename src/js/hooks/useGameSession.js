@@ -11,6 +11,13 @@ import { getRecord, putRecord, deleteRecord } from './idbUtils.js';
 const SESSION_KEY = 'game-session:current';
 const LEARNED_KEY = 'learned-words:production';
 
+const safeGetRecord = async (storeName, key) => {
+    if (typeof getRecord === 'function') {
+        return getRecord(storeName, key);
+    }
+    return null;
+};
+
 /**
  * Games that require the player to produce (write/type/arrange) the word.
  * Only these games contribute to the "words you can write" count.
@@ -45,8 +52,8 @@ export function useGameSession() {
 
         async function load() {
             const [saved, learnedRecord] = await Promise.all([
-                getRecord('game-sessions', SESSION_KEY),
-                getRecord('learned-words', LEARNED_KEY),
+                safeGetRecord('game-sessions', SESSION_KEY),
+                safeGetRecord('learned-words', LEARNED_KEY),
             ]);
 
             if (cancelled) return;
