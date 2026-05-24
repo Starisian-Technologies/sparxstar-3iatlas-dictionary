@@ -36,6 +36,12 @@ export function useProgressSync({ restUrl: _restUrl }) {
                 ? await getRecord('progress-outbox', OUTBOX_KEY)
                 : null;
         const events = outbox?.events ?? [];
+
+        if (typeof putRecord !== 'function') {
+            console.warn('putRecord is unavailable; skipping progress outbox write.');
+            return;
+        }
+
         await putRecord('progress-outbox', {
             key: OUTBOX_KEY,
             events: [...events, { ...event, ts: Date.now() }],
