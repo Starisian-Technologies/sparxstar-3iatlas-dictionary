@@ -31,7 +31,10 @@ export function useProgressSync({ restUrl: _restUrl }) {
      * @param {object} event  e.g. { type: 'aiwa_game_word_correct', word_uuid: '...', game: 'listen_write' }
      */
     const addEvent = useCallback(async (event) => {
-        const outbox = await getRecord('progress-outbox', OUTBOX_KEY);
+        const outbox =
+            typeof getRecord === 'function'
+                ? await getRecord('progress-outbox', OUTBOX_KEY)
+                : null;
         const events = outbox?.events ?? [];
         await putRecord('progress-outbox', {
             key: OUTBOX_KEY,
