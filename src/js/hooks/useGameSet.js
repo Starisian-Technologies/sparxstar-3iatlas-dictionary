@@ -43,7 +43,9 @@ export function useGameSet({ restUrl, langSource, domain = '', limit = 20, inclu
 
             try {
                 /* --- Check IndexedDB cache --- */
-                const cached = await getRecord('game-sets', cacheKey);
+                const cached = (typeof getRecord === 'function')
+                    ? await getRecord('game-sets', cacheKey)
+                    : null;
                 const now = Date.now();
 
                 if (cached && Array.isArray(cached.data) && now - cached.fetchedAt < TTL_MS) {
