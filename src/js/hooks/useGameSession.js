@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { getRecord, putRecord, deleteRecord } from './idbUtils.js';
+import { PRODUCTION_GAMES } from '../games/constants.js';
 
 const SESSION_KEY = 'game-session:current';
 const LEARNED_KEY = 'learned-words:production';
@@ -25,13 +26,6 @@ const safeGetRecord = async (storeName, key) => {
  * Recognition-only games (domain_flash, meaning_match) measure recall but
  * not orthographic production, so they do not increment learnedCount.
  */
-const PRODUCTION_GAMES = new Set([
-    'listen_write',
-    'arrange_word',
-    'complete_sentence',
-    'letter_reveal',
-]);
-
 /**
  * @returns {{
  *   session: object|null,
