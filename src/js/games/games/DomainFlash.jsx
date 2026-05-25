@@ -18,6 +18,7 @@ export default function DomainFlash({ words, language, onResult, onComplete }) {
     const deck = useMemo(() => shuffle(words), [words]);
     const [index, setIndex] = useState(0);
     const [flipped, setFlipped] = useState(false);
+    const [answered, setAnswered] = useState(false);
 
     const word = deck[index];
     if (!word) return null;
@@ -28,11 +29,15 @@ export default function DomainFlash({ words, language, onResult, onComplete }) {
     const handleReveal = () => setFlipped(true);
 
     const handleKnew = () => {
+        if (answered) return;
+        setAnswered(true);
         onResult(word.uuid, 'correct', 1, 5);
         next();
     };
 
     const handleLearning = () => {
+        if (answered) return;
+        setAnswered(true);
         onResult(word.uuid, 'learning', 1, 0);
         next();
     };
@@ -43,6 +48,7 @@ export default function DomainFlash({ words, language, onResult, onComplete }) {
         } else {
             setIndex((i) => i + 1);
             setFlipped(false);
+            setAnswered(false);
         }
     };
 
@@ -122,6 +128,7 @@ export default function DomainFlash({ words, language, onResult, onComplete }) {
                             <button
                                 type="button"
                                 onClick={handleLearning}
+                                disabled={answered}
                                 className="flex-1 py-3 rounded-xl font-semibold text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 transition-colors"
                             >
                                 Still learning
@@ -129,6 +136,7 @@ export default function DomainFlash({ words, language, onResult, onComplete }) {
                             <button
                                 type="button"
                                 onClick={handleKnew}
+                                disabled={answered}
                                 className="flex-1 py-3 rounded-xl font-semibold text-sm text-white transition-colors"
                                 style={{ background: '#4CAF50' }}
                             >
