@@ -323,7 +323,7 @@ export default function GameShell({
     };
 
     /* ── Practice missed words ── */
-    const handlePracticeMissed = useCallback(() => {
+    const handlePracticeMissed = useCallback(async () => {
         if (!session) return;
         const missed = session.results
             .filter((r) => r.outcome === 'learning')
@@ -332,12 +332,21 @@ export default function GameShell({
 
         if (missed.length === 0) return;
 
-        initSession({
-            gameType: selectedGame,
-            langSource: sourceLanguage ?? '',
-            domain: selectedDomain,
-            words: missed,
-        });
+        setSetupError(null);
+
+        try {
+            await initSession({
+                gameType: selectedGame,
+                langSource: sourceLanguage ?? '',
+                domain: selectedDomain,
+                words: missed,
+            });
+        } catch (error) {
+            setSetupError(error?.message ?? 'Unable to restart the game session.');
+            setPhase('setup');
+            return;
+        }
+
         setGameWords(missed);
         setPhase('playing');
     }, [session, initSession, selectedGame, sourceLanguage, selectedDomain]);
