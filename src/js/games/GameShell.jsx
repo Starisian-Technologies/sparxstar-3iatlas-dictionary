@@ -213,12 +213,18 @@ export default function GameShell({
             const sliced = fetchedWords.slice(0, wordCount);
             setSetupError(null);
 
-            initSession({
-                gameType: selectedGame,
-                langSource: sourceLanguage ?? '',
-                domain: selectedDomain,
-                words: sliced,
-            });
+            try {
+                await initSession({
+                    gameType: selectedGame,
+                    langSource: sourceLanguage ?? '',
+                    domain: selectedDomain,
+                    words: sliced,
+                });
+            } catch (error) {
+                setSetupError(error?.message ?? 'Unable to start the game session.');
+                setPhase('setup');
+                return;
+            }
 
             setGameWords(sliced);
             setPhase('playing');
