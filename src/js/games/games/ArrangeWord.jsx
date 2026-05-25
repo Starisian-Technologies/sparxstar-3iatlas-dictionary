@@ -81,10 +81,30 @@ export default function ArrangeWord({ words, language, onResult, onComplete }) {
         (answerIdx) => {
             if (correct) return;
             const tile = answer[answerIdx];
+            const tileInitialIdx = initialPool.indexOf(tile);
+
             setAnswer(answer.filter((_, i) => i !== answerIdx));
-            setPool([...pool, tile]);
+            setPool(() => {
+                if (tileInitialIdx === -1) {
+                    return [...pool, tile];
+                }
+
+                const insertAt = pool.findIndex(
+                    (poolTile) => initialPool.indexOf(poolTile) > tileInitialIdx
+                );
+
+                if (insertAt === -1) {
+                    return [...pool, tile];
+                }
+
+                return [
+                    ...pool.slice(0, insertAt),
+                    tile,
+                    ...pool.slice(insertAt),
+                ];
+            });
         },
-        [answer, correct, pool]
+        [answer, correct, pool, initialPool]
     );
 
     if (!word) return null;
