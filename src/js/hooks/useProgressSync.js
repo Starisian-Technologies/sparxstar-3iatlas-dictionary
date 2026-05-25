@@ -4,8 +4,9 @@
  * Events are held in IndexedDB until Helios token introspection is
  * implemented (OQ-G1). syncNow() is intentionally a no-op for the
  * network POST until that open question is resolved. Events are written
- * to the outbox on a best-effort basis — writes may silently fail if
- * IndexedDB is unavailable (e.g. quota exceeded or private-browsing mode).
+ * to the outbox on a best-effort basis — writes may fail if IndexedDB is
+ * unavailable (e.g. quota exceeded or private-browsing mode), and failures
+ * are logged as warnings.
  *
  * SECURITY NOTE: Reading a Helios Bearer token from localStorage would
  * expose it to any injected script (XSS), undermining the platform's
@@ -49,7 +50,9 @@ export function useProgressSync({ restUrl: _restUrl }) {
                 events: [...events, { ...event, ts: Date.now() }],
             }).then((ok) => {
                 if (!ok) {
-                    console.warn('useProgressSync: outbox write failed (storage unavailable); event may be lost.');
+                    console.warn(
+                        'useProgressSync: outbox write failed (storage unavailable); event may be lost.'
+                    );
                 }
             });
         };
@@ -62,7 +65,7 @@ export function useProgressSync({ restUrl: _restUrl }) {
     /**
      * Network sync is intentionally disabled until OQ-G1 (Helios auth) is
      * resolved. Events accumulate in the IndexedDB outbox on a best-effort
-     * basis (writes may fail silently if storage is unavailable).
+     * basis (writes may fail if storage is unavailable; failures are logged).
      *
      * // TODO: Replace with Helios token introspection when available (OQ-G1).
      */
