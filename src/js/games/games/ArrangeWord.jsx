@@ -23,7 +23,7 @@ export default function ArrangeWord({ words, language, onResult, onComplete }) {
         const ip = buildPool(deck[0]?.headword ?? '');
         return { pool: ip, answer: [], initialPool: ip };
     });
-    const { pool, answer, initialPool } = tileState;
+    const { pool, answer } = tileState;
     const [shake, setShake] = useState(false);
     const [correct, setCorrect] = useState(false);
 
@@ -46,7 +46,10 @@ export default function ArrangeWord({ words, language, onResult, onComplete }) {
     /* Check the answer whenever the answer row changes length. */
     useEffect(() => {
         if (!word || correct || answer.length !== target.length) return;
-        const attempt = answer.map((t) => t.char).join('').toLowerCase();
+        const attempt = answer
+            .map((t) => t.char)
+            .join('')
+            .toLowerCase();
         if (attempt === target) {
             setCorrect(true);
             if (word.audio_url) new Audio(word.audio_url).play().catch(() => {});
@@ -105,11 +108,7 @@ export default function ArrangeWord({ words, language, onResult, onComplete }) {
                     newPool =
                         insertAt === -1
                             ? [...prev.pool, tile]
-                            : [
-                                  ...prev.pool.slice(0, insertAt),
-                                  tile,
-                                  ...prev.pool.slice(insertAt),
-                              ];
+                            : [...prev.pool.slice(0, insertAt), tile, ...prev.pool.slice(insertAt)];
                 }
 
                 return {

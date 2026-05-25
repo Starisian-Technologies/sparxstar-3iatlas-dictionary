@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 
 /**
  * LetterReveal — Game 4.5
@@ -27,6 +27,10 @@ export default function LetterReveal({ words, language, onResult, onComplete }) 
     const [wrongLetters, setWrongLetters] = useState(new Set());
     const [done, setDone] = useState(false);
     const [tiltCount, setTiltCount] = useState(0);
+    const revealedRef = useRef(new Set());
+    const wrongGuessesRef = useRef(0);
+    const wrongLettersRef = useRef(new Set());
+    const doneRef = useRef(false);
 
     const word = deck[index];
     if (!word) return null;
@@ -39,15 +43,23 @@ export default function LetterReveal({ words, language, onResult, onComplete }) 
     const allRevealed = [...uniqueLetters].every((l) => revealed.has(l));
 
     const handleLetterTap = (letter) => {
-        if (done || revealed.has(letter) || wrongLetters.has(letter)) return;
+        if (
+            doneRef.current ||
+            revealedRef.current.has(letter) ||
+            wrongLettersRef.current.has(letter)
+        ) {
+            return;
+        }
 
         if (uniqueLetters.has(letter)) {
             setRevealed((prev) => {
                 const next = new Set(prev).add(letter);
+                revealedRef.current = next;
 
                 /* Check if word is fully revealed. */
                 const complete = [...uniqueLetters].every((l) => next.has(l));
                 if (complete) {
+                    doneRef.current = true;
                     setDone(true);
                     onResult(word.uuid, 'correct', 1, 5);
                     setTimeout(() => advance(), 1200);
@@ -56,12 +68,18 @@ export default function LetterReveal({ words, language, onResult, onComplete }) 
                 return next;
             });
         } else {
-            const nextWrong = wrongGuesses + 1;
-            setWrongGuesses((prev) => prev + 1);
-            setWrongLetters((prev) => new Set(prev).add(letter));
+            const nextWrong = wrongGuessesRef.current + 1;
+            const nextWrongLetters = new Set(wrongLettersRef.current).add(letter);
+
+            wrongGuessesRef.current = nextWrong;
+            wrongLettersRef.current = nextWrongLetters;
+
+            setWrongGuesses(nextWrong);
+            setWrongLetters(nextWrongLetters);
             setTiltCount((c) => c + 1);
 
             if (nextWrong >= MAX_WRONG) {
+                doneRef.current = true;
                 setDone(true);
                 onResult(word.uuid, 'learning', 1, 0);
                 setTimeout(() => advance(), 1800);
@@ -74,6 +92,10 @@ export default function LetterReveal({ words, language, onResult, onComplete }) 
             onComplete();
         } else {
             setIndex((i) => i + 1);
+            revealedRef.current = new Set();
+            wrongGuessesRef.current = 0;
+            wrongLettersRef.current = new Set();
+            doneRef.current = false;
             setRevealed(new Set());
             setWrongGuesses(0);
             setWrongLetters(new Set());
