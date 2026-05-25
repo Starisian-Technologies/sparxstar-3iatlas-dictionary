@@ -1,11 +1,46 @@
 # AIWA Dictionary — Direction v3
 
-**Version:** 3.0  
+**Version:** 3.1  
 **Status:** Active  
 **Repo:** sparxstar-3iatlas-dictionary  
 **Authors:** Max Barrett / Starisian Technologies  
-**Date:** May 2026  
+**Date:** May 2026 (Sprint continuation update)  
 **Supersedes:** DICTIONARY-DIRECTION-v2.md (partially — see Section 1)
+
+---
+
+## 0. Sprint Boot Rules (Apply Before New Feature Work)
+
+### 0.1 Repairs Needed First (Boot Blockers)
+
+Fix these two defects before beginning any net-new feature scope:
+
+1. **Autoloader constants mismatch** (`src/includes/Autoloader.php`)  
+   Fallback autoloader must use plugin boot constants `SPARX_3IATLAS_NAMESPACE` + `SPARX_3IATLAS_PATH`.
+2. **Frontend form CSS mismatch** (`src/frontend/Sparxstar3IAtlasDictionaryForm.php`)  
+   Form style enqueue must target an actually built CSS asset.
+
+### 0.2 Bugs vs Intentional Gaps
+
+- **Fix now (bugs):** broken autoloader constants, broken form CSS path, and any regression directly caused by those repairs.
+- **Do not touch without approved spec (intentional gaps):**
+  - `useProgressSync.syncNow()` no-op behavior
+  - Helios auth stubs / temporary non-Helios guard paths
+
+### 0.3 Game Data Field Prefix Rule
+
+For game event payload data fields, use `game_*` names (`game_type`, `game_domain`, `game_session_ref`, etc.).  
+Use `aiwa_*` only where the identifier is a WordPress hook/event name.
+
+### 0.4 Full Absolute Rules + Platform Context
+
+- Never change `aiwa-cpt-dictionary` CPT slug.
+- Never reintroduce voting/corrections/community AJAX endpoints.
+- Never add custom DB tables; use CPT + post meta.
+- Never hardcode language names in React; always use `/languages`.
+- Never store dictionary files on client devices.
+- This plugin is a **standalone SPARXSTAR dictionary/API service** in the 3iAtlas suite.
+- Do **not** add DVE, Sky, Mḗh₁n̥s, Dheghom, or Brain coupling/dependencies here.
 
 ---
 

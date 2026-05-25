@@ -5,7 +5,7 @@ namespace Starisian\Sparxstar\IAtlas\includes;
  * Simple PSR-4 class autoloader for Starisian plugins.
  *
  * This autoloader supports OOP plugin development without requiring Composer.
- * It expects classes to be within the defined STARISIAN_NAMESPACE and located in /src/.
+ * It expects classes to be within the defined SPARX_3IATLAS_NAMESPACE and located in /src/.
  * 
  * @package Starisian\Sparxstar\IAtlas\includes
  * @author Starisian Technologies (Max Barrett) <support@starisian.com>
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Simple PSR-4 class autoloader for Starisian plugins.
  *
  * This autoloader supports OOP plugin development without requiring Composer.
- * It expects classes to be within the defined STARISIAN_NAMESPACE and located in /src/.
+ * It expects classes to be within the defined SPARX_3IATLAS_NAMESPACE and located in /src/.
  */
 class Autoloader {
 
@@ -53,13 +53,13 @@ class Autoloader {
      */
     public static function sparxIAtlas_loadClass( string $className ): void {
         // Ensure required constants are defined
-        if ( ! defined( 'STARISIAN_NAMESPACE' ) || ! defined( 'STARISIAN_PATH' ) ) {
-            error_log( 'Autoloader error: STARISIAN_NAMESPACE or STARISIAN_PATH is not defined.' );
+        if ( ! defined( 'SPARX_3IATLAS_NAMESPACE' ) || ! defined( 'SPARX_3IATLAS_PATH' ) ) {
+            error_log( 'Autoloader error: SPARX_3IATLAS_NAMESPACE or SPARX_3IATLAS_PATH is not defined.' );
             return;
         }
 
-        $baseNamespace = STARISIAN_NAMESPACE;
-        $baseDir       = STARISIAN_PATH . 'src/';
+        $baseNamespace = SPARX_3IATLAS_NAMESPACE;
+        $baseDir       = SPARX_3IATLAS_PATH . 'src/';
 
         $len = strlen( $baseNamespace );
         if ( strncmp( $className, $baseNamespace, $len ) !== 0 ) {
