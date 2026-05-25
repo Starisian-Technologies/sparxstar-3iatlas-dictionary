@@ -270,7 +270,6 @@ CLI (SYSTEM) → Repository under SYSTEM context → WP meta API
 - Mapper — translation between storage and entity. Handles hydration, validation, persistence. Never caches.
 - Repository — orchestration, caching, and CRUD. Never contains field mapping or validation logic.
 - Registry — single authoritative source of schema field definitions. Not used for runtime hydration.
-
 No class crosses these boundaries. No module is ever merged with another.
 
 ---
