@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Loader2, ChevronDown } from 'lucide-react';
 import * as GameSetHookModule from '../hooks/useGameSet.js';
 import * as useGameSessionModule from '../hooks/useGameSession.js';
@@ -141,6 +141,14 @@ export default function GameShell({
     const useProgressSync = useProgressSyncModule.useProgressSync || useProgressSyncModule.default;
     const { addEvent, syncNow } = useProgressSync({ restUrl });
 
+    /*
+     * Promise chain for result writes.  Game components call onResult() synchronously
+     * (no await), so consecutive calls — including the final onResult + onComplete pair
+     * in DomainFlash — must be serialized here to prevent handleComplete from running
+     * before the last recordResult write has finished.
+     */
+    const pendingResultRef = useRef(Promise.resolve());
+
     /* ── Fetch domains when source language changes ── */
     useEffect(() => {
         let cancelled = false;
@@ -257,58 +265,67 @@ export default function GameShell({
 
     /* ── Handle a single word result from any game component ── */
     const handleWordResult = useCallback(
-        async (uuid, outcome, attempts, xp) => {
-            await recordResult(uuid, outcome, attempts, xp);
+        (uuid, outcome, attempts, xp) => {
+            /*
+             * Chain onto pendingResultRef so that back-to-back synchronous calls
+             * (e.g. the final onResult + onComplete pair in DomainFlash) are serialized.
+             * handleComplete awaits this chain before calling completeSession().
+             */
+            pendingResultRef.current = pendingResultRef.current.then(async () => {
+                await recordResult(uuid, outcome, attempts, xp);
 
-            /* Queue MyCred events. */
-            if (outcome === 'correct') {
-                /* Check if this is the first time practicing this word. */
-                const practiceKey = `aiwa-dict-practiced:${uuid}`;
-                let practiceMarker = null;
-                let canPersistPracticeMarker = true;
-                try {
-                    practiceMarker = window.localStorage.getItem(practiceKey);
-                } catch {
-                    canPersistPracticeMarker = false;
-                }
-                const shouldQueueFirstPracticeEvent = practiceMarker === null;
+                /* Queue MyCred events. */
+                if (outcome === 'correct') {
+                    /* Check if this is the first time practicing this word. */
+                    const practiceKey = `aiwa-dict-practiced:${uuid}`;
+                    let practiceMarker = null;
+                    let canPersistPracticeMarker = true;
+                    try {
+                        practiceMarker = window.localStorage.getItem(practiceKey);
+                    } catch {
+                        canPersistPracticeMarker = false;
+                    }
+                    const shouldQueueFirstPracticeEvent = practiceMarker === null;
 
-                if (shouldQueueFirstPracticeEvent) {
-                    if (canPersistPracticeMarker) {
-                        setLocalStorageItem(practiceKey, '1');
+                    if (shouldQueueFirstPracticeEvent) {
+                        if (canPersistPracticeMarker) {
+                            setLocalStorageItem(practiceKey, '1');
+                        }
+
+                        await addEvent({ type: 'aiwa_game_new_word_practiced', word_uuid: uuid });
                     }
 
-                    await addEvent({ type: 'aiwa_game_new_word_practiced', word_uuid: uuid });
-                }
+                    if (selectedGame === 'listen_write') {
+                        await addEvent({
+                            type: 'aiwa_game_listen_write',
+                            word_uuid: uuid,
+                            game: selectedGame,
+                        });
+                    } else {
+                        await addEvent({
+                            type: 'aiwa_game_word_correct',
+                            word_uuid: uuid,
+                            game: selectedGame,
+                        });
+                    }
 
-                if (selectedGame === 'listen_write') {
-                    await addEvent({
-                        type: 'aiwa_game_listen_write',
-                        word_uuid: uuid,
-                        game: selectedGame,
-                    });
-                } else {
-                    await addEvent({
-                        type: 'aiwa_game_word_correct',
-                        word_uuid: uuid,
-                        game: selectedGame,
-                    });
-                }
-
-                /* Streak detection: check last 3 results from session. */
-                if (session) {
-                    const recent = [...session.results.slice(-2), { outcome }];
-                    if (recent.length === 3 && recent.every((r) => r.outcome === 'correct')) {
-                        await addEvent({ type: 'aiwa_game_streak_3' });
+                    /* Streak detection: check last 3 results from session. */
+                    if (session) {
+                        const recent = [...session.results.slice(-2), { outcome }];
+                        if (recent.length === 3 && recent.every((r) => r.outcome === 'correct')) {
+                            await addEvent({ type: 'aiwa_game_streak_3' });
+                        }
                     }
                 }
-            }
+            });
         },
         [recordResult, addEvent, selectedGame, session]
     );
 
     /* ── Handle game session complete ── */
     const handleComplete = useCallback(async () => {
+        /* Await any in-flight result write before marking the session complete. */
+        await pendingResultRef.current;
         await completeSession();
         await addEvent({ type: 'aiwa_game_session_complete', domain: selectedDomain });
         await syncNow();
