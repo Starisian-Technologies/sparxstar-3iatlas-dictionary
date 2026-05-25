@@ -42,16 +42,19 @@ export default function LetterReveal({ words, language, onResult, onComplete }) 
         if (done || revealed.has(letter) || wrongLetters.has(letter)) return;
 
         if (uniqueLetters.has(letter)) {
-            const next = new Set(revealed).add(letter);
-            setRevealed(next);
+            setRevealed((prev) => {
+                const next = new Set(prev).add(letter);
 
-            /* Check if word is fully revealed. */
-            const complete = [...uniqueLetters].every((l) => next.has(l));
-            if (complete) {
-                setDone(true);
-                onResult(word.uuid, 'correct', 1, 5);
-                setTimeout(() => advance(), 1200);
-            }
+                /* Check if word is fully revealed. */
+                const complete = [...uniqueLetters].every((l) => next.has(l));
+                if (complete) {
+                    setDone(true);
+                    onResult(word.uuid, 'correct', 1, 5);
+                    setTimeout(() => advance(), 1200);
+                }
+
+                return next;
+            });
         } else {
             const nextWrong = wrongGuesses + 1;
             setWrongGuesses(nextWrong);
