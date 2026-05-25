@@ -164,6 +164,7 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
         return new \WP_REST_Response(
             array(
                 'success' => true,
+                'results' => $results,
                 'data'    => array(
                     'results' => $results,
                 ),
