@@ -1384,6 +1384,7 @@ export default function DictionaryApp() {
                 {/* Top-level Browse / Play tab bar */}
                 <div
                     role="tablist"
+                    aria-orientation="horizontal"
                     aria-label="Dictionary modes"
                     style={{
                         display: 'flex',
