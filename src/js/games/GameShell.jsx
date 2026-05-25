@@ -253,12 +253,17 @@ export default function GameShell({
             if (outcome === 'correct') {
                 /* Check if this is the first time practicing this word. */
                 const practiceKey = `aiwa-dict-practiced:${uuid}`;
-                const practiceMarker = getLocalStorageItem(practiceKey);
-                const shouldQueueFirstPracticeEvent =
-                    practiceMarker.value === null || !practiceMarker.available;
+                let practiceMarker = null;
+                let canPersistPracticeMarker = true;
+                try {
+                    practiceMarker = window.localStorage.getItem(practiceKey);
+                } catch {
+                    canPersistPracticeMarker = false;
+                }
+                const shouldQueueFirstPracticeEvent = practiceMarker === null;
 
                 if (shouldQueueFirstPracticeEvent) {
-                    if (practiceMarker.available) {
+                    if (canPersistPracticeMarker) {
                         setLocalStorageItem(practiceKey, '1');
                     }
 
