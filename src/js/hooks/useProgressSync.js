@@ -15,7 +15,7 @@
  * // TODO: Replace with Helios token introspection when available (OQ-G1).
  */
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { getRecord, putRecord } from './idbUtils.js';
 
 const OUTBOX_KEY = 'progress-outbox:pending';
@@ -25,25 +25,33 @@ const OUTBOX_KEY = 'progress-outbox:pending';
  * @returns {{ addEvent: Function, syncNow: Function, syncing: boolean }}
  */
 export function useProgressSync({ restUrl: _restUrl }) {
+    const addEventQueueRef = useRef(Promise.resolve());
+
     /**
      * Add a progress event to the outbox.
      *
      * @param {object} event  e.g. { type: 'aiwa_game_word_correct', word_uuid: '...', game: 'listen_write' }
      */
-    const addEvent = useCallback(async (event) => {
-        const outbox =
-            typeof getRecord === 'function' ? await getRecord('progress-outbox', OUTBOX_KEY) : null;
-        const events = outbox?.events ?? [];
+    const addEvent = useCallback((event) => {
+        const appendEvent = async () => {
+            const outbox =
+                typeof getRecord === 'function' ? await getRecord('progress-outbox', OUTBOX_KEY) : null;
+            const events = outbox?.events ?? [];
 
-        if (typeof putRecord !== 'function') {
-            console.warn('putRecord is unavailable; skipping progress outbox write.');
-            return;
-        }
+            if (typeof putRecord !== 'function') {
+                console.warn('putRecord is unavailable; skipping progress outbox write.');
+                return;
+            }
 
-        await putRecord('progress-outbox', {
-            key: OUTBOX_KEY,
-            events: [...events, { ...event, ts: Date.now() }],
-        });
+            await putRecord('progress-outbox', {
+                key: OUTBOX_KEY,
+                events: [...events, { ...event, ts: Date.now() }],
+            });
+        };
+
+        const queuedAppend = addEventQueueRef.current.then(appendEvent, appendEvent);
+        addEventQueueRef.current = queuedAppend.catch(() => {});
+        return queuedAppend;
     }, []);
 
     /**
