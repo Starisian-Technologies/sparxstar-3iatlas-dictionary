@@ -234,11 +234,15 @@ export default function GameShell({
                 /* Check if this is the first time practicing this word. */
                 const practiceKey = `aiwa-dict-practiced:${uuid}`;
                 const practiceMarker = getLocalStorageItem(practiceKey);
-                if (practiceMarker.available && practiceMarker.value === null) {
-                    const didPersistPractice = setLocalStorageItem(practiceKey, '1');
-                    if (didPersistPractice) {
-                        await addEvent({ type: 'aiwa_game_new_word_practiced', word_uuid: uuid });
+                const shouldQueueFirstPracticeEvent =
+                    practiceMarker.value === null || !practiceMarker.available;
+
+                if (shouldQueueFirstPracticeEvent) {
+                    if (practiceMarker.available) {
+                        setLocalStorageItem(practiceKey, '1');
                     }
+
+                    await addEvent({ type: 'aiwa_game_new_word_practiced', word_uuid: uuid });
                 }
 
                 if (selectedGame === 'listen_write') {
