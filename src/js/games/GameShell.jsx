@@ -189,10 +189,11 @@ export default function GameShell({
                 setGameWords(remainingWords);
                 setSelectedGame(session.gameType);
                 setSelectedDomain(session.domain ?? '');
+                onSourceLanguage(session.langSource ?? '');
                 setPhase('playing');
             }
         }
-    }, [session, phase]); // resume once session loads asynchronously; phase guard prevents re-entry
+    }, [session, phase, onSourceLanguage]); // resume once session loads asynchronously; phase guard prevents re-entry
 
     /* ── When game-set loads (after Start is tapped), kick off the session ── */
     useEffect(() => {
