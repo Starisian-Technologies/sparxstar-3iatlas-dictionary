@@ -256,6 +256,38 @@ Phase 3 covers cross-tool REST integration verification. The authoritative scope
 - S2S → `/wordlist` with `lang_source`
 - RLC → offline `/wordlist` with `lang_source` filter and fallback
 
+### Phase 4 — Games / Play Tab ✅ Done (PR #59, merged May 2026)
+
+Six game types implemented: MeaningMatch, LetterReveal, ArrangeWord, DomainFlash, CompleteSentence, ListenWrite.
+
+Key files added:
+- `src/js/games/GameShell.jsx` — phase state machine, game orchestrator
+- `src/js/games/AccessoryBar.jsx` — special character bar (ŋ ɓ ɗ ñ ɲ ʔ), always present for typed input
+- `src/js/games/SessionComplete.jsx` — end-of-session summary
+- `src/js/games/games/*.jsx` — individual game components
+- `src/js/hooks/useGameSet.js` — IndexedDB-backed game set cache
+- `src/js/hooks/useGameSession.js` — session tracking with sessionRef pattern
+- `src/js/hooks/useProgressSync.js` — IndexedDB outbox (syncNow is intentional no-op — OQ-G1)
+
+**Known intentional gap:** `useProgressSync.syncNow()` is a no-op pending OQ-G1 resolution. Do not implement without a two-mode spec decision (standalone: WordPress user meta; full-system: governed pipeline).
+
+**sessionRef pattern:** `recordResult` and `completeSession` in `useGameSession.js` use `sessionRef.current` to avoid stale React closure bugs. Do not remove this pattern.
+
+---
+
+## Repairs Needed (as of May 2026)
+
+These are boot/runtime blockers that must be resolved before deployment:
+
+**1. Autoloader constant mismatch**
+`src/includes/Autoloader.php` expects `STARISIAN_NAMESPACE` / `STARISIAN_PATH`.
+Plugin header defines `SPARX_3IATLAS_NAMESPACE` / `SPARX_3IATLAS_PATH`.
+Fix: update Autoloader.php to use `SPARX_3IATLAS_NAMESPACE` and `SPARX_3IATLAS_PATH`.
+
+**2. Missing form CSS asset**
+`src/frontend/Sparxstar3IAtlasDictionaryForm.php` enqueues `sparxstar-3iatlas-dictionary-form-style.min.css` which does not exist.
+Fix: remove that `wp_enqueue_style()` call (and matching `wp_register_style()` if present).
+
 ---
 
 ## What Copilot Must Not Do
