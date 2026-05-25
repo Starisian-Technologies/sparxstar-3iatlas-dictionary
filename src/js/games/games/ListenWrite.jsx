@@ -25,15 +25,21 @@ export default function ListenWrite({ words, language, onResult, onComplete }) {
     const [revealed, setRevealed] = useState('');
     const [status, setStatus] = useState(null); /* 'correct' | 'wrong' | null */
     const inputRef = useRef(null);
+    const audioRef = useRef(null);
 
     const word = deck[index];
 
-    /* Auto-play audio when word changes. */
+    /* Auto-play audio when word changes — reuse a single Audio instance. */
     useEffect(() => {
-        if (word?.audio_url) {
-            const audio = new Audio(word.audio_url);
-            audio.play().catch(() => {});
-        }
+        if (!word?.audio_url) return;
+        const audio = audioRef.current ?? (audioRef.current = new Audio());
+        audio.pause();
+        audio.src = word.audio_url;
+        audio.currentTime = 0;
+        audio.play().catch(() => {});
+        return () => {
+            audio.pause();
+        };
     }, [index, word?.audio_url]);
 
     if (deck.length === 0) {
@@ -55,7 +61,11 @@ export default function ListenWrite({ words, language, onResult, onComplete }) {
         language === 'fr' && word.translation_fr ? word.translation_fr : word.translation_en;
 
     const playAudio = () => {
-        if (word.audio_url) new Audio(word.audio_url).play().catch(() => {});
+        const audio = audioRef.current;
+        if (!audio || !word?.audio_url) return;
+        audio.pause();
+        audio.currentTime = 0;
+        audio.play().catch(() => {});
     };
 
     const handleSubmit = (e) => {
