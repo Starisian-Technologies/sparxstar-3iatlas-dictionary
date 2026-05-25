@@ -15,18 +15,17 @@
  * // TODO: Replace with Helios token introspection when available (OQ-G1).
  */
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect } from 'react';
 import { getRecord, putRecord } from './idbUtils.js';
 
 const OUTBOX_KEY = 'progress-outbox:pending';
+let addEventQueue = Promise.resolve();
 
 /**
  * @param {object} _opts  Reserved — restUrl will be used once Helios auth is wired up.
  * @returns {{ addEvent: Function, syncNow: Function, syncing: boolean }}
  */
 export function useProgressSync({ restUrl: _restUrl }) {
-    const addEventQueueRef = useRef(Promise.resolve());
-
     /**
      * Add a progress event to the outbox.
      *
@@ -35,7 +34,9 @@ export function useProgressSync({ restUrl: _restUrl }) {
     const addEvent = useCallback((event) => {
         const appendEvent = async () => {
             const outbox =
-                typeof getRecord === 'function' ? await getRecord('progress-outbox', OUTBOX_KEY) : null;
+                typeof getRecord === 'function'
+                    ? await getRecord('progress-outbox', OUTBOX_KEY)
+                    : null;
             const events = outbox?.events ?? [];
 
             if (typeof putRecord !== 'function') {
@@ -49,8 +50,8 @@ export function useProgressSync({ restUrl: _restUrl }) {
             });
         };
 
-        const queuedAppend = addEventQueueRef.current.then(appendEvent, appendEvent);
-        addEventQueueRef.current = queuedAppend.catch(() => {});
+        const queuedAppend = addEventQueue.then(appendEvent, appendEvent);
+        addEventQueue = queuedAppend.catch(() => {});
         return queuedAppend;
     }, []);
 
