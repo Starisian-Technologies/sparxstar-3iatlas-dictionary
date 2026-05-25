@@ -14,26 +14,34 @@ let _dbPromise = null;
 /** Open (or reuse) the IndexedDB connection. */
 export function openDB() {
     if (_dbPromise) return _dbPromise;
+    if (typeof indexedDB === 'undefined') {
+        return Promise.reject(new Error('IndexedDB is not available in this environment.'));
+    }
 
-    _dbPromise = new Promise((resolve, reject) => {
-        const req = indexedDB.open(DB_NAME, DB_VERSION);
+    try {
+        _dbPromise = new Promise((resolve, reject) => {
+            const req = indexedDB.open(DB_NAME, DB_VERSION);
 
-        req.onupgradeneeded = (e) => {
-            const db = e.target.result;
-            STORES.forEach((name) => {
-                if (!db.objectStoreNames.contains(name)) {
-                    db.createObjectStore(name, { keyPath: 'key' });
-                }
-            });
-        };
+            req.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                STORES.forEach((name) => {
+                    if (!db.objectStoreNames.contains(name)) {
+                        db.createObjectStore(name, { keyPath: 'key' });
+                    }
+                });
+            };
 
-        req.onsuccess = (e) => resolve(e.target.result);
+            req.onsuccess = (e) => resolve(e.target.result);
 
-        req.onerror = (e) => {
-            _dbPromise = null;
-            reject(e.target.error);
-        };
-    });
+            req.onerror = (e) => {
+                _dbPromise = null;
+                reject(e.target.error);
+            };
+        });
+    } catch (error) {
+        _dbPromise = null;
+        return Promise.reject(error);
+    }
 
     return _dbPromise;
 }
