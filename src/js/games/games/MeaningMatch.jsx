@@ -128,31 +128,42 @@ export default function MeaningMatch({ words, language, onResult, onComplete }) 
     );
 }
 
+function getTranslationText(word, language) {
+    return language === 'fr' && word.translation_fr ? word.translation_fr : word.translation_en;
+}
+
 /**
- * Build 3 options: 1 correct + 2 distractors from same domain.
+ * Build up to 3 options: 1 correct + 2 unique distractors from same domain.
  * Distractors fall back to any other word in the deck.
  */
 function buildOptions(deck, currentIndex, language) {
     const word = deck[currentIndex];
-    const correctText =
-        language === 'fr' && word.translation_fr ? word.translation_fr : word.translation_en;
+    const correctText = getTranslationText(word, language);
 
-    /* Prefer distractors from same domain, fall back to any other word. */
+    /* Prefer distractors from same domain, then fall back to any other word. */
     const sameDomain = deck.filter((w, i) => i !== currentIndex && w.domain === word.domain);
-    const others = deck.filter((w, i) => i !== currentIndex);
-    const pool = sameDomain.length >= 2 ? sameDomain : others;
-
-    const picked = shuffle(pool).slice(0, 2);
-    const distractors = picked.map((w) =>
-        language === 'fr' && w.translation_fr ? w.translation_fr : w.translation_en
+    const others = deck.filter(
+        (w, i) => i !== currentIndex && w.domain !== word.domain
     );
 
-    const opts = [
-        { text: correctText, isCorrect: true },
-        ...distractors.map((t) => ({ text: t, isCorrect: false })),
-    ];
+    const seenTexts = new Set([correctText]);
+    const distractors = [];
 
-    return shuffle(opts);
+    for (const candidate of [...shuffle(sameDomain), ...shuffle(others)]) {
+        const text = getTranslationText(candidate, language);
+
+        if (!text || seenTexts.has(text)) continue;
+
+        distractors.push({ text, isCorrect: false });
+        seenTexts.add(text);
+
+        if (distractors.length === 2) break;
+    }
+
+    return shuffle([
+        { text: correctText, isCorrect: true },
+        ...distractors,
+    ]);
 }
 
 function ProgressBar({ current, total }) {
