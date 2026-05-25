@@ -129,7 +129,7 @@ export default function GameShell({
         error: gameSetError,
     } = useGameSet({
         restUrl,
-        langSource: phase === 'loading' || phase === 'playing' ? sourceLanguage : null,
+        langSource: sourceLanguage,
         domain: selectedDomain,
         limit: wordCount,
         includeAudio: selectedGame === 'listen_write',
