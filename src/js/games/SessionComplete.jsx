@@ -1,8 +1,8 @@
 import React from 'react';
 import { CheckCircle2, RotateCcw, List } from 'lucide-react';
 
-/** Games that require orthographic production (same set as useGameSession). */
-const PRODUCTION_GAMES = new Set([
+/** Games that require orthographic production. Exported for reuse as a single source of truth. */
+export const PRODUCTION_GAMES = new Set([
     'listen_write',
     'arrange_word',
     'complete_sentence',
