@@ -183,10 +183,6 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
     private function find_exact_word_post( string $word, string $lang ): ?\WP_Post {
         global $wpdb;
 
-        if ( ! $wpdb instanceof \wpdb ) {
-            return null;
-        }
-
         if ( '' === $lang ) {
             $query = $wpdb->prepare(
                 "SELECT ID
