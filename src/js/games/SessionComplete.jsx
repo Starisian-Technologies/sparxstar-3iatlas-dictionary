@@ -25,7 +25,7 @@ export default function SessionComplete({
     const correct = session.results.filter((r) => r.outcome === 'correct').length;
     const missed = session.results.filter((r) => r.outcome === 'learning').length;
     const xp = session.xpEarned ?? 0;
-    const isProductionGame = PRODUCTION_GAMES.has(session.gameType);
+    const isProductionGame = Boolean(PRODUCTION_GAMES?.has?.(session.gameType));
 
     return (
         <div className="flex flex-col items-center justify-center h-full p-6 text-center">
