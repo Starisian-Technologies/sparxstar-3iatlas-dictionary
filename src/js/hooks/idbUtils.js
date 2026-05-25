@@ -61,20 +61,26 @@ export async function getRecord(storeName, key) {
     }
 }
 
-/** Write (insert or update) a record. The record must have a `key` property. */
+/**
+ * Write (insert or update) a record. The record must have a `key` property.
+ *
+ * @returns {Promise<boolean>} Resolves `true` on success, `false` if the write
+ *   failed (e.g. quota exceeded or private-browsing mode).
+ */
 export async function putRecord(storeName, record) {
     try {
         const db = await openDB();
         return new Promise((resolve) => {
             const tx = db.transaction(storeName, 'readwrite');
             const req = tx.objectStore(storeName).put(record);
-            req.onsuccess = () => resolve();
-            req.onerror = () => resolve();
-            tx.onerror = () => resolve();
-            tx.onabort = () => resolve();
+            req.onsuccess = () => resolve(true);
+            req.onerror = () => resolve(false);
+            tx.onerror = () => resolve(false);
+            tx.onabort = () => resolve(false);
         });
     } catch {
         /* quota exceeded or private-browsing — degrade silently */
+        return false;
     }
 }
 
