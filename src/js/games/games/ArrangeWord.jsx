@@ -44,36 +44,46 @@ export default function ArrangeWord({ words, language, onResult, onComplete }) {
     const pickFromPool = useCallback(
         (poolIdx) => {
             if (correct || !word) return;
-            const tile = pool[poolIdx];
-            const newPool = pool.filter((_, i) => i !== poolIdx);
-            const newAnswer = [...answer, tile];
-            setPool(newPool);
-            setAnswer(newAnswer);
+            setPool((prevPool) => {
+                const tile = prevPool[poolIdx];
 
-            if (newAnswer.length === target.length) {
-                const attempt = newAnswer
-                    .map((t) => t.char)
-                    .join('')
-                    .toLowerCase();
-                if (attempt === target) {
-                    setCorrect(true);
-                    if (word.audio_url) new Audio(word.audio_url).play().catch(() => {});
-                    onResult(word.uuid, 'correct', 1, 5);
-                    setTimeout(advance, 1200);
-                } else {
-                    /* Shake animation, then return placed tiles to pool without
-                     * reshuffling. Player keeps their mental map of which tiles
-                     * are available — only the answer row is cleared. */
-                    setShake(true);
-                    setTimeout(() => {
-                        setShake(false);
-                        setPool(initialPool); /* all tiles back to original pool order */
-                        setAnswer([]);
-                    }, 600);
+                if (typeof tile === 'undefined') {
+                    return prevPool;
                 }
-            }
+
+                setAnswer((prevAnswer) => {
+                    const newAnswer = [...prevAnswer, tile];
+
+                    if (newAnswer.length === target.length) {
+                        const attempt = newAnswer
+                            .map((t) => t.char)
+                            .join('')
+                            .toLowerCase();
+                        if (attempt === target) {
+                            setCorrect(true);
+                            if (word.audio_url) new Audio(word.audio_url).play().catch(() => {});
+                            onResult(word.uuid, 'correct', 1, 5);
+                            setTimeout(advance, 1200);
+                        } else {
+                            /* Shake animation, then return placed tiles to pool without
+                             * reshuffling. Player keeps their mental map of which tiles
+                             * are available — only the answer row is cleared. */
+                            setShake(true);
+                            setTimeout(() => {
+                                setShake(false);
+                                setPool(initialPool); /* all tiles back to original pool order */
+                                setAnswer([]);
+                            }, 600);
+                        }
+                    }
+
+                    return newAnswer;
+                });
+
+                return prevPool.filter((_, i) => i !== poolIdx);
+            });
         },
-        [answer, correct, pool, target, word, onResult, advance, initialPool]
+        [correct, target, word, onResult, advance, initialPool]
     );
 
     /* Return a placed tile back to the pool. */
