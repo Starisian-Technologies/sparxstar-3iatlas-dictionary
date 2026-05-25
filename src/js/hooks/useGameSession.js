@@ -131,7 +131,10 @@ export function useGameSession() {
             };
 
             /* Only count toward "words you can write" for production games. */
-            const isProductionGame = PRODUCTION_GAMES.has(session.gameType);
+            const isProductionGame =
+                PRODUCTION_GAMES != null &&
+                typeof PRODUCTION_GAMES.has === 'function' &&
+                PRODUCTION_GAMES.has(session.gameType);
             if (outcome === 'correct' && isProductionGame) {
                 const learnedRecord =
                     typeof getRecord === 'function'
