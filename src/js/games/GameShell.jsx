@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Loader2, ChevronDown } from 'lucide-react';
 import * as GameSetHookModule from '../hooks/useGameSet.js';
 import { useGameSession } from '../hooks/useGameSession.js';
-import { useProgressSync } from '../hooks/useProgressSync.js';
+import * as useProgressSyncModule from '../hooks/useProgressSync.js';
 import SessionComplete from './SessionComplete.jsx';
 import DomainFlash from './games/DomainFlash.jsx';
 import MeaningMatch from './games/MeaningMatch.jsx';
@@ -137,6 +137,7 @@ export default function GameShell({
     const { session, learnedCount, initSession, recordResult, completeSession, clearSession } =
         useGameSession();
 
+    const useProgressSync = useProgressSyncModule.useProgressSync || useProgressSyncModule.default;
     const { addEvent, syncNow } = useProgressSync({ restUrl });
 
     /* ── Fetch domains when source language changes ── */
