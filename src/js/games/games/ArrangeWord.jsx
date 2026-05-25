@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Volume2 } from 'lucide-react';
 
 /**
@@ -16,9 +16,14 @@ import { Volume2 } from 'lucide-react';
 export default function ArrangeWord({ words, language, onResult, onComplete }) {
     const deck = useMemo(() => shuffle(words), [words]);
     const [index, setIndex] = useState(0);
-    const [answer, setAnswer] = useState([]);
-    const [initialPool, setInitialPool] = useState(() => buildPool(deck[0]?.headword ?? ''));
-    const [pool, setPool] = useState(initialPool);
+    /* pool, answer, and initialPool are kept in one object so pickFromPool can
+     * update both atomically via a single functional setter, preventing stale
+     * state when the player taps tiles quickly before React re-renders. */
+    const [tileState, setTileState] = useState(() => {
+        const ip = buildPool(deck[0]?.headword ?? '');
+        return { pool: ip, answer: [], initialPool: ip };
+    });
+    const { pool, answer, initialPool } = tileState;
     const [shake, setShake] = useState(false);
     const [correct, setCorrect] = useState(false);
 
@@ -33,87 +38,88 @@ export default function ArrangeWord({ words, language, onResult, onComplete }) {
             const nextIndex = index + 1;
             const nextPool = buildPool(deck[nextIndex].headword);
             setIndex(nextIndex);
-            setInitialPool(nextPool);
-            setPool(nextPool);
-            setAnswer([]);
+            setTileState({ pool: nextPool, answer: [], initialPool: nextPool });
             setCorrect(false);
         }
     }, [index, deck, onComplete]);
 
-    /* Tap a tile in the pool → append to answer. */
-    const pickFromPool = useCallback(
-        (poolIdx) => {
-            if (correct || !word) return;
-            const tile = pool[poolIdx];
-            const newPool = pool.filter((_, i) => i !== poolIdx);
-            const newAnswer = [...answer, tile];
-            setPool(newPool);
-            setAnswer(newAnswer);
+    /* Check the answer whenever the answer row changes length. */
+    useEffect(() => {
+        if (!word || correct || answer.length !== target.length) return;
+        const attempt = answer.map((t) => t.char).join('').toLowerCase();
+        if (attempt === target) {
+            setCorrect(true);
+            if (word.audio_url) new Audio(word.audio_url).play().catch(() => {});
+            onResult(word.uuid, 'correct', 1, 5);
+            setTimeout(advance, 1200);
+        } else {
+            /* Shake animation, then return placed tiles to pool without
+             * reshuffling. Player keeps their mental map of which tiles
+             * are available — only the answer row is cleared. */
+            setShake(true);
+            setTimeout(() => {
+                setShake(false);
+                setTileState((prev) => ({ ...prev, pool: prev.initialPool, answer: [] }));
+            }, 600);
+        }
+    }, [answer, correct, target, word, onResult, advance]);
 
-            if (newAnswer.length === target.length) {
-                const attempt = newAnswer
-                    .map((t) => t.char)
-                    .join('')
-                    .toLowerCase();
-                if (attempt === target) {
-                    setCorrect(true);
-                    if (word.audio_url) new Audio(word.audio_url).play().catch(() => {});
-                    onResult(word.uuid, 'correct', 1, 5);
-                    setTimeout(advance, 1200);
-                } else {
-                    /* Shake animation, then return placed tiles to pool without
-                     * reshuffling. Player keeps their mental map of which tiles
-                     * are available — only the answer row is cleared. */
-                    setShake(true);
-                    setTimeout(() => {
-                        setShake(false);
-                        setPool(initialPool); /* all tiles back to original pool order */
-                        setAnswer([]);
-                    }, 600);
-                }
-            }
+    /* Tap a tile in the pool → append to answer.
+     * Uses a single functional setter so rapid taps before re-render are
+     * applied consistently: each updater receives the latest state, tiles are
+     * matched by their stable ID (not a stale render-time index), and the
+     * guard `idx === -1` prevents the same tile being picked twice. */
+    const pickFromPool = useCallback(
+        (tileId) => {
+            if (correct || !word) return;
+            setTileState((prev) => {
+                const idx = prev.pool.findIndex((t) => t.id === tileId);
+                if (idx === -1) return prev; /* guard: already picked */
+                const tile = prev.pool[idx];
+                return {
+                    ...prev,
+                    pool: prev.pool.filter((_, i) => i !== idx),
+                    answer: [...prev.answer, tile],
+                };
+            });
         },
-        [answer, correct, pool, target, word, onResult, advance, initialPool]
+        [correct, word]
     );
 
     /* Return a placed tile back to the pool. */
     const returnToPool = useCallback(
         (answerIdx) => {
             if (correct) return;
+            setTileState((prev) => {
+                const tile = prev.answer[answerIdx];
+                if (typeof tile === 'undefined') return prev;
 
-            setAnswer((prevAnswer) => {
-                const tile = prevAnswer[answerIdx];
-
-                if (typeof tile === 'undefined') {
-                    return prevAnswer;
+                const tileInitialIdx = prev.initialPool.indexOf(tile);
+                let newPool;
+                if (tileInitialIdx === -1) {
+                    newPool = [...prev.pool, tile];
+                } else {
+                    const insertAt = prev.pool.findIndex(
+                        (poolTile) => prev.initialPool.indexOf(poolTile) > tileInitialIdx
+                    );
+                    newPool =
+                        insertAt === -1
+                            ? [...prev.pool, tile]
+                            : [
+                                  ...prev.pool.slice(0, insertAt),
+                                  tile,
+                                  ...prev.pool.slice(insertAt),
+                              ];
                 }
 
-                const tileInitialIdx = initialPool.indexOf(tile);
-
-                setPool((prevPool) => {
-                    if (tileInitialIdx === -1) {
-                        return [...prevPool, tile];
-                    }
-
-                    const insertAt = prevPool.findIndex(
-                        (poolTile) => initialPool.indexOf(poolTile) > tileInitialIdx
-                    );
-
-                    if (insertAt === -1) {
-                        return [...prevPool, tile];
-                    }
-
-                    return [
-                        ...prevPool.slice(0, insertAt),
-                        tile,
-                        ...prevPool.slice(insertAt),
-                    ];
-                });
-
-                return prevAnswer.filter((_, i) => i !== answerIdx);
+                return {
+                    ...prev,
+                    pool: newPool,
+                    answer: prev.answer.filter((_, i) => i !== answerIdx),
+                };
             });
         },
-        [correct, initialPool]
+        [correct]
     );
 
     if (!word) return null;
@@ -172,11 +178,11 @@ export default function ArrangeWord({ words, language, onResult, onComplete }) {
 
             {/* Tile pool */}
             <div className="flex-1 flex flex-wrap gap-2 content-center justify-center px-2">
-                {pool.map((tile, i) => (
+                {pool.map((tile) => (
                     <Tile
                         key={tile.id}
                         char={tile.char}
-                        onClick={() => pickFromPool(i)}
+                        onClick={() => pickFromPool(tile.id)}
                         variant="pool"
                         shake={false}
                         correct={false}
