@@ -73,12 +73,16 @@ export function useGameSet({ restUrl, langSource, domain = '', limit = 20, inclu
                 const data = Array.isArray(json?.data?.words) ? json.data.words : [];
 
                 if (typeof putRecord === 'function') {
-                    await putRecord('game-sets', {
-                        key: cacheKey,
-                        data,
-                        fetchedAt: now,
-                        ttlMs: TTL_MS,
-                    });
+                    try {
+                        await putRecord('game-sets', {
+                            key: cacheKey,
+                            data,
+                            fetchedAt: now,
+                            ttlMs: TTL_MS,
+                        });
+                    } catch {
+                        // Ignore cache persistence failures so fresh network data still renders.
+                    }
                 }
 
                 if (!cancelled) {
