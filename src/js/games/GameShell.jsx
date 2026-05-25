@@ -262,12 +262,6 @@ export default function GameShell({
                         word_uuid: uuid,
                         game: selectedGame,
                     });
-                } else if (selectedGame === 'complete_sentence') {
-                    await addEvent({
-                        type: 'aiwa_game_word_correct',
-                        word_uuid: uuid,
-                        game: selectedGame,
-                    });
                 } else {
                     await addEvent({
                         type: 'aiwa_game_word_correct',
