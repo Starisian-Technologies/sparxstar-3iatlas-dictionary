@@ -272,7 +272,7 @@ export default function GameShell({
              * handleComplete awaits this chain before calling completeSession().
              */
             pendingResultRef.current = pendingResultRef.current.then(async () => {
-                await recordResult(uuid, outcome, attempts, xp);
+                const updatedSession = await recordResult(uuid, outcome, attempts, xp);
 
                 /* Queue MyCred events. */
                 if (outcome === 'correct') {
@@ -309,9 +309,11 @@ export default function GameShell({
                         });
                     }
 
-                    /* Streak detection: check last 3 results from session. */
-                    if (session) {
-                        const recent = [...session.results.slice(-2), { outcome }];
+                    /* Streak detection: use updatedSession.results (already includes
+                     * the result just recorded) rather than the stale session state
+                     * closure, which is typically one result behind at this point. */
+                    if (updatedSession) {
+                        const recent = updatedSession.results.slice(-3);
                         if (recent.length === 3 && recent.every((r) => r.outcome === 'correct')) {
                             await addEvent({ type: 'aiwa_game_streak_3' });
                         }
@@ -319,7 +321,7 @@ export default function GameShell({
                 }
             });
         },
-        [recordResult, addEvent, selectedGame, session]
+        [recordResult, addEvent, selectedGame]
     );
 
     /* ── Handle game session complete ── */

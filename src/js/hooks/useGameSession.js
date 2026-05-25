@@ -5,7 +5,7 @@
  * from the last checkpoint after a crash or browser close.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getRecord, putRecord, deleteRecord } from './idbUtils.js';
 import { PRODUCTION_GAMES } from '../games/constants.js';
 
@@ -33,6 +33,15 @@ export function useGameSession() {
     const [session, setSession] = useState(null);
     const [learnedCount, setLearnedCount] = useState(0);
 
+    /*
+     * sessionRef mirrors `session` state but is updated synchronously inside
+     * callbacks before any async work. This prevents stale-closure bugs when
+     * recordResult or completeSession are called in rapid succession (e.g. a
+     * double-tap or the final onResult + onComplete pair in DomainFlash) before
+     * React has had a chance to re-render and update the `session` closure.
+     */
+    const sessionRef = useRef(null);
+
     /* Load any in-progress session and learned-word count on mount. */
     useEffect(() => {
         let cancelled = false;
@@ -46,6 +55,7 @@ export function useGameSession() {
             if (cancelled) return;
 
             if (saved && saved.completedAt === null) {
+                sessionRef.current = saved;
                 setSession(saved);
             }
             if (learnedRecord && Array.isArray(learnedRecord.uuids)) {
@@ -98,6 +108,7 @@ export function useGameSession() {
                 completedAt: null,
             };
             await safePutRecord('game-sessions', newSession);
+            sessionRef.current = newSession;
             setSession(newSession);
         },
         [safePutRecord]
@@ -120,21 +131,27 @@ export function useGameSession() {
 
     const recordResult = useCallback(
         async (wordUuid, outcome, attempts, xp) => {
-            if (!session) return;
+            const current = sessionRef.current;
+            if (!current) return null;
 
             const result = { wordUuid, outcome, attempts, xp, ts: Date.now() };
             const updated = {
-                ...session,
-                currentIndex: session.currentIndex + 1,
-                results: [...session.results, result],
-                xpEarned: session.xpEarned + xp,
+                ...current,
+                currentIndex: current.currentIndex + 1,
+                results: [...current.results, result],
+                xpEarned: current.xpEarned + xp,
             };
+
+            /* Update ref synchronously before any awaits so that concurrent
+             * calls (e.g. rapid onResult invocations before re-render) always
+             * build from the latest known state, not the stale closure. */
+            sessionRef.current = updated;
 
             /* Only count toward "words you can write" for production games. */
             const isProductionGame =
                 PRODUCTION_GAMES != null &&
                 typeof PRODUCTION_GAMES.has === 'function' &&
-                PRODUCTION_GAMES.has(session.gameType);
+                PRODUCTION_GAMES.has(current.gameType);
             if (outcome === 'correct' && isProductionGame) {
                 const learnedRecord =
                     typeof getRecord === 'function'
@@ -150,26 +167,34 @@ export function useGameSession() {
 
             await safePutRecord('game-sessions', updated);
             setSession(updated);
+            return updated;
         },
-        [session, safePutRecord]
+        [safePutRecord]
     );
 
     /**
      * Mark the session as complete and persist the timestamp.
+     *
+     * Reads from sessionRef (not React state) so it always operates on the
+     * session object last written by recordResult, even if React has not yet
+     * re-rendered after the final word result.
      */
     const completeSession = useCallback(async () => {
-        if (!session) return;
+        const current = sessionRef.current;
+        if (!current) return;
 
-        const completed = { ...session, completedAt: Date.now() };
+        const completed = { ...current, completedAt: Date.now() };
+        sessionRef.current = completed;
         await safePutRecord('game-sessions', completed);
         setSession(completed);
-    }, [session, safePutRecord]);
+    }, [safePutRecord]);
 
     /**
      * Remove the current session from storage (e.g. after sync).
      */
     const clearSession = useCallback(async () => {
         await safeDeleteRecord('game-sessions', SESSION_KEY);
+        sessionRef.current = null;
         setSession(null);
     }, [safeDeleteRecord]);
 
