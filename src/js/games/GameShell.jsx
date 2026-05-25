@@ -196,41 +196,45 @@ export default function GameShell({
 
     /* ── When game-set loads (after Start is tapped), kick off the session ── */
     useEffect(() => {
-        if (phase !== 'loading') return;
-        if (gameSetLoading) return;
-        if (gameSetError) {
-            setSetupError(gameSetError);
-            setPhase('setup');
-            return;
-        }
-        if (fetchedWords.length === 0) {
-            setSetupError('No words are available for this game yet.');
-            setPhase('setup');
-            return;
-        }
-
-        const sliced = fetchedWords.slice(0, wordCount);
-        setSetupError(null);
-
-        initSession({
-            gameType: selectedGame,
-            langSource: sourceLanguage ?? '',
-            domain: selectedDomain,
-            words: sliced,
-        });
-
-        setGameWords(sliced);
-        setPhase('playing');
-
-        /* Fire return-visit event. */
-        const today = new Date().toDateString();
-        const lastVisit = getLocalStorageItem('aiwa-dict-last-play');
-        if (lastVisit.available && lastVisit.value !== today) {
-            const didPersistVisit = setLocalStorageItem('aiwa-dict-last-play', today);
-            if (didPersistVisit) {
-                addEvent({ type: 'aiwa_game_return_visit' });
+        const load = async () => {
+            if (phase !== 'loading') return;
+            if (gameSetLoading) return;
+            if (gameSetError) {
+                setSetupError(gameSetError);
+                setPhase('setup');
+                return;
             }
-        }
+            if (fetchedWords.length === 0) {
+                setSetupError('No words are available for this game yet.');
+                setPhase('setup');
+                return;
+            }
+
+            const sliced = fetchedWords.slice(0, wordCount);
+            setSetupError(null);
+
+            initSession({
+                gameType: selectedGame,
+                langSource: sourceLanguage ?? '',
+                domain: selectedDomain,
+                words: sliced,
+            });
+
+            setGameWords(sliced);
+            setPhase('playing');
+
+            /* Fire return-visit event. */
+            const today = new Date().toDateString();
+            const lastVisit = getLocalStorageItem('aiwa-dict-last-play');
+            if (lastVisit.available && lastVisit.value !== today) {
+                const didPersistVisit = setLocalStorageItem('aiwa-dict-last-play', today);
+                if (didPersistVisit) {
+                    await addEvent({ type: 'aiwa_game_return_visit' });
+                }
+            }
+        };
+
+        load();
     }, [
         phase,
         gameSetLoading,
