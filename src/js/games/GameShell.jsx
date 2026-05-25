@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Loader2, ChevronDown } from 'lucide-react';
 import * as GameSetHookModule from '../hooks/useGameSet.js';
-import { useGameSession } from '../hooks/useGameSession.js';
+import * as useGameSessionModule from '../hooks/useGameSession.js';
 import * as useProgressSyncModule from '../hooks/useProgressSync.js';
 import SessionComplete from './SessionComplete.jsx';
 import DomainFlash from './games/DomainFlash.jsx';
@@ -12,6 +12,7 @@ import CompleteSentence from './games/CompleteSentence.jsx';
 import ListenWrite from './games/ListenWrite.jsx';
 
 const useGameSet = GameSetHookModule.useGameSet ?? GameSetHookModule.default;
+const useGameSession = useGameSessionModule.useGameSession ?? useGameSessionModule.default;
 
 /** Word count options available in session setup. */
 const WORD_COUNTS = [10, 20, 30];
