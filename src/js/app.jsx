@@ -1383,6 +1383,8 @@ export default function DictionaryApp() {
             >
                 {/* Top-level Browse / Play tab bar */}
                 <div
+                    role="tablist"
+                    aria-label="Dictionary modes"
                     style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -1399,6 +1401,10 @@ export default function DictionaryApp() {
                             <button
                                 key={tab}
                                 type="button"
+                                role="tab"
+                                id={`desktop-tab-${tab}`}
+                                aria-controls={`desktop-panel-${tab}`}
+                                aria-selected={isActive}
                                 onClick={() => setTopTab(tab)}
                                 style={{
                                     display: 'flex',
@@ -1416,7 +1422,6 @@ export default function DictionaryApp() {
                                     cursor: 'pointer',
                                     transition: 'color 0.15s',
                                 }}
-                                aria-current={isActive ? 'page' : undefined}
                             >
                                 <Icon size={16} aria-hidden="true" />
                                 {tab === 'play' ? 'Play' : 'Browse'}
@@ -1427,7 +1432,12 @@ export default function DictionaryApp() {
 
                 {/* Content area */}
                 {topTab === 'browse' ? (
-                    <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+                    <div
+                        role="tabpanel"
+                        id="desktop-panel-browse"
+                        aria-labelledby="desktop-tab-browse"
+                        style={{ flex: 1, display: 'flex', overflow: 'hidden' }}
+                    >
                         <div style={{ width: 240, flexShrink: 0 }}>
                             <DesktopSidebar
                                 language={language}
@@ -1477,7 +1487,12 @@ export default function DictionaryApp() {
                         </div>
                     </div>
                 ) : (
-                    <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+                    <div
+                        role="tabpanel"
+                        id="desktop-panel-play"
+                        aria-labelledby="desktop-tab-play"
+                        style={{ flex: 1, display: 'flex', overflow: 'hidden' }}
+                    >
                         <GameShell
                             restUrl={REST_URL}
                             language={language}
