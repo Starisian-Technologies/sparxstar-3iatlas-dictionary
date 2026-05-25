@@ -144,21 +144,29 @@ export default function GameShell({
     /* ── Fetch domains when source language changes ── */
     useEffect(() => {
         let cancelled = false;
+        const controller = new AbortController();
 
         if (!sourceLanguage) {
             setDomains([]);
+            setDomainsLoading(false);
             setSetupError(null);
             return;
         }
         setDomainsLoading(true);
-        fetch(`${restUrl}/domains?lang_source=${encodeURIComponent(sourceLanguage)}`)
+        fetch(`${restUrl}/domains?lang_source=${encodeURIComponent(sourceLanguage)}`, {
+            signal: controller.signal,
+        })
             .then((r) => (r.ok ? r.json() : null))
             .then((json) => {
                 if (!cancelled && json?.success && Array.isArray(json.data?.domains)) {
                     setDomains(json.data.domains);
                 }
             })
-            .catch(() => {})
+            .catch((error) => {
+                if (error?.name === 'AbortError') {
+                    return;
+                }
+            })
             .finally(() => {
                 if (!cancelled) {
                     setDomainsLoading(false);
@@ -167,6 +175,7 @@ export default function GameShell({
 
         return () => {
             cancelled = true;
+            controller.abort();
         };
     }, [sourceLanguage, restUrl]);
 
