@@ -143,6 +143,8 @@ export default function GameShell({
 
     /* ── Fetch domains when source language changes ── */
     useEffect(() => {
+        let cancelled = false;
+
         if (!sourceLanguage) {
             setDomains([]);
             setSetupError(null);
@@ -152,12 +154,20 @@ export default function GameShell({
         fetch(`${restUrl}/domains?lang_source=${encodeURIComponent(sourceLanguage)}`)
             .then((r) => (r.ok ? r.json() : null))
             .then((json) => {
-                if (json?.success && Array.isArray(json.data?.domains)) {
+                if (!cancelled && json?.success && Array.isArray(json.data?.domains)) {
                     setDomains(json.data.domains);
                 }
             })
             .catch(() => {})
-            .finally(() => setDomainsLoading(false));
+            .finally(() => {
+                if (!cancelled) {
+                    setDomainsLoading(false);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
     }, [sourceLanguage, restUrl]);
 
     /* ── Resume an in-progress session when the Play tab is opened ── */
