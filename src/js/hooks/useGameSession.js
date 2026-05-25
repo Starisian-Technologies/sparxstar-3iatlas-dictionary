@@ -20,13 +20,6 @@ const safeGetRecord = async (storeName, key) => {
 };
 
 /**
- * Games that require the player to produce (write/type/arrange) the word.
- * Only these games contribute to the "words you can write" count.
- *
- * Recognition-only games (domain_flash, meaning_match) measure recall but
- * not orthographic production, so they do not increment learnedCount.
- */
-/**
  * @returns {{
  *   session: object|null,
  *   learnedCount: number,

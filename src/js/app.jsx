@@ -1422,6 +1422,7 @@ export default function DictionaryApp() {
                                     cursor: 'pointer',
                                     transition: 'color 0.15s',
                                 }}
+                                tabIndex={isActive ? 0 : -1}
                             >
                                 <Icon size={16} aria-hidden="true" />
                                 {tab === 'play' ? 'Play' : 'Browse'}
