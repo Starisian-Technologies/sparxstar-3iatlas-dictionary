@@ -57,8 +57,8 @@ export default function LetterReveal({ words, language, onResult, onComplete }) 
             });
         } else {
             const nextWrong = wrongGuesses + 1;
-            setWrongGuesses(nextWrong);
-            setWrongLetters(new Set(wrongLetters).add(letter));
+            setWrongGuesses((prev) => prev + 1);
+            setWrongLetters((prev) => new Set(prev).add(letter));
             setTiltCount((c) => c + 1);
 
             if (nextWrong >= MAX_WRONG) {
