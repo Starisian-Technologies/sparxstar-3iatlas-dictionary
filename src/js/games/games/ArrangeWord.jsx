@@ -80,31 +80,40 @@ export default function ArrangeWord({ words, language, onResult, onComplete }) {
     const returnToPool = useCallback(
         (answerIdx) => {
             if (correct) return;
-            const tile = answer[answerIdx];
-            const tileInitialIdx = initialPool.indexOf(tile);
 
-            setAnswer(answer.filter((_, i) => i !== answerIdx));
-            setPool(() => {
-                if (tileInitialIdx === -1) {
-                    return [...pool, tile];
+            setAnswer((prevAnswer) => {
+                const tile = prevAnswer[answerIdx];
+
+                if (typeof tile === 'undefined') {
+                    return prevAnswer;
                 }
 
-                const insertAt = pool.findIndex(
-                    (poolTile) => initialPool.indexOf(poolTile) > tileInitialIdx
-                );
+                const tileInitialIdx = initialPool.indexOf(tile);
 
-                if (insertAt === -1) {
-                    return [...pool, tile];
-                }
+                setPool((prevPool) => {
+                    if (tileInitialIdx === -1) {
+                        return [...prevPool, tile];
+                    }
 
-                return [
-                    ...pool.slice(0, insertAt),
-                    tile,
-                    ...pool.slice(insertAt),
-                ];
+                    const insertAt = prevPool.findIndex(
+                        (poolTile) => initialPool.indexOf(poolTile) > tileInitialIdx
+                    );
+
+                    if (insertAt === -1) {
+                        return [...prevPool, tile];
+                    }
+
+                    return [
+                        ...prevPool.slice(0, insertAt),
+                        tile,
+                        ...prevPool.slice(insertAt),
+                    ];
+                });
+
+                return prevAnswer.filter((_, i) => i !== answerIdx);
             });
         },
-        [answer, correct, pool, initialPool]
+        [correct, initialPool]
     );
 
     if (!word) return null;
