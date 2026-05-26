@@ -27,10 +27,9 @@ Fix these two defects before beginning any net-new feature scope:
   - `useProgressSync.syncNow()` no-op behavior
   - Helios auth stubs / temporary non-Helios guard paths
 
-### 0.3 Game Data Field Prefix Rule
+### 0.3 Game Event Payload Field Rule
 
-For game event payload data fields, use `game_*` names (`game_type`, `game_domain`, `game_session_ref`, etc.).  
-Use `aiwa_*` only where the identifier is a WordPress hook/event name.
+`/progress/sync` events currently use `word_uuid`, `game`, and `domain` as payload keys. If adding new game-specific payload fields, prefix them with `game_`. Use `aiwa_*` only where the identifier is a WordPress hook/event name (e.g. `aiwa_game_word_correct`).
 
 ### 0.4 Full Absolute Rules + Platform Context
 
