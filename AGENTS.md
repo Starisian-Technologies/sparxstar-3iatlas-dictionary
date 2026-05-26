@@ -20,7 +20,7 @@ This is the authoritative lexical data store and REST API service for the entire
 - **Never use `WidthType.PERCENTAGE` in any generated DOCX.** Not relevant here but noted for completeness.
 - **Never add a custom database table.** Use WordPress CPTs and post meta only.
 - **Treat intentional gaps as intentional gaps.** `useProgressSync.syncNow()` no-op behavior and Helios auth stubs are not bug-fix targets until a replacement spec lands.
-- **Game payload field naming rule:** use `game_*` for game data fields (`game_type`, `game_domain`, `game_session_ref`, etc.); reserve `aiwa_*` for WordPress hook/event names.
+- **Game payload field naming:** `/progress/sync` events currently use `word_uuid`, `game`, and `domain`; if adding new game-specific payload fields, prefix them with `game_`. Reserve `aiwa_*` for WordPress hook/event names (e.g. `aiwa_game_word_correct`).
 - **Platform context rule:** this plugin is a standalone dictionary/API service in the 3iAtlas suite; do not add DVE/Sky/Mḗh₁n̥s/Dheghom dependencies or cross-service runtime coupling.
 - **License header on all PHP files must read `Proprietary`, not `MIT`.**
 - **Text domain on all PHP files: `sparxstar-3iatlas-dictionary`.**
