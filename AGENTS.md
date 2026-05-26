@@ -19,6 +19,9 @@ This is the authoritative lexical data store and REST API service for the entire
 - **Never hardcode language names in the React app.** Language terms come from the `/languages` REST endpoint.
 - **Never use `WidthType.PERCENTAGE` in any generated DOCX.** Not relevant here but noted for completeness.
 - **Never add a custom database table.** Use WordPress CPTs and post meta only.
+- **Treat intentional gaps as intentional gaps.** `useProgressSync.syncNow()` no-op behavior and Helios auth stubs are not bug-fix targets until a replacement spec lands.
+- **Game payload field naming:** `/progress/sync` events currently use `word_uuid`, `game`, and `domain`; if adding new game-specific payload fields, prefix them with `game_`. Reserve `aiwa_*` for WordPress hook/event names (e.g. `aiwa_game_word_correct`).
+- **Platform context rule:** this plugin is a standalone dictionary/API service in the 3iAtlas suite; do not add DVE/Sky/Mḗh₁n̥s/Dheghom dependencies or cross-service runtime coupling.
 - **License header on all PHP files must read `Proprietary`, not `MIT`.**
 - **Text domain on all PHP files: `sparxstar-3iatlas-dictionary`.**
 - **All PHP files must declare `strict_types=1`.**
@@ -217,7 +220,7 @@ Specification: `.github/instructions/dictionary-game-spec-v1.md`
 ```
 src/js/hooks/idbUtils.js           — shared IndexedDB helper (openDB, getRecord, putRecord, getAllRecords, deleteRecord)
 src/js/hooks/useGameSet.js         — /game-set fetch + 3-day IndexedDB TTL cache
-src/js/hooks/useGameSession.js     — session state (currentIndex, results, xpEarned, checkpoint resume)
+src/js/hooks/useGameSession.js     — session state (currentIndex, results, xpEarned, checkpoint resume) + `sessionRef` mirror pattern to prevent stale-session writes during rapid actions
 src/js/hooks/useProgressSync.js    — event outbox (IndexedDB); network sync intentionally a no-op pending OQ-G1 resolution
 src/js/games/AccessoryBar.jsx      — Mandinka character bar (ŋ ɓ ɗ ñ ɲ ʔ á é í ó ú), visualViewport positioning
 src/js/games/SessionComplete.jsx   — post-session summary (stats, cumulative word count, action buttons)
@@ -239,6 +242,22 @@ src/js/games/games/ListenWrite.jsx — Game 4.1: auto-play audio, typed response
 |---|---|---|
 | OQ-G3 | Animation asset for Letter Reveal — pottery vessel emoji (🏺) used as placeholder; replace with AIWA-approved cultural visual | Letter Reveal polish |
 | OQ-G4 | Domain Flash "I knew it" — currently fires `aiwa_game_word_correct`; confirm if a separate hook is needed | MyCred hook map |
+
+---
+
+### Repairs Needed (Boot Blockers)
+
+The sprint boot sequence must verify these two items before any new feature work:
+
+1. **Autoloader constants mismatch** (`src/includes/Autoloader.php`)  
+   The fallback autoloader must read plugin boot constants `SPARX_3IATLAS_NAMESPACE` and `SPARX_3IATLAS_PATH` (not legacy `STARISIAN_*` names), otherwise class loading can fail in non-Composer boots.
+
+2. **Frontend form CSS enqueue mismatch** (`src/frontend/Sparxstar3IAtlasDictionaryForm.php`)  
+   Ensure the form enqueues an existing built stylesheet so the frontend dictionary form is styled on shortcode pages.
+
+Rule for triage in this sprint:
+- These two items are **bugs** and should be fixed immediately.
+- `syncNow()` no-op and Helios auth stubs are **intentional gaps** and should not be altered without an approved spec.
 
 ---
 
@@ -272,15 +291,13 @@ For anything beyond Phase 2, the authoritative reference is **`3IATLAS-SUITE-ARC
 - The `user_vote`, `vote_counts`, and `corrections` fields were designed for `/lookup` in v2 but **must not be added**.
 - No community AJAX endpoints — these were v2 designs that did not ship.
 
-### What v3 of Dictionary Direction Will Add
+### v3 Status
 
-The architecture doc specifies a v3 of the direction document that will:
-- Remove Section 2 entirely
-- Add games as a first-class feature: Browse ↔ Play tab navigation, five game types
-- Specify IndexedDB caching (not localStorage) for game-set and wordlist data
-- Add a Play mode UI spec
+`AIWA-Dictionary-Direction-v3.md` is now committed in `.github/instructions/` and should be treated as active guidance for sprint sequencing and guardrails.
 
-**Until that v3 spec is committed to this repo, do not build the games UI.** Wait for the spec document, same as Phase 2 waited for the UI spec.
+For continuation work:
+- Treat documented boot blockers as bug fixes first (autoloader constants and form CSS enqueue path).
+- Keep intentional gaps (`syncNow()` no-op and Helios stubs) unchanged until a dedicated spec lands.
 
 ### Phase 3 — Integration Tests ⏸ Pending
 
