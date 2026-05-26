@@ -247,13 +247,13 @@ src/js/games/games/ListenWrite.jsx — Game 4.1: auto-play audio, typed response
 
 ### Repairs Needed (Boot Blockers)
 
-The next sprint must execute these two repairs before any new feature work:
+The sprint boot sequence must verify these two items before any new feature work:
 
 1. **Autoloader constants mismatch** (`src/includes/Autoloader.php`)  
    The fallback autoloader must read plugin boot constants `SPARX_3IATLAS_NAMESPACE` and `SPARX_3IATLAS_PATH` (not legacy `STARISIAN_*` names), otherwise class loading can fail in non-Composer boots.
 
 2. **Frontend form CSS enqueue mismatch** (`src/frontend/Sparxstar3IAtlasDictionaryForm.php`)  
-   The form currently enqueues a non-existent CSS artifact. It must enqueue an actual built stylesheet so the frontend dictionary form is styled on shortcode pages.
+   Ensure the form enqueues an existing built stylesheet so the frontend dictionary form is styled on shortcode pages.
 
 Rule for triage in this sprint:
 - These two items are **bugs** and should be fixed immediately.
