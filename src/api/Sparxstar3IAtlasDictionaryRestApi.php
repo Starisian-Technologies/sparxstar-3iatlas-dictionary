@@ -853,8 +853,8 @@ final class Sparxstar3IAtlasDictionaryRestApi {
                 case 'aiwa_game_word_correct':
                     do_action( 'aiwa_game_word_correct', $user_id, $word_id, $game );
                     break;
-                case 'aiwa_game_listen_write':
-                    do_action( 'aiwa_game_listen_write', $user_id, $word_id );
+                case 'aiwa_game_listen_write_correct':
+                    do_action( 'aiwa_game_listen_write_correct', $user_id, $word_id );
                     break;
                 case 'aiwa_game_session_complete':
                     do_action( 'aiwa_game_session_complete', $user_id, $domain );

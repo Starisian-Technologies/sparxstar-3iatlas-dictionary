@@ -108,7 +108,7 @@ Fire these WordPress action hooks when processing `/progress/sync` events. myCre
 
 ```php
 do_action('aiwa_game_word_correct',      $user_id, $word_uuid, $game_type);   // +5 XP
-do_action('aiwa_game_listen_write',      $user_id, $word_uuid);                // +10 XP
+do_action('aiwa_game_listen_write_correct', $user_id, $word_uuid);             // +10 XP
 do_action('aiwa_game_session_complete',  $user_id, $domain_slug);              // +25 XP
 do_action('aiwa_game_domain_mastered',   $user_id, $domain_slug);              // +50 Gold
 do_action('aiwa_game_streak_3',          $user_id);                            // +15 XP
@@ -247,9 +247,13 @@ changes applied to the existing `app.jsx` (not a rebuild):
   safely cacheable — satisfies the AGENTS.md offline/caching rules.
 - `/progress/sync` now returns the standard `{ success, data, meta }` envelope and is
   idempotent: duplicate events (`word_uuid|type|ts`) are detected and skipped via a capped
-  per-user transient ledger (`sparx_3iatlas_dict_sync_seen_{user_id}`, 1-day TTL). Hook
-  names unchanged (match the AGENTS.md hook map). Helios stub and `syncNow()` no-op left
-  untouched (intentional gaps).
+  per-user transient ledger (`sparx_3iatlas_dict_sync_seen_{user_id}`, 1-day TTL). Helios
+  stub and `syncNow()` no-op left untouched (intentional gaps).
+- Listen & Write hook canonicalized to **`aiwa_game_listen_write_correct`** (was
+  `aiwa_game_listen_write`) across the hook map, the `/progress/sync` handler, and the
+  client emitter (`GameShell.jsx`) — matches the games spec / suite architecture. myCred is
+  not yet configured for the dictionary, so nothing was listening; this locks the canonical
+  name before integration.
 - `CompleteSentence` deck now excludes words whose headword does not appear verbatim in the
   example sentence (otherwise the blank substitution silently failed and revealed the answer).
 - `package-lock.json` re-synced with `package.json` (missing stylelint deps added) so
