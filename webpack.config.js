@@ -29,6 +29,14 @@ module.exports = {
     module: {
         rules: [
             {
+                /* Treat all .js source files as javascript/auto so that
+                   ES import/export in hook files works correctly even though
+                   package.json has "type":"commonjs". */
+                test: /\.js$/,
+                include: path.resolve(__dirname, 'src'),
+                type: 'javascript/auto',
+            },
+            {
                 test: /\.mjs$/,
                 include: /node_modules/,
                 type: 'javascript/auto',

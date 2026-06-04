@@ -19,6 +19,9 @@ This is the authoritative lexical data store and REST API service for the entire
 - **Never hardcode language names in the React app.** Language terms come from the `/languages` REST endpoint.
 - **Never use `WidthType.PERCENTAGE` in any generated DOCX.** Not relevant here but noted for completeness.
 - **Never add a custom database table.** Use WordPress CPTs and post meta only.
+- **Treat intentional gaps as intentional gaps.** `useProgressSync.syncNow()` no-op behavior and Helios auth stubs are not bug-fix targets until a replacement spec lands.
+- **Game payload field naming:** `/progress/sync` events currently use `word_uuid`, `game`, and `domain`; if adding new game-specific payload fields, prefix them with `game_`. Reserve `aiwa_*` for WordPress hook/event names (e.g. `aiwa_game_word_correct`).
+- **Platform context rule:** this plugin is a standalone dictionary/API service in the 3iAtlas suite; do not add DVE/Sky/Mḗh₁n̥s/Dheghom dependencies or cross-service runtime coupling.
 - **License header on all PHP files must read `Proprietary`, not `MIT`.**
 - **Text domain on all PHP files: `sparxstar-3iatlas-dictionary`.**
 - **All PHP files must declare `strict_types=1`.**
@@ -105,7 +108,7 @@ Fire these WordPress action hooks when processing `/progress/sync` events. myCre
 
 ```php
 do_action('aiwa_game_word_correct',      $user_id, $word_uuid, $game_type);   // +5 XP
-do_action('aiwa_game_listen_write',      $user_id, $word_uuid);                // +10 XP
+do_action('aiwa_game_listen_write_correct', $user_id, $word_uuid);             // +10 XP
 do_action('aiwa_game_session_complete',  $user_id, $domain_slug);              // +25 XP
 do_action('aiwa_game_domain_mastered',   $user_id, $domain_slug);              // +50 Gold
 do_action('aiwa_game_streak_3',          $user_id);                            // +15 XP
@@ -125,7 +128,9 @@ do_action('aiwa_game_return_visit',      $user_id);                            /
 
 ## Coding Standards
 
-- PSR-12 for all PHP
+- **WordPress Coding Standards + VIPWPCS** is the canonical PHP standard (NOT PSR-12 — an
+  earlier version of this doc said PSR-12, which was incorrect; the code uses WP style:
+  `array()`, spaced parens, `aiwa_*`/`sparx*` prefixes, and composer requires `wpcs`+`vipwpcs`).
 - `declare(strict_types=1)` at the top of every PHP file
 - No raw SQL — use `$wpdb->prepare()` if ever needed
 - No `die()` — use `exit(1)` with a message
@@ -133,6 +138,22 @@ do_action('aiwa_game_return_visit',      $user_id);                            /
 - All output escaped with `esc_html()`, `esc_attr()`, `esc_url()` as appropriate
 - Rate limiting via WordPress transients — never external infrastructure
 - PHP 8.2 minimum
+- Text domain: `sparxstar-3iatlas-dictionary`. Plugin global prefixes: `sparxstar`/`sparx`/
+  `aiwa`/`starisian` and the namespace `Starisian\Sparxstar\IAtlas`.
+
+### PHP tooling and the lint gate
+
+- **PHPCS**: `composer lint:php` runs the repo-wide gate (`phpcs.xml.dist`) — the canonical
+  WPCS+VIPWPCS standard, but pre-existing legacy violations are **demoted to warnings** and
+  warnings do not fail the build (transitional baseline). New code must not add **errors**.
+- **Strict standard** (`.phpcs-strict.xml.dist`) is the full WPCS+VIPWPCS with no demotions.
+  CI runs it on **newly-added** `.php` files only (`lint:php:strict`), so new files must pass
+  fully while legacy files are cleaned up incrementally. To tighten: delete a demotion line
+  in `phpcs.xml.dist` once that category is clean. **Re-promote the Security/DB group first.**
+- **PHPStan**: level 5 (`phpstan.neon.dist`); pre-existing findings are captured in
+  `phpstan-baseline.neon`. New code must pass clean; shrink the baseline as files are fixed.
+- Toolchain pinned to **PHPCS 3.x** (do not jump to PHPCS 4.x until WPCS declares 4.x support)
+  and **PHPStan 1.x**. PHPCBF (`composer fix:php`) auto-fixes mechanical violations.
 
 ---
 
@@ -209,6 +230,109 @@ Specification: `DICTIONARY-DIRECTION-v2.md` Sections 4 and 6 — with voting/cor
 
 ---
 
+### Phase 2 UI Fix ✅ Done
+
+Specification: `AIWA-Dictionary-Direction-v3.md` Section 3 (mockup-aligned). Targeted
+changes applied to the existing `app.jsx` (not a rebuild):
+
+- **§3.1 Categories nav** — `DesktopSidebar` now renders a primary nav (Home, Explore,
+  Favorites, History, Categories). The desktop center column switches on `activeNav`.
+  Categories is a nav alias that renders `ExploreView`. Mobile bottom nav unchanged
+  (Home, Explore, Saved, Recent, Play — Play added in Phase 4, superseding v3's
+  "four items" note).
+- **§3.2 Example counts on rows** — `GET_ALL_WORDS_INDEX` now fetches
+  `aiwaExampleSentences { sentenceExample }`; `WordListRow` shows the example-sentence
+  count next to the image icon.
+- **§3.3 Two-column desktop detail** — `DetailView` (desktop, `isSheet === false`) renders
+  always-on left sections (`#detail-meaning`, `#detail-definition`, `#detail-pronunciation`,
+  `#detail-image`, `#detail-examples`, `#detail-related`, `#detail-origin`) plus a right
+  column of `FeatureCard` scroll anchors. Mobile bottom sheet keeps the four-tab layout.
+- **§3.4 Add to Favorites CTA** — pink full-width CTA pinned to the mobile sheet bottom and
+  in the desktop right column. Header heart remains as secondary control.
+- **§3.5 Share icon** — mobile detail header uses the Web Share API (`navigator.share`);
+  not rendered when unsupported.
+- **§3.6 Sidebar footer** — pottery placeholder + tagline + AIWA wordmark. **[OPEN — OQ-V1]**
+  logo asset path and tagline copy pending AIWA approval (placeholder copy in use).
+- **§3.7 Word of the Day** — switched to the server `/word-of-day` endpoint (which exists),
+  cached in `localStorage('aiwa-dict-word-of-day')` keyed by date (24h). Falls back to the
+  deterministic client-side pick if the endpoint is unavailable or its slug is absent from
+  the loaded index.
+
+### Backend hardening (this sprint)
+
+- `/game-set` now sends `Cache-Control: public, max-age=3600` + `ETag` with `304` support
+  (was `no-store`). The set is deterministic per calendar day per lang/domain, so it is
+  safely cacheable — satisfies the AGENTS.md offline/caching rules.
+- `/progress/sync` now returns the standard `{ success, data, meta }` envelope and is
+  idempotent: duplicate events (`word_uuid|type|ts`) are detected and skipped via a capped
+  per-user transient ledger (`sparx_3iatlas_dict_sync_seen_{user_id}`, 1-day TTL). Helios
+  stub and `syncNow()` no-op left untouched (intentional gaps).
+- Listen & Write hook canonicalized to **`aiwa_game_listen_write_correct`** (was
+  `aiwa_game_listen_write`) across the hook map, the `/progress/sync` handler, and the
+  client emitter (`GameShell.jsx`) — matches the games spec / suite architecture. myCred is
+  not yet configured for the dictionary, so nothing was listening; this locks the canonical
+  name before integration.
+- `CompleteSentence` deck now excludes words whose headword does not appear verbatim in the
+  example sentence (otherwise the blank substitution silently failed and revealed the answer).
+- `package-lock.json` re-synced with `package.json` (missing stylelint deps added) so
+  `npm ci` works again.
+
+### Open Questions (UI fix)
+| ID | Question | Blocking |
+|---|---|---|
+| OQ-V1 | AIWA logo asset path and tagline copy for the desktop sidebar footer | Sidebar footer final content |
+
+---
+
+### Phase 4 — Games / Play Tab ✅ Done
+
+Specification: `.github/instructions/dictionary-game-spec-v1.md`
+
+**New files:**
+```
+src/js/hooks/idbUtils.js           — shared IndexedDB helper (openDB, getRecord, putRecord, getAllRecords, deleteRecord)
+src/js/hooks/useGameSet.js         — /game-set fetch + 3-day IndexedDB TTL cache
+src/js/hooks/useGameSession.js     — session state (currentIndex, results, xpEarned, checkpoint resume) + `sessionRef` mirror pattern to prevent stale-session writes during rapid actions
+src/js/hooks/useProgressSync.js    — event outbox (IndexedDB); network sync intentionally a no-op pending OQ-G1 resolution
+src/js/games/AccessoryBar.jsx      — Mandinka character bar (ŋ ɓ ɗ ñ ɲ ʔ á é í ó ú), visualViewport positioning
+src/js/games/SessionComplete.jsx   — post-session summary (stats, cumulative word count, action buttons)
+src/js/games/GameShell.jsx         — session setup (domain/game/word-count selectors), game router, phase management
+src/js/games/games/DomainFlash.jsx — Game 4.6: flashcard reveal, "I knew it" / "Still learning"
+src/js/games/games/MeaningMatch.jsx — Game 4.3: 3-option meaning selection, same-domain distractors
+src/js/games/games/ArrangeWord.jsx — Game 4.2: scrambled letter tiles, tap-to-place, auto-check
+src/js/games/games/LetterReveal.jsx — Game 4.5: alphabet pool, 5 wrong = word skipped, pottery vessel tilt
+src/js/games/games/CompleteSentence.jsx — Game 4.4: sentence with word blanked, typed input, AccessoryBar
+src/js/games/games/ListenWrite.jsx — Game 4.1: auto-play audio, typed response, AccessoryBar, +10 XP
+```
+
+**Changes to existing files:**
+- `src/js/app.jsx`: Play tab added to mobile bottom nav (5th item, Gamepad2 icon). Desktop gets Browse/Play tab bar above the content area. GameShell rendered when Play is active.
+- `webpack.config.js`: Added `javascript/auto` rule for `src/**/*.js` to allow ESM import/export with `"type":"commonjs"` in package.json.
+
+**Open questions carried forward:**
+| ID | Question | Blocking |
+|---|---|---|
+| OQ-G3 | Animation asset for Letter Reveal — pottery vessel emoji (🏺) used as placeholder; replace with AIWA-approved cultural visual | Letter Reveal polish |
+| OQ-G4 | Domain Flash "I knew it" — currently fires `aiwa_game_word_correct`; confirm if a separate hook is needed | MyCred hook map |
+
+---
+
+### Repairs Needed (Boot Blockers)
+
+The sprint boot sequence must verify these two items before any new feature work:
+
+1. **Autoloader constants mismatch** (`src/includes/Autoloader.php`)  
+   The fallback autoloader must read plugin boot constants `SPARX_3IATLAS_NAMESPACE` and `SPARX_3IATLAS_PATH` (not legacy `STARISIAN_*` names), otherwise class loading can fail in non-Composer boots.
+
+2. **Frontend form CSS enqueue mismatch** (`src/frontend/Sparxstar3IAtlasDictionaryForm.php`)  
+   Ensure the form enqueues an existing built stylesheet so the frontend dictionary form is styled on shortcode pages.
+
+Rule for triage in this sprint:
+- These two items are **bugs** and should be fixed immediately.
+- `syncNow()` no-op and Helios auth stubs are **intentional gaps** and should not be altered without an approved spec.
+
+---
+
 ## Spec Version History and Decision Record
 
 > **READ THIS BEFORE STARTING ANY NEW SPRINT.** This section documents the decision trail so future sessions do not re-introduce removed features.
@@ -239,15 +363,13 @@ For anything beyond Phase 2, the authoritative reference is **`3IATLAS-SUITE-ARC
 - The `user_vote`, `vote_counts`, and `corrections` fields were designed for `/lookup` in v2 but **must not be added**.
 - No community AJAX endpoints — these were v2 designs that did not ship.
 
-### What v3 of Dictionary Direction Will Add
+### v3 Status
 
-The architecture doc specifies a v3 of the direction document that will:
-- Remove Section 2 entirely
-- Add games as a first-class feature: Browse ↔ Play tab navigation, five game types
-- Specify IndexedDB caching (not localStorage) for game-set and wordlist data
-- Add a Play mode UI spec
+`AIWA-Dictionary-Direction-v3.md` is now committed in `.github/instructions/` and should be treated as active guidance for sprint sequencing and guardrails.
 
-**Until that v3 spec is committed to this repo, do not build the games UI.** Wait for the spec document, same as Phase 2 waited for the UI spec.
+For continuation work:
+- Treat documented boot blockers as bug fixes first (autoloader constants and form CSS enqueue path).
+- Keep intentional gaps (`syncNow()` no-op and Helios stubs) unchanged until a dedicated spec lands.
 
 ### Phase 3 — Integration Tests ⏸ Pending
 

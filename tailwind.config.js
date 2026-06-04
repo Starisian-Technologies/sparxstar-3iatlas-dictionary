@@ -30,9 +30,15 @@ module.exports = {
                     '0%': { transform: 'translateY(100%)' },
                     '100%': { transform: 'translateY(0)' },
                 },
+                'aiwa-shake': {
+                    '0%, 100%': { transform: 'translateX(0)' },
+                    '20%, 60%': { transform: 'translateX(-6px)' },
+                    '40%, 80%': { transform: 'translateX(6px)' },
+                },
             },
             animation: {
                 'slide-up': 'slideUp 0.3s ease-out',
+                shake: 'aiwa-shake 0.5s ease-in-out',
             },
             colors: {
                 brand: {

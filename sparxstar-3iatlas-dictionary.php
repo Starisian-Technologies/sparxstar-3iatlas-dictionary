@@ -54,7 +54,7 @@ if ( version_compare( PHP_VERSION, '8.2', '<' ) || version_compare( $GLOBALS['wp
     add_action(
         'admin_notices',
         function () {
-            echo '<div class="notice notice-error"><p>' . esc_html__( 'Sparxstar 3IAtlas Dictionary requires PHP 8.2+ and WordPress 6.4+.', 'SparxstarIAtlasDictionary' ) . '</p></div>';
+            echo '<div class="notice notice-error"><p>' . esc_html__( 'Sparxstar 3IAtlas Dictionary requires PHP 8.2+ and WordPress 6.4+.', 'sparxstar-3iatlas-dictionary' ) . '</p></div>';
         }
     );
     return;
