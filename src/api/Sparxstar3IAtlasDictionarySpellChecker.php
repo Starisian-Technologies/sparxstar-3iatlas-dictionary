@@ -22,13 +22,13 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
     /** REST namespace shared by dictionary API routes. */
     private const REST_NAMESPACE = 'sparxstar/v1/dictionary';
     /** Dictionary custom post type slug. */
-    private const CPT            = 'aiwa-cpt-dictionary';
+    private const CPT = 'aiwa-cpt-dictionary';
     /** Hard cap for words validated per request. */
-    private const MAX_WORDS      = 100;
+    private const MAX_WORDS = 100;
     /** Public request budget per rate-limit window. */
-    private const RATE_LIMIT     = 100;
+    private const RATE_LIMIT = 100;
     /** Rate-limit window size in seconds (15 minutes). */
-    private const RATE_WINDOW    = 900;
+    private const RATE_WINDOW = 900;
 
     /**
      * Register WordPress hooks for spell-check route initialization.
