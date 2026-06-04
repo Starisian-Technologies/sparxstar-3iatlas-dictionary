@@ -33,7 +33,7 @@ This is the authoritative lexical data store and REST API service for the entire
 
 - `src/includes/Sparxstar3IAtlasPostTypes.php` — CPT and taxonomy registrations
 - `src/frontend/Sparxstar3IAtlasDictionaryForm.php` — community word submission form
-- `src/js/app.jsx` — React frontend (needs full rebuild in Phase 2 — do not patch, wait for spec)
+- `src/js/app.jsx` — React frontend (Phase 2 complete — full rebuild done; Phase 2 UI Fix also done in PR #64)
 - `src/core/Sparxstar3IAtlasDictionary.php` — main plugin class
 - `tailwind.config.js` — Tailwind config (needs AIWA brand colors in Phase 2)
 - GraphQL queries via WPGraphQL — existing, working
@@ -162,17 +162,34 @@ do_action('aiwa_game_return_visit',      $user_id);                            /
 ```
 src/
   api/
-    Sparxstar3IAtlasDictionaryRestApi.php   ← Phase 1: implemented
+    Sparxstar3IAtlasDictionaryRestApi.php   ← Phase 1: all 9 endpoints
   gamification/
-    Sparxstar3IAtlasDictionaryProgress.php  ← Phase 1: implemented
+    Sparxstar3IAtlasDictionaryProgress.php  ← Phase 1: myCred hooks for /progress/sync
   includes/
     Sparxstar3IAtlasPostTypes.php           ← Phase 0 bug fixes completed
+    Autoloader.php                          ← boot blocker fixed PR #62
   frontend/
-    Sparxstar3IAtlasDictionaryForm.php      ← Phase 0 bug fix completed
+    Sparxstar3IAtlasDictionaryForm.php      ← Phase 0 bug fix + PR #62 CSS fix
   core/
     Sparxstar3IAtlasDictionary.php          ← register new classes here
   js/
-    app.jsx                                 ← Phase 2: full rebuild
+    app.jsx                                 ← Phase 2 full rebuild done; Phase 2 UI Fix done (PR #64)
+    hooks/
+      idbUtils.js                           ← Phase 4: shared IndexedDB helper
+      useGameSet.js                         ← Phase 4: /game-set fetch + IndexedDB TTL cache
+      useGameSession.js                     ← Phase 4: session state + sessionRef pattern
+      useProgressSync.js                    ← Phase 4: IndexedDB outbox (syncNow no-op — OQ-G1)
+    games/
+      GameShell.jsx                         ← Phase 4: game orchestrator + phase state machine
+      AccessoryBar.jsx                      ← Phase 4: Mandinka character input bar
+      SessionComplete.jsx                   ← Phase 4: post-session summary
+      games/
+        MeaningMatch.jsx
+        LetterReveal.jsx
+        ArrangeWord.jsx
+        DomainFlash.jsx
+        CompleteSentence.jsx
+        ListenWrite.jsx
 tailwind.config.js                          ← Phase 2: AIWA brand colors
 AGENTS.md                                   ← this file
 ```
@@ -317,19 +334,17 @@ src/js/games/games/ListenWrite.jsx — Game 4.1: auto-play audio, typed response
 
 ---
 
-### Repairs Needed (Boot Blockers)
+### Boot Blockers — FIXED (PR #62)
 
-The sprint boot sequence must verify these two items before any new feature work:
+Both boot blockers below were resolved in PR #62. Recorded for historical context only.
 
-1. **Autoloader constants mismatch** (`src/includes/Autoloader.php`)  
-   The fallback autoloader must read plugin boot constants `SPARX_3IATLAS_NAMESPACE` and `SPARX_3IATLAS_PATH` (not legacy `STARISIAN_*` names), otherwise class loading can fail in non-Composer boots.
+1. **Autoloader constants mismatch** (`src/includes/Autoloader.php`) — **FIXED**
+   Now correctly uses `SPARX_3IATLAS_NAMESPACE` and `SPARX_3IATLAS_PATH`.
 
-2. **Frontend form CSS enqueue mismatch** (`src/frontend/Sparxstar3IAtlasDictionaryForm.php`)  
-   Ensure the form enqueues an existing built stylesheet so the frontend dictionary form is styled on shortcode pages.
+2. **Frontend form CSS enqueue mismatch** (`src/frontend/Sparxstar3IAtlasDictionaryForm.php`) — **FIXED**
+   The `wp_enqueue_style()` call for the non-existent stylesheet has been removed.
 
-Rule for triage in this sprint:
-- These two items are **bugs** and should be fixed immediately.
-- `syncNow()` no-op and Helios auth stubs are **intentional gaps** and should not be altered without an approved spec.
+`syncNow()` no-op and Helios auth stubs remain as **intentional gaps** — do not alter without an approved spec.
 
 ---
 
@@ -397,18 +412,17 @@ Key files added:
 
 ---
 
-## Repairs Needed (as of May 2026)
+## Repairs Fixed (PR #62)
 
-These are boot/runtime blockers that must be resolved before deployment:
+Both boot blockers below were resolved in PR #62 (merged May 2026). They are recorded here for historical context only — do not re-introduce either issue.
 
-**1. Autoloader constant mismatch**
-`src/includes/Autoloader.php` expects `STARISIAN_NAMESPACE` / `STARISIAN_PATH`.
-Plugin header defines `SPARX_3IATLAS_NAMESPACE` / `SPARX_3IATLAS_PATH`.
-Fix: update Autoloader.php to use `SPARX_3IATLAS_NAMESPACE` and `SPARX_3IATLAS_PATH`.
+**1. Autoloader constant mismatch — FIXED**
+`src/includes/Autoloader.php` previously used legacy `STARISIAN_NAMESPACE` / `STARISIAN_PATH`.
+Now correctly uses `SPARX_3IATLAS_NAMESPACE` and `SPARX_3IATLAS_PATH`.
 
-**2. Missing form CSS asset**
-`src/frontend/Sparxstar3IAtlasDictionaryForm.php` enqueues `sparxstar-3iatlas-dictionary-form-style.min.css` which does not exist.
-Fix: remove that `wp_enqueue_style()` call (and matching `wp_register_style()` if present).
+**2. Missing form CSS asset — FIXED**
+`src/frontend/Sparxstar3IAtlasDictionaryForm.php` previously enqueued a non-existent stylesheet.
+The `wp_enqueue_style()` and matching `wp_register_style()` calls have been removed.
 
 ---
 

@@ -23,35 +23,38 @@ Every other 3iAtlas tool (WordPad, RLC, Sound to Symbol) is a consumer of this p
 
 ---
 
-## Current State — As of May 2026
+## Current State — As of June 2026
 
 | Phase | Description | Status |
 |---|---|---|
 | Phase 0 | Bug fixes — CPT, taxonomies, form | ✅ Done |
 | Phase 1 | REST API — 9 endpoints | ✅ Done |
 | Phase 2 | React frontend rebuild — Browse mode | ✅ Done |
+| Phase 2 UI Fix | Mockup-aligned UI pass (v3 §3.1–3.7) + backend hardening | ✅ Done (PR #64) |
 | Phase 3 | Cross-tool integration tests (WordPad, S2S, RLC) | ⏸ Pending |
-| Phase 4 | Games / Play tab — six game types, session management | ✅ Done (merged PR #59) |
+| Phase 4 | Games / Play tab — six game types, session management | ✅ Done (PR #59) |
 
 **What is in `main` right now:**
-- Full React app with Browse and Play tabs
+- Full React app with Browse and Play tabs; desktop three-column layout, mobile bottom-nav + bottom sheet
+- Phase 2 UI Fix: categories nav, example counts on rows, two-column desktop detail, Favorites CTA, Share icon (Web Share API), sidebar footer placeholder (OQ-V1), `/word-of-day` server endpoint (24h localStorage cache)
 - Six games: MeaningMatch, LetterReveal, ArrangeWord, DomainFlash, CompleteSentence, ListenWrite
 - IndexedDB-backed game set cache (`useGameSet`), session tracking (`useGameSession`), progress outbox (`useProgressSync`)
-- Spell API hardened with `$wpdb` guard and normalized response envelope (merged PR #61)
+- Shared IndexedDB helper `idbUtils.js` (openDB, getRecord, putRecord, getAllRecords, deleteRecord)
+- Spell API hardened with `$wpdb` guard and normalized response envelope (PR #61)
+- Boot blockers fixed (PR #62): Autoloader constants corrected, form CSS enqueue corrected
+- Backend hardening (PR #64): `/game-set` ETag + 304 support, `/progress/sync` idempotent via per-user transient ledger, `Cache-Control: public, max-age=3600` on all GET endpoints
+- WPCS + VIPWPCS toolchain with transitional PHPCS baseline and PHPStan level 5 (PR #65)
 
 ---
 
-## Known Repairs Needed — Do These Before New Features
+## Open Questions — Do Not Implement Without a Spec Decision
 
-**1. Autoloader constant mismatch (boot blocker)**
-`src/includes/Autoloader.php` references `STARISIAN_NAMESPACE` and `STARISIAN_PATH`.
-The plugin header defines `SPARX_3IATLAS_NAMESPACE` and `SPARX_3IATLAS_PATH`.
-If Composer vendor is absent, the fallback autoloader silently fails and no classes load.
-Fix: update `src/includes/Autoloader.php` to use `SPARX_3IATLAS_NAMESPACE` and `SPARX_3IATLAS_PATH`.
-
-**2. Missing form CSS reference**
-`src/frontend/Sparxstar3IAtlasDictionaryForm.php` enqueues `sparxstar-3iatlas-dictionary-form-style.min.css` which does not exist in `/assets/css/`.
-Fix: remove that `wp_enqueue_style()` call (and its matching `wp_register_style()` if present). The form falls back to the shared stylesheet.
+| ID | Question | Blocking |
+|---|---|---|
+| OQ-V1 | AIWA logo asset path and tagline copy for the desktop sidebar footer | Sidebar footer final content |
+| OQ-G1 | `syncNow()` two-mode spec: standalone (WP user meta) vs. full-system (governed pipeline) | Progress sync implementation |
+| OQ-G3 | Letter Reveal animation — pottery vessel emoji (🏺) is a placeholder; replace with AIWA-approved cultural visual | Letter Reveal polish |
+| OQ-G4 | DomainFlash "I knew it" — fires `aiwa_game_word_correct`; confirm if a separate hook is needed | myCred hook map |
 
 ---
 
@@ -131,9 +134,14 @@ There are 9 of these across `src/api/`. They are **integration stubs, not techni
 
 **Files added in Phase 4:**
 ```
+src/js/hooks/
+  idbUtils.js            — shared IndexedDB helper (openDB, getRecord, putRecord, getAllRecords, deleteRecord)
+  useGameSet.js          — /game-set fetch + 3-day IndexedDB TTL cache; cache key includes includeAudio flag
+  useGameSession.js      — session state, learned-word tracking, sessionRef pattern
+  useProgressSync.js     — IndexedDB outbox for progress events (syncNow is no-op — OQ-G1)
 src/js/games/
   GameShell.jsx          — top-level game orchestrator, phase state machine
-  AccessoryBar.jsx       — special character input bar (ŋ ɓ ɗ ñ ɲ ʔ) — always present for typed input
+  AccessoryBar.jsx       — special character input bar (ŋ ɓ ɗ ñ ɲ ʔ á é í ó ú) — always present for typed input
   SessionComplete.jsx    — end-of-session summary
   games/
     MeaningMatch.jsx
@@ -142,10 +150,6 @@ src/js/games/
     DomainFlash.jsx
     CompleteSentence.jsx
     ListenWrite.jsx
-src/js/hooks/
-  useGameSet.js          — fetches and caches game word set in IndexedDB
-  useGameSession.js      — session state, learned-word tracking, sessionRef pattern
-  useProgressSync.js     — IndexedDB outbox for progress events (syncNow is no-op — OQ-G1)
 ```
 
 **Game design mandate (from game spec):**
@@ -166,7 +170,7 @@ Fire these on `/progress/sync` events. myCred listens; when absent, hooks are no
 
 ```php
 do_action('aiwa_game_word_correct',       $user_id, $word_uuid, $game_type); // +5 XP
-do_action('aiwa_game_listen_write',       $user_id, $word_uuid);              // +10 XP
+do_action('aiwa_game_listen_write_correct', $user_id, $word_uuid);            // +10 XP
 do_action('aiwa_game_session_complete',   $user_id, $domain_slug);            // +25 XP
 do_action('aiwa_game_domain_mastered',    $user_id, $domain_slug);            // +50 Gold
 do_action('aiwa_game_streak_3',           $user_id);                          // +15 XP
@@ -217,7 +221,7 @@ The dependency direction is: DVE → export → 3iAtlas dictionary → RLC. The 
 
 ## Coding Standards
 
-- PSR-12 for all PHP
+- **WordPress Coding Standards + VIPWPCS** — not PSR-12. The code uses WP style: `array()`, spaced parens, WP-prefixed function calls.
 - `declare(strict_types=1)` at the top of every PHP file
 - Typed parameters and return types on all methods
 - No raw SQL — use `$wpdb->prepare()` if ever needed
@@ -226,6 +230,13 @@ The dependency direction is: DVE → export → 3iAtlas dictionary → RLC. The 
 - All output escaped with `esc_html()`, `esc_attr()`, `esc_url()` as appropriate
 - Rate limiting via WordPress transients — never external infrastructure
 - PHP 8.2 minimum, WordPress 6.9 minimum
+
+### PHP Toolchain
+
+- **PHPCS** (`composer lint:php`): WPCS + VIPWPCS standard. Pre-existing legacy violations are demoted to warnings in `phpcs.xml.dist` (transitional baseline — warnings do not fail CI). New code must produce zero errors. Auto-fix with `composer fix:php` (PHPCBF).
+- **Strict gate** (`composer lint:php:strict` via `.phpcs-strict.xml.dist`): full WPCS + VIPWPCS with no demotions, run on **newly added** `.php` files only. New files must pass fully.
+- **PHPStan**: level 5 (`phpstan.neon.dist`). Pre-existing findings captured in `phpstan-baseline.neon`. New code must pass clean; shrink the baseline as files are fixed.
+- Toolchain pinned to **PHPCS 3.x** (do not jump to 4.x until WPCS declares 4.x support) and **PHPStan 1.x**. Do not upgrade these without a deliberate toolchain decision.
 
 ---
 
