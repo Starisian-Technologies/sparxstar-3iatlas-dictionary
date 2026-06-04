@@ -25,6 +25,10 @@ import {
     Sun,
     Moon,
     Gamepad2,
+    Share2,
+    LayoutGrid,
+    Users,
+    Leaf,
 } from 'lucide-react';
 import '../css/sparxstar-3iatlas-dictionary-style.css';
 import GameShell from './games/GameShell.jsx';
@@ -123,6 +127,57 @@ const NAV_ITEMS = [
     { id: 'play', label: 'Play', Icon: Gamepad2 },
 ];
 
+/**
+ * Desktop sidebar nav (v3 §3.1). Categories is a nav alias that renders ExploreView.
+ * Mobile bottom nav is separate (NAV_ITEMS) and additionally carries Play.
+ */
+const DESKTOP_NAV_ITEMS = [
+    { id: 'home', label: 'Home', Icon: Home },
+    { id: 'explore', label: 'Explore', Icon: Compass },
+    { id: 'favorites', label: 'Favorites', Icon: Heart },
+    { id: 'history', label: 'History', Icon: Clock },
+    { id: 'categories', label: 'Categories', Icon: LayoutGrid },
+];
+
+/** Detail panel feature cards (v3 §3.3) — scroll anchors into the left column. */
+const FEATURE_CARDS = [
+    {
+        label: 'Audio Pronunciation',
+        description: 'Listen to the correct pronunciation of each word.',
+        iconBg: '#E91E8C',
+        icon: Volume2,
+        anchor: 'detail-pronunciation',
+    },
+    {
+        label: 'Cultural Images',
+        description: 'Visual context helps you connect deeper with the meaning.',
+        iconBg: '#7B3FA0',
+        icon: ImageIcon,
+        anchor: 'detail-image',
+    },
+    {
+        label: 'Example Sentences',
+        description: 'See how words are used in real life situations.',
+        iconBg: '#1565C0',
+        icon: BookOpen,
+        anchor: 'detail-examples',
+    },
+    {
+        label: 'Related Words',
+        description: 'Explore synonyms, antonyms and word variants.',
+        iconBg: '#00796B',
+        icon: Users,
+        anchor: 'detail-related',
+    },
+    {
+        label: 'Origin & Cultural Notes',
+        description: 'Discover the roots and cultural background of words.',
+        iconBg: '#F57F17',
+        icon: Leaf,
+        anchor: 'detail-origin',
+    },
+];
+
 // ---------------------------------------------------------------------------
 // GraphQL queries
 // ---------------------------------------------------------------------------
@@ -156,6 +211,9 @@ const GET_ALL_WORDS_INDEX = gql`
                             node {
                                 id
                             }
+                        }
+                        aiwaExampleSentences {
+                            __typename
                         }
                     }
                 }
@@ -370,6 +428,7 @@ const WordListRow = ({ word, language, onSelect, onPrefetch, isFavorite, onFavor
     const translation = language === 'fr' ? d.aiwaTranslationFrench : d.aiwaTranslationEnglish;
     const hasAudio = !!d.aiwaAudioFile?.node?.mediaItemUrl;
     const hasImage = !!d.aiwaWordPhoto?.node?.id;
+    const exampleCount = d.aiwaExampleSentences?.length || 0;
 
     return (
         <div
@@ -412,6 +471,14 @@ const WordListRow = ({ word, language, onSelect, onPrefetch, isFavorite, onFavor
                 {hasAudio && <Volume2 size={14} className="text-pink-400" aria-label="Has audio" />}
                 {hasImage && (
                     <ImageIcon size={14} className="text-purple-400" aria-label="Has image" />
+                )}
+                {exampleCount > 0 && (
+                    <span
+                        className="text-xs font-semibold text-gray-400"
+                        aria-label={`${exampleCount} example sentences`}
+                    >
+                        {exampleCount}
+                    </span>
                 )}
                 <button
                     onClick={(e) => {
@@ -610,6 +677,28 @@ const AlphaBar = ({ onSelect }) => {
 // Components — Detail view (tabbed)
 // ---------------------------------------------------------------------------
 
+/** Desktop detail right-column card — a scroll anchor into the left column (v3 §3.3). */
+const FeatureCard = ({ icon: Icon, iconBg, label, description, onClick }) => (
+    <button
+        type="button"
+        onClick={onClick}
+        className="flex items-start gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 hover:border-pink-200 dark:hover:border-pink-900 transition-colors text-left w-full"
+    >
+        <div
+            className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+            style={{ background: iconBg }}
+        >
+            <Icon size={16} className="text-white" />
+        </div>
+        <div>
+            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{label}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 leading-snug">
+                {description}
+            </p>
+        </div>
+    </button>
+);
+
 const DETAIL_TABS = ['overview', 'examples', 'related', 'origin'];
 
 const DetailView = ({
@@ -643,6 +732,24 @@ const DetailView = ({
     const outerClass = isSheet
         ? 'relative z-50 bg-white dark:bg-gray-900 w-full md:w-[600px] h-[85vh] md:h-[80vh] rounded-t-2xl md:rounded-2xl shadow-2xl pointer-events-auto flex flex-col overflow-hidden animate-slide-up'
         : 'flex flex-col h-full bg-white dark:bg-gray-900 overflow-hidden';
+
+    const scrollToAnchor = (anchor) => {
+        document.getElementById(anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    const canShare = isSheet && typeof navigator !== 'undefined' && !!navigator.share;
+
+    const favoriteCta = (
+        <button
+            type="button"
+            onClick={() => onFavoriteToggle(slug)}
+            className="flex items-center justify-center gap-2 w-full py-3 rounded-xl font-semibold text-sm text-white transition-colors"
+            style={{ background: '#E91E8C' }}
+        >
+            <Heart size={16} fill={isFav ? 'currentColor' : 'none'} />
+            {isFav ? 'Saved' : 'Add to Favorites'}
+        </button>
+    );
 
     return (
         <div className={outerClass}>
@@ -712,74 +819,245 @@ const DetailView = ({
                                 )}
                             </div>
                         </div>
-                        {onClose && (
-                            <button
-                                onClick={onClose}
-                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full shrink-0"
-                                aria-label="Close word details"
-                                type="button"
-                            >
-                                <X size={22} aria-hidden="true" />
-                            </button>
-                        )}
+                        <div className="flex items-center gap-1 shrink-0">
+                            {canShare && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        navigator
+                                            .share({
+                                                title: word.title,
+                                                text: `${word.title}${translation ? ` — ${translation}` : ''}`,
+                                                url: window.location.href,
+                                            })
+                                            .catch(() => {});
+                                    }}
+                                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+                                    aria-label="Share this word"
+                                >
+                                    <Share2 size={20} aria-hidden="true" />
+                                </button>
+                            )}
+                            {onClose && (
+                                <button
+                                    onClick={onClose}
+                                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+                                    aria-label="Close word details"
+                                    type="button"
+                                >
+                                    <X size={22} aria-hidden="true" />
+                                </button>
+                            )}
+                        </div>
                     </div>
 
-                    {/* Tab bar */}
-                    <div
-                        className="flex border-b border-gray-100 dark:border-gray-800 shrink-0 overflow-x-auto scrollbar-hide"
-                        role="tablist"
-                    >
-                        {DETAIL_TABS.map((tab) => (
-                            <button
-                                key={tab}
-                                role="tab"
-                                aria-selected={activeTab === tab}
-                                onClick={() => setActiveTab(tab)}
-                                className="px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors"
-                                style={
-                                    activeTab === tab
-                                        ? { borderColor: '#E91E8C', color: '#E91E8C' }
-                                        : { borderColor: 'transparent', color: '#9ca3af' }
-                                }
-                                type="button"
+                    {/* Mobile bottom sheet keeps the four-tab layout (v3 §3.3). */}
+                    {isSheet ? (
+                        <>
+                            {/* Tab bar */}
+                            <div
+                                className="flex border-b border-gray-100 dark:border-gray-800 shrink-0 overflow-x-auto scrollbar-hide"
+                                role="tablist"
                             >
-                                {tabLabel(tab)}
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Tab body */}
-                    <div className="overflow-y-auto flex-1 p-5 space-y-5">
-                        {activeTab === 'overview' && (
-                            <>
-                                {translation && (
-                                    <div
-                                        className="p-4 rounded-xl"
-                                        style={{ background: '#FCE4F3' }}
+                                {DETAIL_TABS.map((tab) => (
+                                    <button
+                                        key={tab}
+                                        role="tab"
+                                        aria-selected={activeTab === tab}
+                                        onClick={() => setActiveTab(tab)}
+                                        className="px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors"
+                                        style={
+                                            activeTab === tab
+                                                ? { borderColor: '#E91E8C', color: '#E91E8C' }
+                                                : { borderColor: 'transparent', color: '#9ca3af' }
+                                        }
+                                        type="button"
                                     >
-                                        <h3
-                                            className="text-xs font-bold uppercase tracking-wider mb-1"
-                                            style={{ color: '#E91E8C' }}
-                                        >
-                                            {language === 'fr' ? 'Fran\u00e7ais' : 'English'}
-                                        </h3>
-                                        <p className="text-xl font-medium text-gray-900">
-                                            {translation}
-                                        </p>
+                                        {tabLabel(tab)}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Tab body */}
+                            <div className="overflow-y-auto flex-1 p-5 space-y-5">
+                                {activeTab === 'overview' && (
+                                    <>
+                                        {translation && (
+                                            <div
+                                                className="p-4 rounded-xl"
+                                                style={{ background: '#FCE4F3' }}
+                                            >
+                                                <h3
+                                                    className="text-xs font-bold uppercase tracking-wider mb-1"
+                                                    style={{ color: '#E91E8C' }}
+                                                >
+                                                    {language === 'fr'
+                                                        ? 'Fran\u00e7ais'
+                                                        : 'English'}
+                                                </h3>
+                                                <p className="text-xl font-medium text-gray-900">
+                                                    {translation}
+                                                </p>
+                                            </div>
+                                        )}
+                                        {d.aiwaExtract && (
+                                            <div>
+                                                <h3 className="flex items-center gap-2 font-bold text-gray-800 dark:text-gray-200 mb-2">
+                                                    <BookOpen size={16} aria-hidden="true" />{' '}
+                                                    Definition
+                                                </h3>
+                                                <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                                                    {d.aiwaExtract}
+                                                </p>
+                                            </div>
+                                        )}
+                                        {exampleCount > 0 && (
+                                            <div>
+                                                <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2">
+                                                    How people use it
+                                                </h3>
+                                                <div
+                                                    className="pl-4 border-l-4"
+                                                    style={{ borderColor: '#E91E8C' }}
+                                                >
+                                                    <p className="text-base text-gray-900 dark:text-gray-100">
+                                                        {d.aiwaExampleSentences[0].sentenceExample}
+                                                    </p>
+                                                    <p className="text-sm text-gray-500 dark:text-gray-400 italic mt-1">
+                                                        {language === 'fr'
+                                                            ? d.aiwaExampleSentences[0]
+                                                                  .sentenceFrenchTranslation
+                                                            : d.aiwaExampleSentences[0]
+                                                                  .sentenceEnglishTranslation}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+
+                                {activeTab === 'examples' && (
+                                    <div>
+                                        {exampleCount === 0 && (
+                                            <p className="text-gray-400 text-sm italic">
+                                                No examples recorded yet.
+                                            </p>
+                                        )}
+                                        <div className="space-y-5">
+                                            {d.aiwaExampleSentences &&
+                                                d.aiwaExampleSentences.map((ex, idx) => (
+                                                    <div
+                                                        key={idx}
+                                                        className="pl-4 border-l-4 border-gray-200 dark:border-gray-700"
+                                                    >
+                                                        <p className="text-base text-gray-900 dark:text-gray-100">
+                                                            {ex.sentenceExample}
+                                                        </p>
+                                                        {ex.sentenceIpaPronounciation && (
+                                                            <p className="text-xs text-gray-400 font-mono mt-0.5">
+                                                                /{ex.sentenceIpaPronounciation}/
+                                                            </p>
+                                                        )}
+                                                        {ex.sentencePhoneticPronunciation && (
+                                                            <p className="text-xs text-gray-400 mt-0.5">
+                                                                [{ex.sentencePhoneticPronunciation}]
+                                                            </p>
+                                                        )}
+                                                        <p className="text-sm text-gray-500 dark:text-gray-400 italic mt-1">
+                                                            {language === 'fr'
+                                                                ? ex.sentenceFrenchTranslation
+                                                                : ex.sentenceEnglishTranslation}
+                                                        </p>
+                                                    </div>
+                                                ))}
+                                        </div>
                                     </div>
                                 )}
-                                {d.aiwaExtract && (
+
+                                {activeTab === 'related' && (
                                     <div>
+                                        <RelatedWordList
+                                            title="Synonyms"
+                                            items={d.aiwaSynonyms}
+                                            onSelectWord={onSelectWord}
+                                        />
+                                        <RelatedWordList
+                                            title="Antonyms"
+                                            items={d.aiwaAntonyms}
+                                            onSelectWord={onSelectWord}
+                                        />
+                                        <RelatedWordList
+                                            title="Phonetic Variants"
+                                            items={d.aiwaPhoneticVariants}
+                                            onSelectWord={onSelectWord}
+                                        />
+                                        {!d.aiwaSynonyms?.nodes?.length &&
+                                            !d.aiwaAntonyms?.nodes?.length &&
+                                            !d.aiwaPhoneticVariants?.nodes?.length && (
+                                                <p className="text-gray-400 text-sm italic">
+                                                    No related words recorded.
+                                                </p>
+                                            )}
+                                    </div>
+                                )}
+
+                                {activeTab === 'origin' && (
+                                    <div>
+                                        {d.aiwaOrigin ? (
+                                            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                                                {d.aiwaOrigin}
+                                            </p>
+                                        ) : (
+                                            <p className="text-gray-400 text-sm italic">
+                                                No origin notes available.
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Pinned Add to Favorites CTA (v3 §3.4) */}
+                            <div className="shrink-0 p-4 border-t border-gray-100 dark:border-gray-800">
+                                {favoriteCta}
+                            </div>
+                        </>
+                    ) : (
+                        /* Desktop two-column layout (v3 §3.3) */
+                        <div className="flex flex-1 overflow-hidden">
+                            {/* Left: always-rendered scrollable sections */}
+                            <div className="flex-1 overflow-y-auto p-5 space-y-6">
+                                {translation && (
+                                    <section id="detail-meaning">
+                                        <div
+                                            className="p-4 rounded-xl"
+                                            style={{ background: '#FCE4F3' }}
+                                        >
+                                            <h3
+                                                className="text-xs font-bold uppercase tracking-wider mb-1"
+                                                style={{ color: '#E91E8C' }}
+                                            >
+                                                {language === 'fr' ? 'Français' : 'English'}
+                                            </h3>
+                                            <p className="text-xl font-medium text-gray-900">
+                                                {translation}
+                                            </p>
+                                        </div>
+                                    </section>
+                                )}
+
+                                {d.aiwaExtract && (
+                                    <section id="detail-definition">
                                         <h3 className="flex items-center gap-2 font-bold text-gray-800 dark:text-gray-200 mb-2">
                                             <BookOpen size={16} aria-hidden="true" /> Definition
                                         </h3>
                                         <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                                             {d.aiwaExtract}
                                         </p>
-                                    </div>
+                                    </section>
                                 )}
+
                                 {exampleCount > 0 && (
-                                    <div>
+                                    <section>
                                         <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2">
                                             How people use it
                                         </h3>
@@ -798,90 +1076,157 @@ const DetailView = ({
                                                           .sentenceEnglishTranslation}
                                             </p>
                                         </div>
+                                    </section>
+                                )}
+
+                                <section id="detail-pronunciation">
+                                    <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2">
+                                        Pronunciation
+                                    </h3>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        {d.aiwaAudioFile?.node?.mediaItemUrl && (
+                                            <AudioButton
+                                                url={d.aiwaAudioFile.node.mediaItemUrl}
+                                                size={18}
+                                            />
+                                        )}
+                                        {d.aiwaIpaPronunciation && (
+                                            <span className="bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-xs font-mono text-gray-600 dark:text-gray-300">
+                                                /{d.aiwaIpaPronunciation}/
+                                            </span>
+                                        )}
+                                        {d.phoneticProunciation && (
+                                            <span className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-2 py-0.5 rounded text-xs text-gray-500">
+                                                [{d.phoneticProunciation}]
+                                            </span>
+                                        )}
+                                        {!d.aiwaAudioFile?.node?.mediaItemUrl &&
+                                            !d.aiwaIpaPronunciation &&
+                                            !d.phoneticProunciation && (
+                                                <p className="text-gray-400 text-sm italic">
+                                                    No pronunciation recorded.
+                                                </p>
+                                            )}
                                     </div>
-                                )}
-                            </>
-                        )}
+                                </section>
 
-                        {activeTab === 'examples' && (
-                            <div>
-                                {exampleCount === 0 && (
-                                    <p className="text-gray-400 text-sm italic">
-                                        No examples recorded yet.
-                                    </p>
-                                )}
-                                <div className="space-y-5">
-                                    {d.aiwaExampleSentences &&
-                                        d.aiwaExampleSentences.map((ex, idx) => (
-                                            <div
-                                                key={idx}
-                                                className="pl-4 border-l-4 border-gray-200 dark:border-gray-700"
-                                            >
-                                                <p className="text-base text-gray-900 dark:text-gray-100">
-                                                    {ex.sentenceExample}
-                                                </p>
-                                                {ex.sentenceIpaPronounciation && (
-                                                    <p className="text-xs text-gray-400 font-mono mt-0.5">
-                                                        /{ex.sentenceIpaPronounciation}/
-                                                    </p>
-                                                )}
-                                                {ex.sentencePhoneticPronunciation && (
-                                                    <p className="text-xs text-gray-400 mt-0.5">
-                                                        [{ex.sentencePhoneticPronunciation}]
-                                                    </p>
-                                                )}
-                                                <p className="text-sm text-gray-500 dark:text-gray-400 italic mt-1">
-                                                    {language === 'fr'
-                                                        ? ex.sentenceFrenchTranslation
-                                                        : ex.sentenceEnglishTranslation}
-                                                </p>
-                                            </div>
-                                        ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === 'related' && (
-                            <div>
-                                <RelatedWordList
-                                    title="Synonyms"
-                                    items={d.aiwaSynonyms}
-                                    onSelectWord={onSelectWord}
-                                />
-                                <RelatedWordList
-                                    title="Antonyms"
-                                    items={d.aiwaAntonyms}
-                                    onSelectWord={onSelectWord}
-                                />
-                                <RelatedWordList
-                                    title="Phonetic Variants"
-                                    items={d.aiwaPhoneticVariants}
-                                    onSelectWord={onSelectWord}
-                                />
-                                {!d.aiwaSynonyms?.nodes?.length &&
-                                    !d.aiwaAntonyms?.nodes?.length &&
-                                    !d.aiwaPhoneticVariants?.nodes?.length && (
+                                <section id="detail-image">
+                                    <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2">
+                                        Image
+                                    </h3>
+                                    {d.aiwaWordPhoto?.node?.sourceUrl ? (
+                                        <img
+                                            src={d.aiwaWordPhoto.node.sourceUrl}
+                                            alt={word.title}
+                                            className="w-full rounded-xl object-cover"
+                                            style={{ maxHeight: 220 }}
+                                        />
+                                    ) : (
                                         <p className="text-gray-400 text-sm italic">
-                                            No related words recorded.
+                                            No image available.
                                         </p>
                                     )}
-                            </div>
-                        )}
+                                </section>
 
-                        {activeTab === 'origin' && (
-                            <div>
-                                {d.aiwaOrigin ? (
-                                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                                        {d.aiwaOrigin}
-                                    </p>
-                                ) : (
-                                    <p className="text-gray-400 text-sm italic">
-                                        No origin notes available.
-                                    </p>
-                                )}
+                                <section id="detail-examples">
+                                    <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2">
+                                        Example Sentences
+                                    </h3>
+                                    {exampleCount === 0 && (
+                                        <p className="text-gray-400 text-sm italic">
+                                            No examples recorded yet.
+                                        </p>
+                                    )}
+                                    <div className="space-y-5">
+                                        {d.aiwaExampleSentences &&
+                                            d.aiwaExampleSentences.map((ex, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className="pl-4 border-l-4 border-gray-200 dark:border-gray-700"
+                                                >
+                                                    <p className="text-base text-gray-900 dark:text-gray-100">
+                                                        {ex.sentenceExample}
+                                                    </p>
+                                                    {ex.sentenceIpaPronounciation && (
+                                                        <p className="text-xs text-gray-400 font-mono mt-0.5">
+                                                            /{ex.sentenceIpaPronounciation}/
+                                                        </p>
+                                                    )}
+                                                    {ex.sentencePhoneticPronunciation && (
+                                                        <p className="text-xs text-gray-400 mt-0.5">
+                                                            [{ex.sentencePhoneticPronunciation}]
+                                                        </p>
+                                                    )}
+                                                    <p className="text-sm text-gray-500 dark:text-gray-400 italic mt-1">
+                                                        {language === 'fr'
+                                                            ? ex.sentenceFrenchTranslation
+                                                            : ex.sentenceEnglishTranslation}
+                                                    </p>
+                                                </div>
+                                            ))}
+                                    </div>
+                                </section>
+
+                                <section id="detail-related">
+                                    <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2">
+                                        Related Words
+                                    </h3>
+                                    <RelatedWordList
+                                        title="Synonyms"
+                                        items={d.aiwaSynonyms}
+                                        onSelectWord={onSelectWord}
+                                    />
+                                    <RelatedWordList
+                                        title="Antonyms"
+                                        items={d.aiwaAntonyms}
+                                        onSelectWord={onSelectWord}
+                                    />
+                                    <RelatedWordList
+                                        title="Phonetic Variants"
+                                        items={d.aiwaPhoneticVariants}
+                                        onSelectWord={onSelectWord}
+                                    />
+                                    {!d.aiwaSynonyms?.nodes?.length &&
+                                        !d.aiwaAntonyms?.nodes?.length &&
+                                        !d.aiwaPhoneticVariants?.nodes?.length && (
+                                            <p className="text-gray-400 text-sm italic">
+                                                No related words recorded.
+                                            </p>
+                                        )}
+                                </section>
+
+                                <section id="detail-origin">
+                                    <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2">
+                                        Origin &amp; Cultural Notes
+                                    </h3>
+                                    {d.aiwaOrigin ? (
+                                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                                            {d.aiwaOrigin}
+                                        </p>
+                                    ) : (
+                                        <p className="text-gray-400 text-sm italic">
+                                            No origin notes available.
+                                        </p>
+                                    )}
+                                </section>
                             </div>
-                        )}
-                    </div>
+
+                            {/* Right: feature cards + favorites CTA */}
+                            <div className="w-56 shrink-0 border-l border-gray-100 dark:border-gray-800 p-3 overflow-y-auto flex flex-col gap-2">
+                                {FEATURE_CARDS.map((card) => (
+                                    <FeatureCard
+                                        key={card.anchor}
+                                        icon={card.icon}
+                                        iconBg={card.iconBg}
+                                        label={card.label}
+                                        description={card.description}
+                                        onClick={() => scrollToAnchor(card.anchor)}
+                                    />
+                                ))}
+                                <div className="mt-2">{favoriteCta}</div>
+                            </div>
+                        </div>
+                    )}
                 </>
             )}
         </div>
@@ -1077,6 +1422,8 @@ const DesktopSidebar = ({
     languages,
     sourceLanguage,
     onSourceLanguage,
+    activeNav,
+    onNavChange,
 }) => (
     <aside className="flex flex-col h-full bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 p-5 overflow-y-auto">
         <div className="mb-6">
@@ -1111,6 +1458,32 @@ const DesktopSidebar = ({
 
         <hr className="border-gray-100 dark:border-gray-800 mb-4" />
 
+        {/* Primary navigation (v3 §3.1) */}
+        <nav className="flex flex-col gap-1 mb-4" aria-label="Dictionary navigation">
+            {DESKTOP_NAV_ITEMS.map(({ id, label, Icon }) => {
+                // Categories keeps its own active state (v3 §3.1); the center column renders
+                // ExploreView for both 'explore' and 'categories'.
+                const isActive = activeNav === id;
+                return (
+                    <button
+                        key={id}
+                        type="button"
+                        onClick={() => onNavChange(id)}
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            isActive ? '' : 'text-gray-700 dark:text-gray-300'
+                        }`}
+                        style={isActive ? { background: '#FCE4F3', color: '#E91E8C' } : undefined}
+                        aria-current={isActive ? 'page' : undefined}
+                    >
+                        <Icon size={18} aria-hidden="true" />
+                        {label}
+                    </button>
+                );
+            })}
+        </nav>
+
+        <hr className="border-gray-100 dark:border-gray-800 mb-4" />
+
         <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">
             Source Language
         </h3>
@@ -1119,6 +1492,24 @@ const DesktopSidebar = ({
             selected={sourceLanguage}
             onSelect={onSourceLanguage}
         />
+
+        {/* Sidebar footer (v3 §3.6) — [OPEN — OQ-V1] logo asset + tagline copy pending AIWA approval */}
+        <div className="mt-auto pt-4 border-t border-gray-100 dark:border-gray-800">
+            <div
+                className="w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-800 mb-3"
+                aria-hidden="true"
+            />
+            <p className="text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
+                Preserving our language.
+                <br />
+                Connecting our heritage.
+                <br />
+                Building our future.
+            </p>
+            <p className="mt-2 text-lg font-bold" style={{ color: '#E91E8C' }}>
+                AIWA
+            </p>
+        </div>
     </aside>
 );
 
@@ -1169,6 +1560,7 @@ export default function DictionaryApp() {
     const [scrollState, setScrollState] = useState({ atTop: true, atBottom: false });
     const [languages, setLanguages] = useState([]);
     const [topTab, setTopTab] = useState('browse');
+    const [wordOfDaySlug, setWordOfDaySlug] = useState(null);
 
     const virtuosoRef = useRef(null);
     const isDesktop = useIsDesktop();
@@ -1185,14 +1577,53 @@ export default function DictionaryApp() {
             .catch(() => {});
     }, []);
 
+    // Word of the Day — server endpoint with a 24h localStorage cache keyed by date (v3 §3.7).
+    // The server returns the same word for all users on a given calendar day.
+    useEffect(() => {
+        const today = new Date().toISOString().slice(0, 10);
+        try {
+            const cached = JSON.parse(localStorage.getItem('aiwa-dict-word-of-day') || 'null');
+            if (cached && cached.date === today && cached.slug) {
+                setWordOfDaySlug(cached.slug);
+                return;
+            }
+        } catch {
+            /* ignore malformed cache */
+        }
+        fetch(`${REST_URL}/word-of-day`)
+            .then((r) => (r.ok ? r.json() : null))
+            .then((json) => {
+                const slug = json?.success ? json.data?.word?.slug : null;
+                const date = json?.data?.date || today;
+                if (slug) {
+                    setWordOfDaySlug(slug);
+                    try {
+                        localStorage.setItem(
+                            'aiwa-dict-word-of-day',
+                            JSON.stringify({ slug, date })
+                        );
+                    } catch {
+                        /* quota — degrade silently */
+                    }
+                }
+            })
+            .catch(() => {});
+    }, []);
+
     const { loading, error, data } = useQuery(GET_ALL_WORDS_INDEX, { client });
 
     const allWords = useMemo(() => (data?.dictionaries?.edges || []).map((e) => e.node), [data]);
 
-    const wordOfDay = useMemo(
-        () => (allWords.length ? allWords[wordOfDayIndex(allWords.length)] : null),
-        [allWords]
-    );
+    const wordOfDay = useMemo(() => {
+        if (!allWords.length) return null;
+        // Prefer the server-selected word; fall back to a deterministic client-side pick
+        // if the endpoint is unavailable or its slug is not in the loaded index.
+        if (wordOfDaySlug) {
+            const match = allWords.find((w) => w.slug === wordOfDaySlug);
+            if (match) return match;
+        }
+        return allWords[wordOfDayIndex(allWords.length)];
+    }, [allWords, wordOfDaySlug]);
 
     const filteredWords = useMemo(() => {
         let entries = allWords;
@@ -1451,6 +1882,8 @@ export default function DictionaryApp() {
                                 languages={languages}
                                 sourceLanguage={sourceLanguage}
                                 onSourceLanguage={setSourceLanguage}
+                                activeNav={activeNav}
+                                onNavChange={setActiveNav}
                             />
                         </div>
 
@@ -1463,8 +1896,49 @@ export default function DictionaryApp() {
                                 borderRight: '1px solid #f3f4f6',
                             }}
                         >
-                            {wordListArea}
-                            <AlphaBar onSelect={handleScrollToLetter} />
+                            {activeNav === 'home' && (
+                                <>
+                                    {wordListArea}
+                                    <AlphaBar onSelect={handleScrollToLetter} />
+                                </>
+                            )}
+                            {(activeNav === 'explore' || activeNav === 'categories') && (
+                                <ExploreView
+                                    languages={languages}
+                                    sourceLanguage={sourceLanguage}
+                                    onSelectLanguage={(slug) => {
+                                        setSourceLanguage(slug);
+                                        setActiveNav('home');
+                                    }}
+                                />
+                            )}
+                            {activeNav === 'favorites' && (
+                                <FavoritesView
+                                    words={allWords}
+                                    favorites={favorites}
+                                    language={language}
+                                    onSelect={handleSelectWord}
+                                    onFavoriteToggle={handleFavoriteToggle}
+                                    onPrefetch={prefetchWord}
+                                />
+                            )}
+                            {activeNav === 'history' && (
+                                <HistoryView
+                                    words={allWords}
+                                    history={history}
+                                    language={language}
+                                    onSelect={handleSelectWord}
+                                    favorites={favorites}
+                                    onFavoriteToggle={handleFavoriteToggle}
+                                    onPrefetch={prefetchWord}
+                                />
+                            )}
+                            {activeNav === 'play' && (
+                                <>
+                                    {wordListArea}
+                                    <AlphaBar onSelect={handleScrollToLetter} />
+                                </>
+                            )}
                         </div>
 
                         <div style={{ width: 420, flexShrink: 0, overflow: 'hidden' }}>

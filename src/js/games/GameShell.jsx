@@ -297,7 +297,7 @@ export default function GameShell({
 
                     if (selectedGame === 'listen_write') {
                         await addEvent({
-                            type: 'aiwa_game_listen_write',
+                            type: 'aiwa_game_listen_write_correct',
                             word_uuid: uuid,
                             game: selectedGame,
                         });
