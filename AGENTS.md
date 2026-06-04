@@ -128,7 +128,9 @@ do_action('aiwa_game_return_visit',      $user_id);                            /
 
 ## Coding Standards
 
-- PSR-12 for all PHP
+- **WordPress Coding Standards + VIPWPCS** is the canonical PHP standard (NOT PSR-12 — an
+  earlier version of this doc said PSR-12, which was incorrect; the code uses WP style:
+  `array()`, spaced parens, `aiwa_*`/`sparx*` prefixes, and composer requires `wpcs`+`vipwpcs`).
 - `declare(strict_types=1)` at the top of every PHP file
 - No raw SQL — use `$wpdb->prepare()` if ever needed
 - No `die()` — use `exit(1)` with a message
@@ -136,6 +138,22 @@ do_action('aiwa_game_return_visit',      $user_id);                            /
 - All output escaped with `esc_html()`, `esc_attr()`, `esc_url()` as appropriate
 - Rate limiting via WordPress transients — never external infrastructure
 - PHP 8.2 minimum
+- Text domain: `sparxstar-3iatlas-dictionary`. Plugin global prefixes: `sparxstar`/`sparx`/
+  `aiwa`/`starisian` and the namespace `Starisian\Sparxstar\IAtlas`.
+
+### PHP tooling and the lint gate
+
+- **PHPCS**: `composer lint:php` runs the repo-wide gate (`phpcs.xml.dist`) — the canonical
+  WPCS+VIPWPCS standard, but pre-existing legacy violations are **demoted to warnings** and
+  warnings do not fail the build (transitional baseline). New code must not add **errors**.
+- **Strict standard** (`.phpcs-strict.xml.dist`) is the full WPCS+VIPWPCS with no demotions.
+  CI runs it on **newly-added** `.php` files only (`lint:php:strict`), so new files must pass
+  fully while legacy files are cleaned up incrementally. To tighten: delete a demotion line
+  in `phpcs.xml.dist` once that category is clean. **Re-promote the Security/DB group first.**
+- **PHPStan**: level 5 (`phpstan.neon.dist`); pre-existing findings are captured in
+  `phpstan-baseline.neon`. New code must pass clean; shrink the baseline as files are fixed.
+- Toolchain pinned to **PHPCS 3.x** (do not jump to PHPCS 4.x until WPCS declares 4.x support)
+  and **PHPStan 1.x**. PHPCBF (`composer fix:php`) auto-fixes mechanical violations.
 
 ---
 

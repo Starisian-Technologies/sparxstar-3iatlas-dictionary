@@ -1,2 +1,16 @@
 parameters:
-  ignoreErrors: []
+	ignoreErrors:
+		-
+			message: "#^Function wp_strlen not found\\.$#"
+			count: 1
+			path: src/api/Sparxstar3IAtlasDictionaryRestApi.php
+
+		-
+			message: "#^Property WP_Term\\:\\:\\$slug \\(string\\) in isset\\(\\) is not nullable\\.$#"
+			count: 1
+			path: src/api/Sparxstar3IAtlasDictionaryRestApi.php
+
+		-
+			message: "#^Used function acf_add_local_field_group not found\\.$#"
+			count: 1
+			path: src/includes/Sparxstar3IAtlasPostTypes.php

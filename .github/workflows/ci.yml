@@ -57,8 +57,22 @@ jobs:
             - name: Lint JS & CSS
               run: npm run lint
 
-            - name: Lint PHP
+            - name: Lint PHP (repo baseline)
               run: composer run lint:php
+
+            # New PHP files must meet the full WPCS + VIPWPCS standard (no baseline
+            # demotions). Legacy files are exempt and cleaned up incrementally.
+            - name: Lint new PHP files (strict)
+              if: github.event_name == 'pull_request' && matrix.php-version == '8.3'
+              run: |
+                  git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+                  NEW=$(git diff --name-only --diff-filter=A "origin/${{ github.base_ref }}" HEAD -- '*.php' || true)
+                  if [ -z "$NEW" ]; then
+                    echo "No new PHP files to lint."
+                    exit 0
+                  fi
+                  echo "New PHP files:"; echo "$NEW"
+                  echo "$NEW" | xargs vendor/bin/phpcs -q --standard=.phpcs-strict.xml.dist
 
             - name: Static Analysis (PHPStan)
               run: composer run analyze:php
