@@ -710,16 +710,30 @@ final class Sparxstar3IAtlasDictionaryRestApi {
             $words[] = $word;
         }
 
-        $response = new \WP_REST_Response(
-            array(
-                'success' => true,
-                'data'    => array( 'words' => $words ),
+        $payload = array(
+            'success' => true,
+            'data'    => array( 'words' => $words ),
+            'meta'    => array(
+                'total'         => count( $words ),
+                'lang_source'   => $lang,
+                'domain'        => $domain,
+                'include_audio' => $include_audio,
             ),
-            200
         );
-        $response->header( 'Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0' );
-        $response->header( 'Pragma', 'no-cache' );
-        $response->header( 'Expires', '-1' );
+
+        // The set is deterministic per calendar day for a given lang/domain, so it is safe to cache.
+        $response      = $this->cached_response( $payload, 3600 );
+        $word_uuids    = array_column( $words, 'uuid' );
+        $etag          = md5( $seed . ':' . $limit . ':' . ( $include_audio ? '1' : '0' ) . ':' . implode( ',', $word_uuids ) );
+        $etag_value    = '"' . $etag . '"';
+        $if_none_match = trim( (string) $request->get_header( 'If-None-Match' ) );
+        if ( $this->if_none_match_contains( $if_none_match, $etag_value ) ) {
+            $not_modified = new \WP_REST_Response( null, 304 );
+            $not_modified->header( 'Cache-Control', 'public, max-age=3600' );
+            $not_modified->header( 'ETag', $etag_value );
+            return $not_modified;
+        }
+        $response->header( 'ETag', $etag_value );
 
         return $response;
     }
@@ -798,9 +812,18 @@ final class Sparxstar3IAtlasDictionaryRestApi {
             return new \WP_Error( 'invalid_payload', 'events must be a JSON array.', array( 'status' => 400 ) );
         }
 
-        $user_id  = get_current_user_id();
-        $accepted = 0;
-        $failed   = 0;
+        $user_id    = get_current_user_id();
+        $accepted   = 0;
+        $failed     = 0;
+        $duplicates = 0;
+
+        // Idempotency ledger: keys are word_uuid|type|ts. Retried batches are skipped.
+        // TODO: Replace with Helios-identified persistent ledger when token introspection lands.
+        $seen_key = 'sparx_3iatlas_dict_sync_seen_' . $user_id;
+        $seen     = get_transient( $seen_key );
+        if ( ! is_array( $seen ) ) {
+            $seen = array();
+        }
 
         foreach ( $events as $event ) {
             if ( ! is_array( $event ) ) {
@@ -812,11 +835,19 @@ final class Sparxstar3IAtlasDictionaryRestApi {
             $word_id = sanitize_text_field( (string) ( $event['word_uuid'] ?? '' ) );
             $game    = sanitize_text_field( (string) ( $event['game'] ?? '' ) );
             $domain  = sanitize_text_field( (string) ( $event['domain'] ?? '' ) );
+            $ts      = sanitize_text_field( (string) ( $event['ts'] ?? '' ) );
 
             if ( '' === $type ) {
                 ++$failed;
                 continue;
             }
+
+            $dedupe_key = $word_id . '|' . $type . '|' . $ts;
+            if ( isset( $seen[ $dedupe_key ] ) ) {
+                ++$duplicates;
+                continue;
+            }
+            $seen[ $dedupe_key ] = 1;
 
             switch ( $type ) {
                 case 'aiwa_game_word_correct':
@@ -848,12 +879,25 @@ final class Sparxstar3IAtlasDictionaryRestApi {
             ++$accepted;
         }
 
+        // Cap the ledger so it cannot grow unbounded, then persist for a day to cover retries.
+        if ( count( $seen ) > 2000 ) {
+            $seen = array_slice( $seen, -2000, null, true );
+        }
+        set_transient( $seen_key, $seen, DAY_IN_SECONDS );
+
         return new \WP_REST_Response(
             array(
-                'xp_awarded'       => 0,
-                'gold_awarded'     => 0,
-                'events_processed' => $accepted,
-                'failed'           => $failed,
+                'success' => true,
+                'data'    => array(
+                    // Point totals are awarded by myCred listeners; this controller does not compute them.
+                    'xp_awarded'       => 0,
+                    'gold_awarded'     => 0,
+                    'events_processed' => $accepted,
+                ),
+                'meta'    => array(
+                    'failed'     => $failed,
+                    'duplicates' => $duplicates,
+                ),
             ),
             200
         );

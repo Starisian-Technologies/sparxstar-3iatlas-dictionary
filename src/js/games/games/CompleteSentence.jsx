@@ -17,7 +17,20 @@ import AccessoryBar from '../AccessoryBar.jsx';
  *   onComplete {Function} () => void
  */
 export default function CompleteSentence({ words, language, onResult, onComplete }) {
-    const deck = useMemo(() => shuffle(words.filter((w) => w.example?.sentence)), [words]);
+    // Require the headword to actually appear in the sentence — otherwise the blank
+    // substitution is a no-op and the answer is left visible, defeating the game.
+    const deck = useMemo(
+        () =>
+            shuffle(
+                words.filter(
+                    (w) =>
+                        w.example?.sentence &&
+                        w.headword &&
+                        new RegExp(escapeRegex(w.headword), 'i').test(w.example.sentence)
+                )
+            ),
+        [words]
+    );
 
     const [index, setIndex] = useState(0);
     const [input, setInput] = useState('');
