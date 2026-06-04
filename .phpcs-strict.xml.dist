@@ -1,0 +1,93 @@
+<?xml version="1.0"?>
+<ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         name="Starisian WordPress Plugin (Strict)"
+         xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/PHPCSStandards/PHP_CodeSniffer/master/phpcs.xsd">
+
+  <description>
+    Canonical coding standard for the SPARXSTAR 3iAtlas Dictionary: WordPress Coding
+    Standards + VIPWPCS (the stricter superset), plus Docs, I18n and PHP compatibility.
+    This is the FULL standard — new and modified code is expected to pass it with zero
+    errors and warnings. The repo-wide gate (phpcs.xml.dist) demotes legacy violations to
+    warnings as a transitional baseline; this file is the bar we tighten toward.
+  </description>
+
+  <!-- Scan the plugin source and bootstrap. -->
+  <file>src</file>
+  <file>sparxstar-3iatlas-dictionary.php</file>
+
+  <!-- Exclude generated, vendored, and non-plugin paths. -->
+  <exclude-pattern>vendor/*</exclude-pattern>
+  <exclude-pattern>node_modules/*</exclude-pattern>
+  <exclude-pattern>assets/*</exclude-pattern>
+  <exclude-pattern>tests/*</exclude-pattern>
+  <exclude-pattern>dest_test/*</exclude-pattern>
+  <exclude-pattern>*/index.php</exclude-pattern>
+
+  <arg name="basepath" value="."/>
+  <arg name="parallel" value="8"/>
+  <arg name="extensions" value="php"/>
+  <arg name="colors"/>
+  <arg value="sp"/>
+
+  <!-- WordPress Coding Standards + VIPWPCS (canonical). -->
+  <rule ref="WordPress-Extra">
+    <!-- This plugin uses space indentation (see .editorconfig), not WP tabs. -->
+    <exclude name="Generic.WhiteSpace.DisallowSpaceIndent"/>
+  </rule>
+  <rule ref="WordPress-Docs"/>
+  <rule ref="WordPress-VIP-Go"/>
+  <rule ref="Generic.Commenting.Todo"/>
+
+  <!--
+    The plugin is PSR-4 autoloaded (Starisian\Sparxstar\IAtlas\ => src/) with PascalCase
+    class files, so the WordPress class-file-name convention does not apply.
+  -->
+  <rule ref="WordPress.Files.FileName">
+    <exclude name="WordPress.Files.FileName.InvalidClassFileName"/>
+    <exclude name="WordPress.Files.FileName.NotHyphenatedLowercase"/>
+  </rule>
+
+  <!-- Short ternary (?:) is permitted on PHP 8.2+; it is an intentional project choice. -->
+  <rule ref="Universal.Operators.DisallowShortTernary">
+    <severity>0</severity>
+  </rule>
+
+  <!-- Enforce spaces, not tabs (4-space indent). -->
+  <arg name="tab-width" value="4"/>
+  <rule ref="Generic.WhiteSpace.ScopeIndent">
+    <properties>
+      <property name="indent" value="4"/>
+      <property name="tabIndent" value="false"/>
+    </properties>
+  </rule>
+  <rule ref="Generic.WhiteSpace.DisallowTabIndent"/>
+
+  <config name="minimum_wp_version" value="6.8"/>
+
+  <!-- Correct text domain (matches AGENTS.md). -->
+  <rule ref="WordPress.WP.I18n">
+    <properties>
+      <property name="text_domain" type="array">
+        <element value="sparxstar-3iatlas-dictionary"/>
+      </property>
+    </properties>
+  </rule>
+
+  <!-- Real global prefixes used by this plugin (functions, hooks, constants, namespace). -->
+  <rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+    <properties>
+      <property name="prefixes" type="array">
+        <element value="Starisian\Sparxstar\IAtlas"/>
+        <element value="sparxstar"/>
+        <element value="sparx"/>
+        <element value="aiwa"/>
+        <element value="starisian"/>
+      </property>
+    </properties>
+  </rule>
+
+  <!-- PHP 8.2+ compatibility. -->
+  <config name="testVersion" value="8.2-"/>
+  <rule ref="PHPCompatibility"/>
+
+</ruleset>
