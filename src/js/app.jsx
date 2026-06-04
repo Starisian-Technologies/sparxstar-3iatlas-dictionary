@@ -213,7 +213,7 @@ const GET_ALL_WORDS_INDEX = gql`
                             }
                         }
                         aiwaExampleSentences {
-                            sentenceExample
+                            __typename
                         }
                     }
                 }
@@ -1461,21 +1461,18 @@ const DesktopSidebar = ({
         {/* Primary navigation (v3 §3.1) */}
         <nav className="flex flex-col gap-1 mb-4" aria-label="Dictionary navigation">
             {DESKTOP_NAV_ITEMS.map(({ id, label, Icon }) => {
-                // Categories is a nav alias for the Explore view (v3 §3.1), so it shares
-                // Explore's active state.
-                const isActive =
-                    activeNav === id || (id === 'explore' && activeNav === 'categories');
+                // Categories keeps its own active state (v3 §3.1); the center column renders
+                // ExploreView for both 'explore' and 'categories'.
+                const isActive = activeNav === id;
                 return (
                     <button
                         key={id}
                         type="button"
-                        onClick={() => onNavChange(id === 'categories' ? 'explore' : id)}
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                        style={
-                            isActive
-                                ? { background: '#FCE4F3', color: '#E91E8C' }
-                                : { color: '#374151' }
-                        }
+                        onClick={() => onNavChange(id)}
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            isActive ? '' : 'text-gray-700 dark:text-gray-300'
+                        }`}
+                        style={isActive ? { background: '#FCE4F3', color: '#E91E8C' } : undefined}
                         aria-current={isActive ? 'page' : undefined}
                     >
                         <Icon size={18} aria-hidden="true" />

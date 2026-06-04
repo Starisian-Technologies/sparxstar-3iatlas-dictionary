@@ -817,7 +817,9 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         $failed     = 0;
         $duplicates = 0;
 
-        // Idempotency ledger: keys are word_uuid|type|ts. Retried batches are skipped.
+        // Idempotency ledger: keys are word_uuid|game|domain|type|ts. Retried batches are
+        // skipped. Deduplication only applies when a timestamp is present — without one the
+        // key is not specific enough to distinguish legitimate repeat events of the same type.
         // TODO: Replace with Helios-identified persistent ledger when token introspection lands.
         $seen_key = 'sparx_3iatlas_dict_sync_seen_' . $user_id;
         $seen     = get_transient( $seen_key );
@@ -842,12 +844,11 @@ final class Sparxstar3IAtlasDictionaryRestApi {
                 continue;
             }
 
-            $dedupe_key = $word_id . '|' . $type . '|' . $ts;
-            if ( isset( $seen[ $dedupe_key ] ) ) {
+            $dedupe_key = $word_id . '|' . $game . '|' . $domain . '|' . $type . '|' . $ts;
+            if ( '' !== $ts && isset( $seen[ $dedupe_key ] ) ) {
                 ++$duplicates;
                 continue;
             }
-            $seen[ $dedupe_key ] = 1;
 
             switch ( $type ) {
                 case 'aiwa_game_word_correct':
@@ -876,6 +877,10 @@ final class Sparxstar3IAtlasDictionaryRestApi {
                     continue 2;
             }
 
+            // Record only valid, processed events that carry a timestamp.
+            if ( '' !== $ts ) {
+                $seen[ $dedupe_key ] = 1;
+            }
             ++$accepted;
         }
 
