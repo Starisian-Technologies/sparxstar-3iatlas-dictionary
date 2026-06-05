@@ -42,7 +42,7 @@ Every other 3iAtlas tool (WordPad, RLC, Sound to Symbol) is a consumer of this p
 - Shared IndexedDB helper `idbUtils.js` (openDB, getRecord, putRecord, getAllRecords, deleteRecord)
 - Spell API hardened with `$wpdb` guard and normalized response envelope (PR #61)
 - Boot blockers fixed (PR #62): Autoloader constants corrected, form CSS enqueue corrected
-- Backend hardening (PR #64): `/game-set` ETag + 304 support, `/progress/sync` idempotent via per-user transient ledger, `Cache-Control: public, max-age=3600` on all GET endpoints
+- Backend hardening (PR #64): `/game-set` ETag + 304 support, `/progress/sync` idempotent via per-user transient ledger, `Cache-Control: public` on all GET endpoints (most use `max-age=3600`; taxonomy endpoints `/languages` use `max-age=604800`)
 - WPCS + VIPWPCS toolchain with transitional PHPCS baseline and PHPStan level 5 (PR #65)
 
 ---
@@ -65,7 +65,7 @@ Progress sync to the server is intentionally deferred. The outbox is written to 
 Do not implement `syncNow()` as a simple REST POST. Before implementing OQ-G1, a spec decision is needed on two-mode behaviour: standalone (write to WordPress user meta) vs. full-system (route through governed pipeline). Implementing blind will require a refactor.
 
 **`// TODO: Replace with Helios token introspection`**
-There are 9 of these across `src/api/`. They are **integration stubs, not technical debt**. They correctly mark where Helios authentication attaches when the full SPARXSTAR stack is present. In standalone mode, WordPress user checks are correct degraded behaviour. Do not remove them or replace them with a different auth model without a platform decision.
+These appear across `src/api/` (RestApi, SpellChecker, RateLimitTrait). They are **integration stubs, not technical debt**. They correctly mark where Helios authentication attaches when the full SPARXSTAR stack is present. In standalone mode, WordPress user checks are correct degraded behaviour. Do not remove them or replace them with a different auth model without a platform decision.
 
 ---
 
@@ -73,7 +73,7 @@ There are 9 of these across `src/api/`. They are **integration stubs, not techni
 
 - **Never modify the `aiwa-cpt-dictionary` CPT slug.** Live data depends on it.
 - **Never add community voting, correction CPTs, or AJAX voting endpoints.** Removed by design. Games replace them.
-- **Never store dictionary word data on the client device.** All lookups are server-side. Devices send a query; server returns only the result. (Game set caching in IndexedDB is permitted — that is gameplay data, not the dictionary corpus.)
+- **Never store the dictionary corpus on the client device inside this React app.** All lookups are server-side. The app sends a query; the server returns only the result. (Game set caching in IndexedDB is permitted — that is gameplay data, not the corpus. Consumer tools such as RLC may cache `/wordlist` snapshots for offline use — that is a consumer concern, not this repo's.)
 - **Never hardcode language names in the React app.** Language terms come from `GET /languages`.
 - **Never add a custom database table.** Use WordPress CPTs and post meta only.
 - **Never use `aiwa_` or `sparxstar_` prefixes for game mechanics data.** Those prefixes are governed cultural data markers. Game scores, session state, and learned-word records must use `game_` prefix or `_spx_` for session-scoped data. This keeps the governed data perimeter clean for future DVE integration.
@@ -82,7 +82,7 @@ There are 9 of these across `src/api/`. They are **integration stubs, not techni
 - **License header on all PHP files: `Proprietary`, not `MIT`.**
 - **Text domain: `sparxstar-3iatlas-dictionary`.**
 - **All PHP files must declare `declare(strict_types=1)`.**
-- **Namespace: `Starisian\Sparxstar\Atlas\Dictionary`.**
+- **Namespace root: `Starisian\Sparxstar\IAtlas`** with subpackages `\api`, `\core`, `\frontend`, `\includes`. Example: `Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryRestApi`.
 - **`exit(1)` not `wp_die()` in loader/bootstrap contexts.**
 - **No `SELECT *` — always name columns.**
 - **No `error_log()` in production paths.** Wrap in `WP_DEBUG` check.
@@ -124,8 +124,8 @@ There are 9 of these across `src/api/`. They are **integration stubs, not techni
 - `ORDER BY RAND()` is acceptable temporarily; replace before large production datasets
 
 **Caching headers:**
-- All GET responses: `Cache-Control: public, max-age=3600`
-- `/wordlist` and `/game-set`: ETag support for conditional requests
+- All GET responses: `Cache-Control: public` with a TTL — most endpoints use `max-age=3600`; `/languages` uses `max-age=604800` (taxonomy terms change rarely)
+- `/wordlist` and `/game-set`: ETag support for conditional requests (304 responses)
 - `/word-of-day`: include `date` field (ISO 8601) so clients detect staleness
 
 ---
@@ -186,8 +186,8 @@ do_action('aiwa_game_return_visit',       $user_id);                          //
 
 **Key ACF fields:**
 - `aiwa_extract` — definition text
-- `aiwa_translation_en` / `aiwa_translation_fr`
-- `aiwa_ipa` — IPA pronunciation
+- `aiwa_translation_english` / `aiwa_translation_french`
+- `aiwa_ipa_pronunciation` — IPA pronunciation
 - `aiwa_phonetic` — phonetic pronunciation
 - `aiwa_audio_file` — audio URL
 - `aiwa_word_photo` — image URL
@@ -229,7 +229,7 @@ The dependency direction is: DVE → export → 3iAtlas dictionary → RLC. The 
 - All user input sanitized with `sanitize_text_field()` or equivalent
 - All output escaped with `esc_html()`, `esc_attr()`, `esc_url()` as appropriate
 - Rate limiting via WordPress transients — never external infrastructure
-- PHP 8.2 minimum, WordPress 6.9 minimum
+- PHP 8.2 minimum, WordPress 6.8 minimum (plugin header `Requires at least: 6.8`)
 
 ### PHP Toolchain
 

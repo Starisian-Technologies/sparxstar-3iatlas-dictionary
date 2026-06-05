@@ -25,7 +25,7 @@ This is the authoritative lexical data store and REST API service for the entire
 - **License header on all PHP files must read `Proprietary`, not `MIT`.**
 - **Text domain on all PHP files: `sparxstar-3iatlas-dictionary`.**
 - **All PHP files must declare `strict_types=1`.**
-- **Namespace: `Starisian\Sparxstar\Atlas\Dictionary`**
+- **Namespace root: `Starisian\Sparxstar\IAtlas`** with subpackages `\api`, `\core`, `\frontend`, `\includes`
 
 ---
 
@@ -45,9 +45,9 @@ This is the authoritative lexical data store and REST API service for the entire
 
 Key ACF fields on `aiwa-cpt-dictionary`:
 - `aiwa_extract` — definition/extract text
-- `aiwa_translation_en` — English translation
-- `aiwa_translation_fr` — French translation
-- `aiwa_ipa` — IPA pronunciation
+- `aiwa_translation_english` — English translation
+- `aiwa_translation_french` — French translation
+- `aiwa_ipa_pronunciation` — IPA pronunciation
 - `aiwa_phonetic` — phonetic pronunciation
 - `aiwa_audio_file` — audio recording URL
 - `aiwa_word_photo` — image URL
@@ -137,7 +137,7 @@ do_action('aiwa_game_return_visit',      $user_id);                            /
 - All user input sanitized with `sanitize_text_field()` or equivalent before use
 - All output escaped with `esc_html()`, `esc_attr()`, `esc_url()` as appropriate
 - Rate limiting via WordPress transients — never external infrastructure
-- PHP 8.2 minimum, WordPress 6.9 minimum
+- PHP 8.2 minimum, WordPress 6.8 minimum (plugin header `Requires at least: 6.8`; 6.9 is the platform-wide target standard)
 - Text domain: `sparxstar-3iatlas-dictionary`. Plugin global prefixes: `sparxstar`/`sparx`/
   `aiwa`/`starisian` and the namespace `Starisian\Sparxstar\IAtlas`.
 
@@ -162,7 +162,8 @@ do_action('aiwa_game_return_visit',      $user_id);                            /
 ```
 src/
   api/
-    Sparxstar3IAtlasDictionaryRestApi.php   ← Phase 1: all 9 endpoints
+    Sparxstar3IAtlasDictionaryRestApi.php   ← Phase 1: 8 endpoints (lookup, search, wordlist, languages, domains, game-set, word-of-day, progress/sync)
+    Sparxstar3IAtlasDictionarySpellChecker.php ← Phase 1: POST /spell endpoint
   gamification/
     Sparxstar3IAtlasDictionaryProgress.php  ← Phase 1: myCred hooks for /progress/sync
   includes/
@@ -204,7 +205,7 @@ AGENTS.md                                   ← this file
 - `aiwa_sentence_ipa` SCF discrepancy documented — `src/includes/Sparxstar3IAtlasPostTypes.php` is authoritative, do not add to SCF JSON
 
 ### Phase 1 — REST API ✅ Done
-Endpoints live under `sparxstar/v1/dictionary`:
+Endpoints live under `sparxstar/v1/dictionary`. 8 endpoints are registered in `Sparxstar3IAtlasDictionaryRestApi.php`; POST /spell is registered in `Sparxstar3IAtlasDictionarySpellChecker.php`:
 - GET /lookup
 - GET /search
 - GET /wordlist (with ETag)
@@ -213,7 +214,7 @@ Endpoints live under `sparxstar/v1/dictionary`:
 - GET /game-set
 - GET /word-of-day
 - POST /progress/sync (temporary non-Helios guard: Bearer token presence + logged-in user + WordPress capability check; full Helios token introspection still TODO)
-- POST /spell (public, rate-limited spell-check endpoint)
+- POST /spell — in `Sparxstar3IAtlasDictionarySpellChecker.php` (public, rate-limited)
 
 Note: Do not describe `/progress/sync` as complete Helios auth until `permission_helios()` validates Helios tokens via the real introspection/verification path instead of the current stub guard.
 
@@ -342,7 +343,7 @@ Both boot blockers below were resolved in PR #62. Recorded for historical contex
    Now correctly uses `SPARX_3IATLAS_NAMESPACE` and `SPARX_3IATLAS_PATH`.
 
 2. **Frontend form CSS enqueue mismatch** (`src/frontend/Sparxstar3IAtlasDictionaryForm.php`) — **FIXED**
-   The `wp_enqueue_style()` call for the non-existent stylesheet has been removed.
+   The enqueue was corrected to reference the existing built stylesheet (`sparxstar-3iatlas-dictionary-style.min.css`). The `wp_enqueue_style()` call remains — it was pointing at the wrong filename, not absent.
 
 `syncNow()` no-op and Helios auth stubs remain as **intentional gaps** — do not alter without an approved spec.
 
@@ -421,8 +422,8 @@ Both boot blockers below were resolved in PR #62 (merged May 2026). They are rec
 Now correctly uses `SPARX_3IATLAS_NAMESPACE` and `SPARX_3IATLAS_PATH`.
 
 **2. Missing form CSS asset — FIXED**
-`src/frontend/Sparxstar3IAtlasDictionaryForm.php` previously enqueued a non-existent stylesheet.
-The `wp_enqueue_style()` and matching `wp_register_style()` calls have been removed.
+`src/frontend/Sparxstar3IAtlasDictionaryForm.php` previously enqueued a non-existent stylesheet filename.
+The enqueue was corrected to reference `sparxstar-3iatlas-dictionary-style.min.css` (the existing built asset). The `wp_enqueue_style()` call is still present and correct — do not remove it.
 
 ---
 

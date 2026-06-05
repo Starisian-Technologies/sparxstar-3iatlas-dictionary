@@ -152,6 +152,6 @@ Applied in order — first matching condition governs:
 
 ## WordPress Minimum Version
 
-WordPress 6.9+ across all repos that use WordPress. Single-site and multisite compatible. Network activation supported but not required. Standard applies to every repo including README, composer.json, bootstrap files, and AGENTS.md/Copilot instructions files.
+WordPress 6.8+ minimum across all repos that use WordPress; 6.9 is the platform-wide target standard as repos are updated. Individual repo plugin headers are authoritative for their own requirement — check `Requires at least:` in each plugin header before documenting a specific version. Single-site and multisite compatible. Network activation supported but not required.
 
 Note: Sky v2.0 (draft) moves Sky out of WordPress entirely — it becomes a standalone React package. Sky v1.0 (implemented) is a WordPress plugin. Flag code accordingly based on which version the repo targets.
