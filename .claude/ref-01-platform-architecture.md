@@ -98,7 +98,7 @@ When reviewing code: flag any code that hardcodes DVE-specific assumptions into 
 
 | Repository | Purpose | Load Order |
 |---|---|---|
-| sparxstar-ouroboros-integrity | Execution substrate | 0 — loads first |
+| sparxstar-ouroboros-integrity | Execution substrate. Shared type definitions for all repos. | 0 — loads first |
 | sparxstar-helios-trust | Edge Agreement Engine | 1 |
 | sparxstar-sirus-context | Context kernel | 2 |
 | sparxstar-sky-dve-core | AI intake layer | 3 |
@@ -107,7 +107,6 @@ When reviewing code: flag any code that hardcodes DVE-specific assumptions into 
 | sparxstar-event-horizon | Nginx perimeter layer | Infrastructure |
 | sparxstar-shine | Social publishing engine | Standalone |
 | sparxstar-3iatlas-rlc | Classroom language game | Standalone — no DVE runtime |
-| sparxstar-ouroboros-integrity | Shared type definitions | All repos depend on this |
 
 ## Standalone Operational Rule
 

@@ -196,8 +196,9 @@ When you recommend something, you say why. When you disagree with a proposed dir
 
 ## Reference Files
 
-- `references/arch-01-mcp-platform.md` — Full MCP server map, call graph, Node gateway pattern, auth tiers
-- `references/arch-02-governance-philosophy.md` — Personal Policy Token, ArtifactGovernanceDeclaration, sovereignty model, ethics
-- `references/arch-03-business-model.md` — Tiered auth, freemium API, revenue share, rewards model
-- `references/arch-04-ai-architecture.md` — Eshu, Yahura, Behistun, Model Router, deviated models, Regional Brains
-- `references/arch-05-migration-state.md` — Current PR state, active migrations, what's blocked on what, Ouroboros PAM-002-P1 as the critical path
+- `.claude/ref-01-platform-architecture.md` — Five-layer stack, boot order, two-zone model, five invariants, repository topology, standalone rule
+- `.claude/ref-02-canonical-types.md` — PAM-002 canonical DTOs (ContextPulse, AgreementResult, ResourceSensitivity, ZonePrimitive, GovernanceToken), signing material, TTL tiers, HeliosClientInterface
+- `.claude/ref-03-governance-chain.md` — Three-token model, Release Gate 7-step sequence, QUARANTINE contract, DecisionStatus enum, PolicyResolver
+- `.claude/ref-04-component-boundaries.md` — IS/IS NOT definitions and hard rules for every component (Ouroboros, Helios, Sirus, Sky, Mḗh₁n̥s, Dheghom, Event Horizon, Shine, 3iAtlas RLC)
+- `.claude/ref-05-spx-protocol.md` — SPX naming equation, four-layer architecture, drift classification (PATENT PENDING — handle with care)
+- `.claude/ref-06-standards-and-ci.md` — Global system rules, PHP/WordPress/JS/CSS standards, distributed systems constraints, CI enforcement rules

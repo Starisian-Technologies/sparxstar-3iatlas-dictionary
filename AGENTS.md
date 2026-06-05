@@ -137,7 +137,7 @@ do_action('aiwa_game_return_visit',      $user_id);                            /
 - All user input sanitized with `sanitize_text_field()` or equivalent before use
 - All output escaped with `esc_html()`, `esc_attr()`, `esc_url()` as appropriate
 - Rate limiting via WordPress transients — never external infrastructure
-- PHP 8.2 minimum
+- PHP 8.2 minimum, WordPress 6.9 minimum
 - Text domain: `sparxstar-3iatlas-dictionary`. Plugin global prefixes: `sparxstar`/`sparx`/
   `aiwa`/`starisian` and the namespace `Starisian\Sparxstar\IAtlas`.
 

@@ -83,7 +83,7 @@ These are three different questions. They must be answered in this order, by the
 - Audit log MUST NOT be deletable by any actor
 - ContextPulse MUST NOT be stored in localStorage or any JavaScript-accessible location
 - Signing keys MUST NOT be stored in WordPress options or the database
-- AgreementResult must resolve to exactly one of: ALLOW_EDGE | ALLOW_ORIGIN | STEP_UP | DENY. No null. No fallback. No default pass.
+- AgreementResult must resolve to exactly one of: ALLOW_EDGE | ALLOW_ORIGIN | STEP_UP | DENY | PROVISIONAL. No null. No fallback. No default pass.
 
 **Dual Execution Consistency:**
 AgreementEvaluator exists in TypeScript (edge) AND PHP (origin). Both must pass shared-test-vectors.json (owned by Ouroboros). If you change evaluation logic, change BOTH implementations simultaneously. A change to one without the other breaks the platform.
