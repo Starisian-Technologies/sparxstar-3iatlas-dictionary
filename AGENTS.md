@@ -25,7 +25,7 @@ This is the authoritative lexical data store and REST API service for the entire
 - **License header on all PHP files must read `Proprietary`, not `MIT`.**
 - **Text domain on all PHP files: `sparxstar-3iatlas-dictionary`.**
 - **All PHP files must declare `strict_types=1`.**
-- **Namespace: `Starisian\Sparxstar\Atlas\Dictionary`**
+- **Namespace root: `Starisian\Sparxstar\IAtlas`** with subpackages `\api`, `\core`, `\frontend`, `\includes`
 
 ---
 
@@ -33,7 +33,7 @@ This is the authoritative lexical data store and REST API service for the entire
 
 - `src/includes/Sparxstar3IAtlasPostTypes.php` — CPT and taxonomy registrations
 - `src/frontend/Sparxstar3IAtlasDictionaryForm.php` — community word submission form
-- `src/js/app.jsx` — React frontend (needs full rebuild in Phase 2 — do not patch, wait for spec)
+- `src/js/app.jsx` — React frontend (Phase 2 complete — full rebuild done; Phase 2 UI Fix also done in PR #64)
 - `src/core/Sparxstar3IAtlasDictionary.php` — main plugin class
 - `tailwind.config.js` — Tailwind config (needs AIWA brand colors in Phase 2)
 - GraphQL queries via WPGraphQL — existing, working
@@ -45,9 +45,9 @@ This is the authoritative lexical data store and REST API service for the entire
 
 Key ACF fields on `aiwa-cpt-dictionary`:
 - `aiwa_extract` — definition/extract text
-- `aiwa_translation_en` — English translation
-- `aiwa_translation_fr` — French translation
-- `aiwa_ipa` — IPA pronunciation
+- `aiwa_translation_english` — English translation
+- `aiwa_translation_french` — French translation
+- `aiwa_ipa_pronunciation` — IPA pronunciation
 - `aiwa_phonetic` — phonetic pronunciation
 - `aiwa_audio_file` — audio recording URL
 - `aiwa_word_photo` — image URL
@@ -137,7 +137,7 @@ do_action('aiwa_game_return_visit',      $user_id);                            /
 - All user input sanitized with `sanitize_text_field()` or equivalent before use
 - All output escaped with `esc_html()`, `esc_attr()`, `esc_url()` as appropriate
 - Rate limiting via WordPress transients — never external infrastructure
-- PHP 8.2 minimum
+- PHP 8.2 minimum, WordPress 6.8 minimum (plugin header `Requires at least: 6.8`; 6.9 is the platform-wide target standard)
 - Text domain: `sparxstar-3iatlas-dictionary`. Plugin global prefixes: `sparxstar`/`sparx`/
   `aiwa`/`starisian` and the namespace `Starisian\Sparxstar\IAtlas`.
 
@@ -162,17 +162,35 @@ do_action('aiwa_game_return_visit',      $user_id);                            /
 ```
 src/
   api/
-    Sparxstar3IAtlasDictionaryRestApi.php   ← Phase 1: implemented
+    Sparxstar3IAtlasDictionaryRestApi.php   ← Phase 1: 8 endpoints (lookup, search, wordlist, languages, domains, game-set, word-of-day, progress/sync)
+    Sparxstar3IAtlasDictionarySpellChecker.php ← Phase 1: POST /spell endpoint
   gamification/
-    Sparxstar3IAtlasDictionaryProgress.php  ← Phase 1: implemented
+    Sparxstar3IAtlasDictionaryProgress.php  ← Phase 1: myCred hooks for /progress/sync
   includes/
     Sparxstar3IAtlasPostTypes.php           ← Phase 0 bug fixes completed
+    Autoloader.php                          ← boot blocker fixed PR #62
   frontend/
-    Sparxstar3IAtlasDictionaryForm.php      ← Phase 0 bug fix completed
+    Sparxstar3IAtlasDictionaryForm.php      ← Phase 0 bug fix + PR #62 CSS fix
   core/
     Sparxstar3IAtlasDictionary.php          ← register new classes here
   js/
-    app.jsx                                 ← Phase 2: full rebuild
+    app.jsx                                 ← Phase 2 full rebuild done; Phase 2 UI Fix done (PR #64)
+    hooks/
+      idbUtils.js                           ← Phase 4: shared IndexedDB helper
+      useGameSet.js                         ← Phase 4: /game-set fetch + IndexedDB TTL cache
+      useGameSession.js                     ← Phase 4: session state + sessionRef pattern
+      useProgressSync.js                    ← Phase 4: IndexedDB outbox (syncNow no-op — OQ-G1)
+    games/
+      GameShell.jsx                         ← Phase 4: game orchestrator + phase state machine
+      AccessoryBar.jsx                      ← Phase 4: Mandinka character input bar
+      SessionComplete.jsx                   ← Phase 4: post-session summary
+      games/
+        MeaningMatch.jsx
+        LetterReveal.jsx
+        ArrangeWord.jsx
+        DomainFlash.jsx
+        CompleteSentence.jsx
+        ListenWrite.jsx
 tailwind.config.js                          ← Phase 2: AIWA brand colors
 AGENTS.md                                   ← this file
 ```
@@ -187,7 +205,7 @@ AGENTS.md                                   ← this file
 - `aiwa_sentence_ipa` SCF discrepancy documented — `src/includes/Sparxstar3IAtlasPostTypes.php` is authoritative, do not add to SCF JSON
 
 ### Phase 1 — REST API ✅ Done
-Endpoints live under `sparxstar/v1/dictionary`:
+Endpoints live under `sparxstar/v1/dictionary`. 8 endpoints are registered in `Sparxstar3IAtlasDictionaryRestApi.php`; POST /spell is registered in `Sparxstar3IAtlasDictionarySpellChecker.php`:
 - GET /lookup
 - GET /search
 - GET /wordlist (with ETag)
@@ -196,7 +214,7 @@ Endpoints live under `sparxstar/v1/dictionary`:
 - GET /game-set
 - GET /word-of-day
 - POST /progress/sync (temporary non-Helios guard: Bearer token presence + logged-in user + WordPress capability check; full Helios token introspection still TODO)
-- POST /spell (public, rate-limited spell-check endpoint)
+- POST /spell — in `Sparxstar3IAtlasDictionarySpellChecker.php` (public, rate-limited)
 
 Note: Do not describe `/progress/sync` as complete Helios auth until `permission_helios()` validates Helios tokens via the real introspection/verification path instead of the current stub guard.
 
@@ -317,19 +335,17 @@ src/js/games/games/ListenWrite.jsx — Game 4.1: auto-play audio, typed response
 
 ---
 
-### Repairs Needed (Boot Blockers)
+### Boot Blockers — FIXED (PR #62)
 
-The sprint boot sequence must verify these two items before any new feature work:
+Both boot blockers below were resolved in PR #62. Recorded for historical context only.
 
-1. **Autoloader constants mismatch** (`src/includes/Autoloader.php`)  
-   The fallback autoloader must read plugin boot constants `SPARX_3IATLAS_NAMESPACE` and `SPARX_3IATLAS_PATH` (not legacy `STARISIAN_*` names), otherwise class loading can fail in non-Composer boots.
+1. **Autoloader constants mismatch** (`src/includes/Autoloader.php`) — **FIXED**
+   Now correctly uses `SPARX_3IATLAS_NAMESPACE` and `SPARX_3IATLAS_PATH`.
 
-2. **Frontend form CSS enqueue mismatch** (`src/frontend/Sparxstar3IAtlasDictionaryForm.php`)  
-   Ensure the form enqueues an existing built stylesheet so the frontend dictionary form is styled on shortcode pages.
+2. **Frontend form CSS enqueue mismatch** (`src/frontend/Sparxstar3IAtlasDictionaryForm.php`) — **FIXED**
+   The enqueue was corrected to reference the existing built stylesheet (`sparxstar-3iatlas-dictionary-style.min.css`). The `wp_enqueue_style()` call remains — it was pointing at the wrong filename, not absent.
 
-Rule for triage in this sprint:
-- These two items are **bugs** and should be fixed immediately.
-- `syncNow()` no-op and Helios auth stubs are **intentional gaps** and should not be altered without an approved spec.
+`syncNow()` no-op and Helios auth stubs remain as **intentional gaps** — do not alter without an approved spec.
 
 ---
 
@@ -377,6 +393,37 @@ Phase 3 covers cross-tool REST integration verification. The authoritative scope
 - WordPad → `/lookup` and `/spell` endpoints
 - S2S → `/wordlist` with `lang_source`
 - RLC → offline `/wordlist` with `lang_source` filter and fallback
+
+### Phase 4 — Games / Play Tab ✅ Done (PR #59, merged May 2026)
+
+Six game types implemented: MeaningMatch, LetterReveal, ArrangeWord, DomainFlash, CompleteSentence, ListenWrite.
+
+Key files added:
+- `src/js/games/GameShell.jsx` — phase state machine, game orchestrator
+- `src/js/games/AccessoryBar.jsx` — special character bar (ŋ ɓ ɗ ñ ɲ ʔ), always present for typed input
+- `src/js/games/SessionComplete.jsx` — end-of-session summary
+- `src/js/games/games/*.jsx` — individual game components
+- `src/js/hooks/useGameSet.js` — IndexedDB-backed game set cache
+- `src/js/hooks/useGameSession.js` — session tracking with sessionRef pattern
+- `src/js/hooks/useProgressSync.js` — IndexedDB outbox (syncNow is intentional no-op — OQ-G1)
+
+**Known intentional gap:** `useProgressSync.syncNow()` is a no-op pending OQ-G1 resolution. Do not implement without a two-mode spec decision (standalone: WordPress user meta; full-system: governed pipeline).
+
+**sessionRef pattern:** `recordResult` and `completeSession` in `useGameSession.js` use `sessionRef.current` to avoid stale React closure bugs. Do not remove this pattern.
+
+---
+
+## Repairs Fixed (PR #62)
+
+Both boot blockers below were resolved in PR #62 (merged May 2026). They are recorded here for historical context only — do not re-introduce either issue.
+
+**1. Autoloader constant mismatch — FIXED**
+`src/includes/Autoloader.php` previously used legacy `STARISIAN_NAMESPACE` / `STARISIAN_PATH`.
+Now correctly uses `SPARX_3IATLAS_NAMESPACE` and `SPARX_3IATLAS_PATH`.
+
+**2. Missing form CSS asset — FIXED**
+`src/frontend/Sparxstar3IAtlasDictionaryForm.php` previously enqueued a non-existent stylesheet filename.
+The enqueue was corrected to reference `sparxstar-3iatlas-dictionary-style.min.css` (the existing built asset). The `wp_enqueue_style()` call is still present and correct — do not remove it.
 
 ---
 
