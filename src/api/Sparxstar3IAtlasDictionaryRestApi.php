@@ -7,9 +7,13 @@ declare(strict_types=1);
  *
  * @package Starisian\Sparxstar\IAtlas\api
  * @license Starisian Technologies Proprietary License (STPL)
+ * @copyright Copyright (c) 2024 Starisian Technologies. All rights reserved.
  */
 
 namespace Starisian\Sparxstar\IAtlas\api;
+
+use Starisian\Sparxstar\IAtlas\api\auth\DictionaryAuthResolver;
+use Starisian\Sparxstar\IAtlas\api\auth\AuthContext;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit( 1 );
@@ -29,33 +33,191 @@ final class Sparxstar3IAtlasDictionaryRestApi {
     }
 
     public function register_rest_routes(): void {
-        $routes = array(
+        // Public endpoint — mints ephemeral page tokens.
+        register_rest_route(
+            self::REST_NAMESPACE,
+            '/page-token',
+            array(
+                'methods'             => 'GET',
+                'callback'            => array( $this, 'handle_page_token' ),
+                'permission_callback' => '__return_true',
+            )
+        );
+
+        // Browse-or-consumer endpoints — accept ephemeral token OR API key.
+        $browse_routes = array(
             array( 'GET', '/lookup', 'handle_lookup' ),
             array( 'GET', '/search', 'handle_search' ),
-            array( 'GET', '/wordlist', 'handle_wordlist' ),
             array( 'GET', '/languages', 'handle_languages' ),
             array( 'GET', '/domains', 'handle_domains' ),
             array( 'GET', '/game-set', 'handle_game_set' ),
             array( 'GET', '/word-of-day', 'handle_word_of_day' ),
-            array( 'POST', '/progress/sync', 'handle_progress_sync', 'permission_helios' ),
+            array( 'POST', '/spell', 'handle_spell' ),
         );
 
-        foreach ( $routes as $route ) {
-            $permission = isset( $route[3] ) ? array( $this, $route[3] ) : array( $this, 'permission_open' );
+        foreach ( $browse_routes as $route ) {
             register_rest_route(
                 self::REST_NAMESPACE,
                 $route[1],
                 array(
                     'methods'             => $route[0],
                     'callback'            => array( $this, $route[2] ),
-                    'permission_callback' => $permission,
+                    'permission_callback' => array( $this, 'permission_browse_or_consumer' ),
                 )
             );
         }
+
+        // Consumer-only endpoint — requires API key; ephemeral tokens are rejected with 403.
+        register_rest_route(
+            self::REST_NAMESPACE,
+            '/wordlist',
+            array(
+                'methods'             => 'GET',
+                'callback'            => array( $this, 'handle_wordlist' ),
+                'permission_callback' => array( $this, 'permission_consumer_only' ),
+            )
+        );
+
+        /**
+         * @deprecated June 2026 — retired per 3IATLAS-IDENTITY-AND-GAME-SERVICES-DECISION-v1.0 §6.2.
+         * Progress sync moves to the SPARXSTAR Game Service (RLC engine). No client may be
+         * built against this endpoint. Route removal is scheduled after the Game Service
+         * intake is live. Do not extend, do not document publicly, do not remove yet.
+         */
+        register_rest_route(
+            self::REST_NAMESPACE,
+            '/progress/sync',
+            array(
+                'methods'             => 'POST',
+                'callback'            => array( $this, 'handle_progress_sync' ),
+                'permission_callback' => array( $this, 'permission_helios' ),
+            )
+        );
+    }
+
+    /**
+     * Permission callback: ephemeral token OR API key required.
+     * Returns true on success, WP_Error (401/403/429) on failure.
+     *
+     * @param \WP_REST_Request $request The incoming request.
+     * @return true|\WP_Error
+     */
+    public function permission_browse_or_consumer( \WP_REST_Request $request ): bool|\WP_Error {
+        $resolver = new DictionaryAuthResolver();
+        $result   = $resolver->resolve( $request );
+
+        if ( is_wp_error( $result ) ) {
+            return $result;
+        }
+
+        // Attach quota remaining so handlers can emit X-RateLimit-Remaining.
+        $request->set_param( '_auth_context', $result );
+        return true;
+    }
+
+    /**
+     * Permission callback: API key ONLY.
+     * Returns 403 if an ephemeral token is presented, 401 if nothing.
+     *
+     * @param \WP_REST_Request $request The incoming request.
+     * @return true|\WP_Error
+     */
+    public function permission_consumer_only( \WP_REST_Request $request ): bool|\WP_Error {
+        $resolver = new DictionaryAuthResolver();
+        $result   = $resolver->resolve( $request );
+
+        if ( is_wp_error( $result ) ) {
+            return $result;
+        }
+
+        if ( 'ephemeral' === $result->credential_type ) {
+            return new \WP_Error(
+                'forbidden',
+                __( 'This endpoint requires an API key. Ephemeral page tokens are not accepted here.', 'sparxstar-3iatlas-dictionary' ),
+                array( 'status' => 403 )
+            );
+        }
+
+        $request->set_param( '_auth_context', $result );
+        return true;
     }
 
     public function permission_open(): bool {
         return true;
+    }
+
+    /**
+     * Mint and return a new ephemeral page token.
+     *
+     * Public endpoint with same-origin referer check and per-IP rate limiting.
+     *
+     * @param \WP_REST_Request $request The incoming request.
+     * @return \WP_REST_Response|\WP_Error
+     */
+    public function handle_page_token( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
+        // Same-origin referer check.
+        $referer = trim( (string) $request->get_header( 'Referer' ) );
+        if ( '' !== $referer ) {
+            $referer_host  = (string) parse_url( $referer, PHP_URL_HOST );
+            $site_host     = (string) parse_url( site_url(), PHP_URL_HOST );
+            if ( '' !== $referer_host && $referer_host !== $site_host ) {
+                return new \WP_Error(
+                    'forbidden',
+                    __( 'Cross-origin page token requests are not allowed.', 'sparxstar-3iatlas-dictionary' ),
+                    array( 'status' => 403 )
+                );
+            }
+        }
+
+        // Per-IP rate limit.
+        if ( ! $this->check_rate_limit() ) {
+            return $this->rate_limit_error();
+        }
+
+        if ( ! defined( 'SPARXSTAR_DICT_PAGE_SECRET' ) ) {
+            return new \WP_Error(
+                'configuration_error',
+                __( 'SPARXSTAR_DICT_PAGE_SECRET is not defined. Please add it to wp-config.php.', 'sparxstar-3iatlas-dictionary' ),
+                array( 'status' => 500 )
+            );
+        }
+
+        $token     = $this->mint_ephemeral_token();
+        $expires   = time() + 3600;
+
+        return new \WP_REST_Response(
+            array(
+                'success' => true,
+                'data'    => array(
+                    'token'      => $token,
+                    'expires_at' => $expires,
+                ),
+                'meta'    => array(),
+            ),
+            200
+        );
+    }
+
+    /**
+     * Mint an HMAC-SHA256 ephemeral page token.
+     *
+     * Format: base64url(JSON {iat,exp,scope}) . '.' . hex(HMAC-SHA256)
+     *
+     * @return string The signed token string.
+     */
+    private function mint_ephemeral_token(): string {
+        $now     = time();
+        $payload = array(
+            'iat'   => $now,
+            'exp'   => $now + 3600,
+            'scope' => 'browse',
+        );
+
+        $encoded_payload = rtrim( strtr( base64_encode( (string) wp_json_encode( $payload ) ), '+/', '-_' ), '=' );
+        $secret          = (string) constant( 'SPARXSTAR_DICT_PAGE_SECRET' );
+        $signature       = hash_hmac( 'sha256', $encoded_payload, $secret );
+
+        return $encoded_payload . '.' . $signature;
     }
 
     private function parse_bearer_token( string $authorization_header ): ?string {
@@ -92,7 +254,28 @@ final class Sparxstar3IAtlasDictionaryRestApi {
     private function cached_response( array $data, int $max_age = 3600 ): \WP_REST_Response {
         $response = new \WP_REST_Response( $data, 200 );
         $response->header( 'Cache-Control', 'public, max-age=' . $max_age );
+        $response->header( 'X-RateLimit-Remaining', (string) $this->get_rate_limit_remaining() );
         return $response;
+    }
+
+    /**
+     * Handle POST /spell — delegates to the spell-checker class.
+     * Stub: returns 501 if the spell-checker is not available.
+     *
+     * @param \WP_REST_Request $request The incoming request.
+     * @return \WP_REST_Response|\WP_Error
+     */
+    public function handle_spell( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
+        if ( ! $this->check_rate_limit() ) {
+            return $this->rate_limit_error();
+        }
+        // The actual spell-checking logic lives in Sparxstar3IAtlasDictionarySpellChecker.
+        // This route entry exists so the permission matrix is enforced here.
+        return new \WP_Error(
+            'not_implemented',
+            __( 'Use the dedicated spell-checker endpoint.', 'sparxstar-3iatlas-dictionary' ),
+            array( 'status' => 501 )
+        );
     }
 
     private function if_none_match_contains( string $if_none_match, string $etag_value ): bool {
@@ -799,6 +982,15 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         );
     }
 
+    /**
+     * @deprecated June 2026 — retired per 3IATLAS-IDENTITY-AND-GAME-SERVICES-DECISION-v1.0 §6.2.
+     * Progress sync moves to the SPARXSTAR Game Service (RLC engine). No client may be
+     * built against this endpoint. Route removal is scheduled after the Game Service
+     * intake is live. Do not extend, do not document publicly, do not remove yet.
+     *
+     * @param \WP_REST_Request $request The incoming request.
+     * @return \WP_REST_Response|\WP_Error
+     */
     public function handle_progress_sync( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
         // TODO: Replace with Helios token introspection when available.
         if ( ! $this->check_rate_limit() ) {

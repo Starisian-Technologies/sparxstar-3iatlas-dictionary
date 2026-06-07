@@ -13,6 +13,19 @@ namespace Starisian\Sparxstar\IAtlas\api;
 
 trait Sparxstar3IAtlasRateLimitTrait {
 
+    /** @var int Remaining quota from the last check_rate_limit() call. */
+    private int $rate_limit_remaining = 0;
+
+    /**
+     * Returns the number of requests remaining in the current window for the
+     * current client IP, as computed by the last call to check_rate_limit().
+     *
+     * @return int
+     */
+    public function get_rate_limit_remaining(): int {
+        return $this->rate_limit_remaining;
+    }
+
     private function check_rate_limit(): bool {
         // TODO: Replace with Helios token introspection when available.
         $ip       = $this->get_client_ip();
@@ -20,6 +33,7 @@ trait Sparxstar3IAtlasRateLimitTrait {
         $lock_key = 'sparx_3iatlas_dict_rl_lock_' . md5( $ip );
 
         if ( ! $this->acquire_rate_limit_lock( $lock_key ) ) {
+            $this->rate_limit_remaining = 0;
             return false;
         }
 
@@ -43,6 +57,7 @@ trait Sparxstar3IAtlasRateLimitTrait {
             }
 
             if ( $count >= self::RATE_LIMIT ) {
+                $this->rate_limit_remaining = 0;
                 return false;
             }
 
@@ -58,6 +73,7 @@ trait Sparxstar3IAtlasRateLimitTrait {
                 $expires_in
             );
 
+            $this->rate_limit_remaining = max( 0, self::RATE_LIMIT - $count );
             return true;
         } finally {
             $this->release_rate_limit_lock( $lock_key );

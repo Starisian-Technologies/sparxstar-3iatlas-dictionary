@@ -23,6 +23,7 @@ use WP_Post;
 use Throwable;
 use RuntimeException;
 use function defined;
+use function add_action;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -140,6 +141,7 @@ final class Sparxstar3IAtlasDictionary {
                     'root_id'    => 'sparxstar-dictionary-root',
                     'graphqlUrl' => $graphql_url,
                     'restUrl'    => \untrailingslashit( \rest_url( 'sparxstar/v1/dictionary' ) ),
+                    'pageToken'  => $this->mint_page_token(),
                 )
             );
             // Ensure assets are enqueued (in case they weren't caught by the global check, e.g., in a widget)
@@ -189,15 +191,61 @@ final class Sparxstar3IAtlasDictionary {
                 ( new \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionarySpellChecker() )->register_hooks();
             }
 
+            // CORS handler — must be registered early (priority 1 on rest_api_init).
+            if ( class_exists( \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryCors::class ) ) {
+                ( new \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryCors() )->register_hooks();
+            }
+
             // Instantiate Auto Linker
             if ( class_exists( Sparxstar3IAtlasAutoLinker::class ) ) {
                 new Sparxstar3IAtlasAutoLinker();
+            }
+
+            // WP-CLI commands — only register when CLI is active.
+            if ( defined( 'WP_CLI' ) && WP_CLI && class_exists( \Starisian\Sparxstar\IAtlas\cli\Sparxstar3IAtlasDictionaryCliCommands::class ) ) {
+                $cli_handler = new \Starisian\Sparxstar\IAtlas\cli\Sparxstar3IAtlasDictionaryCliCommands();
+                \WP_CLI::add_command( 'sparxstar-dict key', $cli_handler );
             }
         } catch ( \Throwable $throwable ) {
             if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
                 error_log( '[Starisian 3IAtlas Dictionary]: Error loading dependencies - ' . $throwable->getMessage() );
             }
         }
+    }
+
+    /**
+     * Mint an HMAC-SHA256 signed ephemeral page token for server-side injection.
+     *
+     * Returns an empty string (with an admin notice) if SPARXSTAR_DICT_PAGE_SECRET
+     * is not defined. Never falls back silently.
+     *
+     * @return string The signed token, or an empty string on configuration error.
+     */
+    private function mint_page_token(): string {
+        if ( ! defined( 'SPARXSTAR_DICT_PAGE_SECRET' ) ) {
+            add_action(
+                'admin_notices',
+                static function (): void {
+                    echo '<div class="notice notice-error"><p>' .
+                        esc_html__( 'Sparxstar 3iAtlas Dictionary: SPARXSTAR_DICT_PAGE_SECRET is not defined in wp-config.php. Page tokens cannot be minted.', 'sparxstar-3iatlas-dictionary' ) .
+                        '</p></div>';
+                }
+            );
+            return '';
+        }
+
+        $now     = time();
+        $payload = array(
+            'iat'   => $now,
+            'exp'   => $now + 3600,
+            'scope' => 'browse',
+        );
+
+        $encoded_payload = rtrim( strtr( base64_encode( (string) wp_json_encode( $payload ) ), '+/', '-_' ), '=' );
+        $secret          = (string) constant( 'SPARXSTAR_DICT_PAGE_SECRET' );
+        $signature       = hash_hmac( 'sha256', $encoded_payload, $secret );
+
+        return $encoded_payload . '.' . $signature;
     }
 
     /**
