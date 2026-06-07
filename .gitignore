@@ -106,3 +106,4 @@ docs/api/
 
 
 build_test/
+.claude/worktrees/
