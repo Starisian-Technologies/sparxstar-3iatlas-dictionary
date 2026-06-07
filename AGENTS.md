@@ -72,29 +72,59 @@ Do not add this field to the SCF JSON. Do not remove it from PostTypes.php.
 
 `sparxstar/v1/dictionary`
 
-**Auth model:**
-- All GET endpoints: public, no auth required, rate-limited (100 requests / 15 min / IP via WordPress transients)
-- POST `/progress/sync`: temporary non-Helios guard (Bearer token presence + logged-in user + capability check) until Helios token introspection is implemented
-- Add `// TODO: Replace with Helios token introspection` comment on every rate-limit check
+### Auth Model — Webster Model (June 2026)
+
+**Supersedes:** 3IATLAS-SUITE-ARCHITECTURE-v1.0 "Read endpoints: Public, no auth required" — see 3IATLAS-IDENTITY-AND-GAME-SERVICES-DECISION-v1.0 §6.3 and API Lockdown issue.
+
+**The website is free to use; the API requires credentials.** Two credential types:
+
+- **Ephemeral page token** — HMAC-SHA256, minted server-side on page render, injected via `wp_localize_script` as `sparxstarDictionarySettings.pageToken`. Sent as `X-Page-Token` header. TTL 60 min, scope `browse`, quota 600 req/token. Frontend retries on 401 via `GET /page-token` refresh endpoint.
+- **Consumer API key** — long-lived, stored hashed (SHA-256) in WP option `aiwa_dict_api_keys`. Sent as `X-Api-Key` header. Daily quota 10,000/key (filterable). Issued via WP-CLI: `wp sparxstar-dict key generate --label=<name>`.
+
+**Rule: all new endpoints must declare their row in the auth table before implementation.**
+
+| Endpoint | Ephemeral page token | API key | No credential |
+|---|---|---|---|
+| GET `/lookup`, `/search`, `/languages`, `/domains`, `/word-of-day` | ✅ | ✅ | ❌ 401 |
+| POST `/spell` | ✅ | ✅ | ❌ 401 |
+| GET `/game-set` | ✅ | ✅ | ❌ 401 |
+| GET `/wordlist` | ❌ 403 | ✅ only | ❌ 401 |
+| GET `/page-token` | Public (referer check + rate limit) | | |
+| POST `/progress/sync` | **DEPRECATED** — do not touch | | |
+
+Existing per-IP rate limiting (100/15 min) remains as an outer layer on all endpoints.
+
+**Consumer key onboarding (one step):** issue a key AND add its origin to `aiwa_dict_cors_origins` option. These always happen together.
+
+**WP-CLI key management:**
+```bash
+wp sparxstar-dict key generate --label=<name>  # prints plaintext once; stores hash only
+wp sparxstar-dict key list
+wp sparxstar-dict key revoke --label=<name>
+```
+
+**Auth implementation:** `src/api/auth/DictionaryAuthInterface.php` — single doorway. When `sparxstar-identity` ships, its RS256 JWT verifier becomes a third implementation behind this doorway with no endpoint code changes.
 
 **Response envelope (all endpoints):**
 ```json
 { "success": true, "data": {}, "meta": { "total": 0, "page": 1, "per_page": 20 } }
 ```
+Error responses use the same envelope with `success: false`. 429 includes `Retry-After: 86400`.
 
-**Core Phase 1 endpoints (implemented):**
+**Endpoints:**
 
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
-| GET | `/lookup` | Public | Full entry by slug or UUID |
-| GET | `/search` | Public | Search entries by query string |
-| GET | `/wordlist` | Public | Lightweight word list for offline caching |
-| GET | `/languages` | Public | All language taxonomy terms with word counts |
-| GET | `/domains` | Public | Semantic domain taxonomy terms with counts |
-| GET | `/game-set` | Public | Curated word set for game use (richer than wordlist) |
-| GET | `/word-of-day` | Public | Single deterministic daily entry |
-| POST | `/progress/sync` | Temporary non-Helios guard | Batch game event sync → myCred points |
-| POST | `/spell` | Public (rate-limited) | Spell-checking service for dictionary entries |
+| GET | `/lookup` | Browse or consumer | Full entry by slug or UUID |
+| GET | `/search` | Browse or consumer | Search entries by query string |
+| GET | `/wordlist` | Consumer key only | Lightweight word list for offline caching |
+| GET | `/languages` | Browse or consumer | All language taxonomy terms with word counts |
+| GET | `/domains` | Browse or consumer | Semantic domain taxonomy terms with counts |
+| GET | `/game-set` | Browse or consumer | Curated word set for game use (richer than wordlist) |
+| GET | `/word-of-day` | Browse or consumer | Single deterministic daily entry |
+| GET | `/page-token` | Public (referer + rate limit) | Mint fresh ephemeral token for the React app |
+| POST | `/spell` | Browse or consumer | Spell-checking service for dictionary entries |
+| POST | `/progress/sync` | **DEPRECATED** — frozen | Do not build clients against this endpoint |
 
 **`/game-set` parameters:** `lang_source` (required), `domain` (optional), `limit` (default 20, max 50), `include_audio` (bool)
 **`/game-set` exclusion rule:** Exclude entries missing headword, translation_en, or IPA. Games require all three.
@@ -295,10 +325,31 @@ changes applied to the existing `app.jsx` (not a rebuild):
 - `package-lock.json` re-synced with `package.json` (missing stylelint deps added) so
   `npm ci` works again.
 
-### Open Questions (UI fix)
-| ID | Question | Blocking |
-|---|---|---|
-| OQ-V1 | AIWA logo asset path and tagline copy for the desktop sidebar footer | Sidebar footer final content |
+### Open Questions
+
+| ID | Status | Question | Blocking |
+|---|---|---|---|
+| OQ-V1 | ⏸ Open | AIWA logo asset path and tagline copy for the desktop sidebar footer | Sidebar footer final content |
+| OQ-G1 | ✅ Closed (historical) | WP nonce auth for `/progress/sync` — decision was correct for the WP endpoint; endpoint itself is now retired per 3IATLAS-IDENTITY-AND-GAME-SERVICES-DECISION-v1.0 §6.2 | — |
+| OQ-G3 | ⏸ Open | Animation asset for Letter Reveal — pottery vessel emoji (🏺) is placeholder; replace with AIWA-approved cultural visual | Letter Reveal polish |
+| OQ-G4 | ⏸ Open | DomainFlash "I knew it" — currently fires `aiwa_game_word_correct`; confirm if a separate hook is needed | myCred hook map |
+| OQ-G5 | ✅ Closed | Sync destination — 3iAtlas Game Service (RLC Node engine), authenticated by suite JWT from `sparxstar-identity` (RS256; apps verify with public key only) | — |
+| OQ-I3 | ⏸ Open | Account-claim flow: merging guest device progress into a new suite account | Game Service intake spec |
+| OQ-I4 | ⏸ Open | Tier verification: who approves teacher (Lower Basic session-opening) accounts | Identity Service spec |
+
+---
+
+### Progress Sync — Current State (June 2026)
+
+- **Server route `/progress/sync`:** live but **DEPRECATED**. `@deprecated` docblock added. Never extend. Removal scheduled after the Game Service intake is live.
+- **Client `syncNow()`:** intentional no-op. **DO NOT IMPLEMENT** until `GAME-SERVICE-INTAKE-SPEC-v1.0` is committed to `.github/instructions/` in this repo.
+- **Event schema is FROZEN as contract:** `word_uuid`, `game_type`, `outcome`, `attempts`, `xp`, `timestamp`, production-vs-recognition distinction (per PR #59 Fix 2). Any change to this schema is a spec violation.
+- **IndexedDB outbox behavior:** unchanged, correct, keep.
+- **Sync target:** 3iAtlas Game Service (§3 of decision record). Suite JWT from `sparxstar-identity`. Guest play stays device-local.
+
+### Authentication Rule (suite-wide, permanent)
+
+WordPress authentication is prohibited for all user-facing features. WordPress sessions are admin-only. User identity comes from the suite Identity Service (`sparxstar-identity`) when its spec lands. Do not add `wp_nonce` / `is_user_logged_in()` gates to any new user-facing endpoint.
 
 ---
 
@@ -406,8 +457,6 @@ Key files added:
 - `src/js/hooks/useGameSet.js` — IndexedDB-backed game set cache
 - `src/js/hooks/useGameSession.js` — session tracking with sessionRef pattern
 - `src/js/hooks/useProgressSync.js` — IndexedDB outbox (syncNow is intentional no-op — OQ-G1)
-
-**Known intentional gap:** `useProgressSync.syncNow()` is a no-op pending OQ-G1 resolution. Do not implement without a two-mode spec decision (standalone: WordPress user meta; full-system: governed pipeline).
 
 **sessionRef pattern:** `recordResult` and `completeSession` in `useGameSession.js` use `sessionRef.current` to avoid stale React closure bugs. Do not remove this pattern.
 
