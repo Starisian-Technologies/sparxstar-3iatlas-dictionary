@@ -429,7 +429,7 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         }
 
         $q        = sanitize_text_field( (string) ( $request->get_param( 'q' ) ?? '' ) );
-        $lang     = sanitize_text_field( (string) ( $request->get_param( 'lang' ) ?? '' ) );
+        $lang     = sanitize_text_field( (string) ( $request->get_param( 'lang_source' ) ?? '' ) );
         $per_page = min( 100, max( 1, absint( $request->get_param( 'per_page' ) ?? 20 ) ) );
         $page     = max( 1, absint( $request->get_param( 'page' ) ?? 1 ) );
 
@@ -493,7 +493,7 @@ final class Sparxstar3IAtlasDictionaryRestApi {
             return $this->rate_limit_error();
         }
 
-        $lang     = sanitize_text_field( (string) ( $request->get_param( 'lang' ) ?? '' ) );
+        $lang     = sanitize_text_field( (string) ( $request->get_param( 'lang_source' ) ?? '' ) );
         $per_page = min( 2000, max( 1, absint( $request->get_param( 'per_page' ) ?? 1000 ) ) );
         $page     = max( 1, absint( $request->get_param( 'page' ) ?? 1 ) );
 
