@@ -11,6 +11,70 @@ This is the authoritative lexical data store and REST API service for the entire
 
 ---
 
+## Dictionary Role — Read Before Writing Any Code
+
+**Authoritative spec:** `.github/instructions/3IATLAS-DICTIONARY-ROLE-AND-PIPELINE-SPEC-v1.0.md`
+
+The dictionary is a **downstream governed publication service**. It is **linguistically read-only** after import.
+
+```
+Community / Speakers / Linguists / Elders
+        ↓
+DVE (intake, review, normalization, approval)
+        ↓
+AIWA Dictionary  ← you are here
+(import, store, lock, serve)
+        ↓
+3iAtlas Apps (games, workbooks, browse, API consumers)
+```
+
+**What this means for code:**
+- The dictionary does NOT intake words. No community submission pathways for new entries.
+- The dictionary does NOT adjudicate or flag entries. No review queues, no quality routing.
+- Linguistic fields (headword, language, definitions, pronunciation, siblings, speaker community tags) are **locked after import**. WordPress admins cannot edit them directly.
+- Operational fields (publish status, visibility, API eligibility, featured flag) are editable.
+- All corrections originate upstream in DVE as a new Approved Entry Package, imported via WP-CLI.
+- `aiwa_entry_uuid` is minted by DVE. The dictionary preserves it. Never regenerate it. Never let WordPress mint a UUID for an approved entry.
+
+**Import v1 — WP-CLI batch, deliberate and rare:**
+```bash
+wp aiwa-dictionary import --file=approved-entry-batch.json --dry-run   # validates, no write
+wp aiwa-dictionary import --file=approved-entry-batch.json --publish    # validates and writes
+```
+
+**Entry lifecycle states:** `active`, `deprecated`, `merged`, `hidden`, `withdrawn` — never delete a UUID once published.
+
+---
+
+## Language Model — Two Layers, Never Mixed
+
+**Authoritative spec:** `.github/instructions/3IATLAS-DICTIONARY-MULTILANGUAGE-MODEL-SPEC-v1.0.md`
+
+The dictionary maintains two independent language layers. They answer different questions.
+
+| Layer | Field | Question answered | Who uses it |
+|---|---|---|---|
+| **Primary Language Layer** | `starmus_tax_language` | Where does this word belong linguistically? | Games (strict mode), curriculum, formal learning |
+| **Speaker Community Layer** | `aiwa_speaker_community` taxonomy | Who uses or recognizes this word in lived speech? | Browse app (ecology mode), literacy, real-speech |
+
+**The rule: never silently mix.** A result set that combines primary-language matches with speaker-community matches without labeling them separately is a spec violation.
+
+**Search modes — always explicit:**
+
+| Mode | Param | Returns | Use for |
+|---|---|---|---|
+| `mode=strict` | `lang_source=mandinka` | Primary language matches only | Games, quizzes, formal lessons |
+| `mode=ecology` | `speaker_community=mandinka-speakers` | Primary language first, then speaker-community matches labeled | Browse, literacy, urban speech |
+| `mode=cross_language` | on `/lookup` | Cross-language sibling entries with relation type | Detail views, S2S, WordPad |
+
+Default mode when omitted: `strict`. The game service must always use `strict`. It must never use `ecology`.
+
+**Speaker community taxonomy is controlled.** Valid terms: `mandinka-speakers`, `wolof-speakers`, `fula-speakers`, `jola-speakers`, `serer-speakers`, `soninke-speakers`, `mixed-urban-gambia`, `banjul-market`, `serekunda-urban`, `senegambia-region`, `school-gambia`, `islamic-religious-context`. Freeform tags are not permitted.
+
+**Community usage status per tag:** `observed` → `speaker_confirmed` → `editorial_approved`. Games must only trust `editorial_approved` tags in strict mode.
+
+---
+
 ## Absolute Rules — Never Violate
 
 - **Never modify the `aiwa-cpt-dictionary` CPT slug.** Live data depends on it. Changing it destroys existing entries.
@@ -40,20 +104,55 @@ This is the authoritative lexical data store and REST API service for the entire
 
 ## Data Model — Key CPT and Fields
 
-**CPT:** `aiwa-cpt-dictionary`
-**Taxonomies:** `starmus_tax_language` (source language — Mandinka, Wolof, etc.), `starmus_tax_dialect`, `starmus_tax_alpha` (alphabetical grouping)
+**Authoritative specs:** `.github/instructions/3IATLAS-DICTIONARY-APPROVED-ENTRY-SPEC-v1.0.md` and `.github/instructions/3IATLAS-DICTIONARY-ENRICHMENT-FIELDS-SPEC-v1.0.md`
 
-Key ACF fields on `aiwa-cpt-dictionary`:
-- `aiwa_extract` — definition/extract text
-- `aiwa_translation_english` — English translation
-- `aiwa_translation_french` — French translation
-- `aiwa_ipa_pronunciation` — IPA pronunciation
-- `aiwa_phonetic` — phonetic pronunciation
-- `aiwa_audio_file` — audio recording URL
-- `aiwa_word_photo` — image URL
-- `aiwa_origin` — word origin notes
-- `aiwa_synonyms` / `aiwa_antonyms` — related words
-- `aiwa_example_sentences` — repeater field with sub-fields: sentence, IPA, phonetic, EN translation, FR translation
+**CPT:** `aiwa-cpt-dictionary`
+
+**Taxonomies:**
+- `starmus_tax_language` — Primary Language Layer (Mandinka, Wolof, Fula, etc.) — one term per entry
+- `starmus_tax_dialect` — dialect grouping
+- `starmus_tax_alpha` — alphabetical grouping
+- `aiwa_domain` — semantic domain (hierarchical: animals → domestic-animals / wild-animals, etc.)
+- `aiwa_speaker_community` — Speaker Community Layer (controlled vocabulary; see Language Model section)
+- `starmus_part_of_speech` — part of speech
+
+**ACF fields on `aiwa-cpt-dictionary` — linguistic (locked after import):**
+
+| Field | Description |
+|---|---|
+| `aiwa_entry_uuid` | DVE-minted UUID. Canonical cross-suite identifier. Immutable. |
+| `aiwa_extract` | Definition / extract text |
+| `aiwa_translation_english` | English gloss |
+| `aiwa_translation_french` | French gloss |
+| `aiwa_ipa_pronunciation` | IPA pronunciation |
+| `aiwa_phonetic` | Phonetic pronunciation in plain text |
+| `aiwa_audio_file` | Approved audio asset URL |
+| `aiwa_word_photo` | Image URL |
+| `aiwa_origin` | Origin and cultural notes |
+| `aiwa_synonyms` | ACF relationship — intra-language synonym entries |
+| `aiwa_antonyms` | ACF relationship — intra-language antonym entries |
+| `aiwa_rhyme_entries` | ACF relationship — entries that rhyme in the source language (new) |
+| `aiwa_cross_language_siblings` | ACF relationship — related entries in other languages |
+| `aiwa_cross_language_relation_type` | Relation type per sibling: `same_concept`, `loanword`, `cognate`, `shared_regional_usage`, `religious_term`, `market_usage`, `school_usage`, `false_friend`, `uncertain` |
+| `aiwa_community_usage_status` | Per speaker-community tag: `observed`, `speaker_confirmed`, `editorial_approved` |
+| `aiwa_example_sentences` | Repeater: sentence, IPA, phonetic, EN translation, FR translation |
+| `aiwa_level` | AIWA Level: `AIWA-0` through `AIWA-5` (sovereign educational scale) |
+| `aiwa_cefr_approx` | Optional CEFR approximation: `A1`–`C2` (reference mapping only) |
+| `aiwa_oxford_tier` | Optional Oxford reference: `oxford_3000`, `oxford_5000` |
+| `aiwa_concepticon_id` | Integer reference to concepticon.clld.org (sparse academic anchor) |
+| `aiwa_clics_id` | Reference to CLICS cross-linguistic colexification database (sparse) |
+
+**AIWA Level scale (pending AIWA curriculum board final confirmation):**
+
+| Value | Label | CEFR Approx |
+|---|---|---|
+| `AIWA-0` | Picture / First Exposure | Pre-A1 |
+| `AIWA-1` | Beginner Survival | A1 |
+| `AIWA-2` | Everyday Sentence | A2 |
+| `AIWA-3` | Storytelling and Explanation | B1 |
+| `AIWA-4` | School, Civic, Formal | B2 |
+| `AIWA-5` | Literary, Technical, Specialist | C1–C2 |
+
 - `aiwa_sentence_ipa` (key: `field_696e6b18c17f4`) — registered in PostTypes.php but absent from SCF JSON. **PostTypes.php is authoritative. Do not add this field to the SCF JSON.**
 
 ---
@@ -437,6 +536,17 @@ For anything beyond Phase 2, the authoritative reference is **`3IATLAS-SUITE-ARC
 For continuation work:
 - Treat documented boot blockers as bug fixes first (autoloader constants and form CSS enqueue path).
 - Keep intentional gaps (`syncNow()` no-op and Helios stubs) unchanged until a dedicated spec lands.
+
+### Dictionary Architecture — June 2026 (active)
+
+Four specs committed to `.github/instructions/` that define the dictionary's final architecture. Any code that contradicts these specs is a violation.
+
+| Spec | Status | Summary |
+|---|---|---|
+| `3IATLAS-DICTIONARY-ROLE-AND-PIPELINE-SPEC-v1.0.md` | Active | DVE upstream / dictionary downstream. Linguistically read-only after import. WP-CLI batch import. Entry lifecycle states. Edit lock rules. |
+| `3IATLAS-DICTIONARY-APPROVED-ENTRY-SPEC-v1.0.md` | Active | Approved Entry Package format. Required fields. UUID ownership (DVE mints, dictionary preserves). AIWA Level scale. Replacement and deprecation packages. |
+| `3IATLAS-DICTIONARY-MULTILANGUAGE-MODEL-SPEC-v1.0.md` | Active | Primary Language Layer + Speaker Community Layer. Strict / ecology / cross-language search modes. No silent mixing. Controlled speaker community taxonomy. Cross-language relation types. Community usage status. JWT language claims (for identity service). |
+| `3IATLAS-DICTIONARY-ENRICHMENT-FIELDS-SPEC-v1.0.md` | Active | AIWA Level sovereign scale. CEFR/Oxford as reference mappings only. Concepticon and CLICS academic anchors. Rhyme entries field. Domain taxonomy expansion. Updated `/game-set` and `/wordlist` filter params. |
 
 ### Phase 3 — Integration Tests ⏸ Pending
 
