@@ -233,33 +233,6 @@ final class Sparxstar3IAtlasDictionary {
     }
 
     /**
-     * Mint an HMAC-SHA256 signed ephemeral page token for server-side injection.
-     *
-     * Returns an empty string (with an admin notice) if SPARXSTAR_DICT_PAGE_SECRET
-     * is not defined. Never falls back silently.
-     *
-     * @return string The signed token, or an empty string on configuration error.
-     */
-    private function mint_page_token(): string {
-        if ( ! defined( 'SPARXSTAR_DICT_PAGE_SECRET' ) ) {
-            return '';
-        }
-
-        $now     = time();
-        $payload = array(
-            'iat'   => $now,
-            'exp'   => $now + 3600,
-            'scope' => 'browse',
-        );
-
-        $encoded_payload = rtrim( strtr( base64_encode( (string) wp_json_encode( $payload ) ), '+/', '-_' ), '=' );
-        $secret          = (string) constant( 'SPARXSTAR_DICT_PAGE_SECRET' );
-        $signature       = hash_hmac( 'sha256', $encoded_payload, $secret );
-
-        return $encoded_payload . '.' . $signature;
-    }
-
-    /**
      * Loads the plugin textdomain for translation.
      *
      * @return void
