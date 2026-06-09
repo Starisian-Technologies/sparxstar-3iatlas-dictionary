@@ -153,7 +153,8 @@ final class Sparxstar3IAtlasDictionaryRestApi {
      * @return \WP_REST_Response|\WP_Error
      */
     public function handle_page_token( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
-        // Same-origin referer check.
+        // Same-origin Referer check. Empty Referer is intentionally allowed — direct API
+        // calls and privacy-protected browsers omit it; the IP rate limit is the backstop.
         $referer = trim( (string) $request->get_header( 'Referer' ) );
         if ( '' !== $referer ) {
             $referer_host  = (string) parse_url( $referer, PHP_URL_HOST );
@@ -394,10 +395,12 @@ final class Sparxstar3IAtlasDictionaryRestApi {
             return new \WP_Error( 'not_found', 'Entry not found.', array( 'status' => 404 ) );
         }
 
+        $include_audio = filter_var( $request->get_param( 'include_audio' ) ?? false, FILTER_VALIDATE_BOOLEAN );
+
         return $this->cached_response(
             array(
                 'success' => true,
-                'data'    => array( 'word' => $this->build_entry( $post->ID ) ),
+                'data'    => array( 'word' => $this->build_entry( $post->ID, $include_audio ) ),
                 'meta'    => array(),
             )
         );

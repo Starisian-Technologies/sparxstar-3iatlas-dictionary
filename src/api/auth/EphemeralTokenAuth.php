@@ -1,7 +1,4 @@
 <?php
-
-declare(strict_types=1);
-
 /**
  * Verifies ephemeral page tokens minted by the /page-token endpoint.
  *
@@ -14,6 +11,8 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2024 Starisian Technologies. All rights reserved.
  */
 
+declare(strict_types=1);
+
 namespace Starisian\Sparxstar\IAtlas\api\auth;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -25,7 +24,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class EphemeralTokenAuth implements DictionaryAuthInterface {
 
-    /** @var int Maximum requests per ephemeral token. */
+    /**
+     * Maximum requests per ephemeral token.
+     *
+     * @var int
+     */
     private const TOKEN_QUOTA = 600;
 
     /**
@@ -127,6 +130,7 @@ final class EphemeralTokenAuth implements DictionaryAuthInterface {
                 array(
                     'status'      => 429,
                     'retry_after' => 86400,
+                    'headers'     => array( 'Retry-After' => '86400' ),
                 )
             );
         }

@@ -1,7 +1,4 @@
 <?php
-
-declare(strict_types=1);
-
 /**
  * CORS handler for the 3iAtlas Dictionary REST API.
  *
@@ -14,6 +11,8 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2024 Starisian Technologies. All rights reserved.
  */
 
+declare(strict_types=1);
+
 namespace Starisian\Sparxstar\IAtlas\api;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -25,7 +24,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class Sparxstar3IAtlasDictionaryCors {
 
-    /** @var string The REST route prefix this CORS handler is scoped to. */
+    /**
+     * The REST route prefix this CORS handler is scoped to.
+     *
+     * @var string
+     */
     private const ROUTE_PREFIX = '/' . Sparxstar3IAtlasDictionaryRestApi::REST_NAMESPACE;
 
     /**
@@ -81,10 +84,10 @@ final class Sparxstar3IAtlasDictionaryCors {
      * Add CORS headers to the response for matched origins on dictionary routes.
      * Hooked into rest_pre_serve_request.
      *
-     * @param bool                 $served   Whether the request has already been served.
-     * @param \WP_REST_Response    $result   The response object.
-     * @param \WP_REST_Request     $request  The request object.
-     * @param \WP_REST_Server      $server   The REST server instance.
+     * @param bool              $served  Whether the request has already been served.
+     * @param \WP_REST_Response $result  The response object.
+     * @param \WP_REST_Request  $request The request object.
+     * @param \WP_REST_Server   $server  The REST server instance.
      * @return bool
      */
     public function add_cors_headers( bool $served, \WP_REST_Response $result, \WP_REST_Request $request, \WP_REST_Server $server ): bool {

@@ -1,7 +1,4 @@
 <?php
-
-declare(strict_types=1);
-
 /**
  * Verifies long-lived API keys sent via the X-Api-Key header.
  *
@@ -14,6 +11,8 @@ declare(strict_types=1);
  * @copyright Copyright (c) 2024 Starisian Technologies. All rights reserved.
  */
 
+declare(strict_types=1);
+
 namespace Starisian\Sparxstar\IAtlas\api\auth;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -25,10 +24,18 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class ApiKeyAuth implements DictionaryAuthInterface {
 
-    /** @var string Option name that stores the API key registry. */
+    /**
+     * Option name that stores the API key registry.
+     *
+     * @var string
+     */
     public const KEYS_OPTION = 'aiwa_dict_api_keys';
 
-    /** @var int Default daily quota per API key. */
+    /**
+     * Default daily quota per API key.
+     *
+     * @var int
+     */
     private const DEFAULT_DAILY_QUOTA = 10000;
 
     /**
@@ -89,6 +96,7 @@ final class ApiKeyAuth implements DictionaryAuthInterface {
                 array(
                     'status'      => 429,
                     'retry_after' => 86400,
+                    'headers'     => array( 'Retry-After' => '86400' ),
                 )
             );
         }

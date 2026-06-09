@@ -1,7 +1,4 @@
 <?php
-
-declare(strict_types=1);
-
 /**
  * WP-CLI command class for the 3iAtlas Dictionary.
  *
@@ -13,6 +10,8 @@ declare(strict_types=1);
  * @license Starisian Technologies Proprietary License (STPL)
  * @copyright Copyright (c) 2024 Starisian Technologies. All rights reserved.
  */
+
+declare(strict_types=1);
 
 namespace Starisian\Sparxstar\IAtlas\cli;
 
@@ -33,7 +32,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Sparxstar3IAtlasDictionaryCliCommands {
 
-    /** @var int Default daily quota assigned to newly generated keys. */
+    /**
+     * Default daily quota assigned to newly generated keys.
+     *
+     * @var int
+     */
     private const DEFAULT_DAILY_QUOTA = 10000;
 
     /**

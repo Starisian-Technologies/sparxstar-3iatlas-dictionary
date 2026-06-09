@@ -1,7 +1,4 @@
 <?php
-
-declare(strict_types=1);
-
 /**
  * Contract that every credential verifier for the 3iAtlas Dictionary REST API must satisfy.
  *
@@ -12,6 +9,8 @@ declare(strict_types=1);
  * @license Starisian Technologies Proprietary License (STPL)
  * @copyright Copyright (c) 2024 Starisian Technologies. All rights reserved.
  */
+
+declare(strict_types=1);
 
 namespace Starisian\Sparxstar\IAtlas\api\auth;
 

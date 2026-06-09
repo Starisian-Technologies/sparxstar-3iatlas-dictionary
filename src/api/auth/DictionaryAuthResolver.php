@@ -1,7 +1,4 @@
 <?php
-
-declare(strict_types=1);
-
 /**
  * Composite credential resolver for the 3iAtlas Dictionary REST API.
  *
@@ -16,6 +13,8 @@ declare(strict_types=1);
  * @license Starisian Technologies Proprietary License (STPL)
  * @copyright Copyright (c) 2024 Starisian Technologies. All rights reserved.
  */
+
+declare(strict_types=1);
 
 namespace Starisian\Sparxstar\IAtlas\api\auth;
 
@@ -41,7 +40,11 @@ final class DictionaryAuthResolver implements DictionaryAuthInterface {
         $has_api_key    = '' !== trim( (string) $request->get_header( 'X-Api-Key' ) );
 
         if ( $has_page_token ) {
-            return ( new EphemeralTokenAuth() )->resolve( $request );
+            $result = ( new EphemeralTokenAuth() )->resolve( $request );
+            if ( ! is_wp_error( $result ) ) {
+                return $result;
+            }
+            // Page token invalid/expired — fall through to API key if also present.
         }
 
         if ( $has_api_key ) {

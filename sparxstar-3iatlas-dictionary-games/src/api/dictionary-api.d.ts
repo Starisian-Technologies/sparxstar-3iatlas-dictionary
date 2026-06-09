@@ -123,7 +123,25 @@ export interface ApiError {
 
 // ─── Endpoint response types ──────────────────────────────────────────────────
 
-/** GET /lookup?slug=&[include_audio=true] */
+/**
+ * Discriminated error codes for GET /lookup.
+ *
+ * Consumers MUST scope their error handling to this allowlist:
+ *   - `not_found`     (404) — headword / UUID is genuinely absent from the dictionary.
+ *                            Map to null / "word not found" UX.
+ *   - `missing_param` (400) — caller supplied neither slug nor uuid. Client bug; surface
+ *                            as an error, do NOT silently swallow as null.
+ *
+ * All other codes (rate_limited, quota_exceeded, invalid_api_key, …) must also surface
+ * as errors — fail closed, not null.
+ *
+ * SCOPE NOTE: `not_found` is reused by /word-of-day with a different meaning ("couldn't
+ * select a word today"). Do not apply this allowlist globally — keep it scoped to the
+ * lookup() call site.
+ */
+export type LookupErrorCode = 'not_found' | 'missing_param';
+
+/** GET /lookup?slug=&uuid=&[include_audio=true] */
 export interface LookupData { word: DictionaryEntry }
 export type LookupResponse = ApiSuccess<LookupData>;
 

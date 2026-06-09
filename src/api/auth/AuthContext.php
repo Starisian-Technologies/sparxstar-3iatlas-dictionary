@@ -1,7 +1,4 @@
 <?php
-
-declare(strict_types=1);
-
 /**
  * Immutable data transfer object representing a successfully resolved credential.
  *
@@ -9,6 +6,8 @@ declare(strict_types=1);
  * @license Starisian Technologies Proprietary License (STPL)
  * @copyright Copyright (c) 2024 Starisian Technologies. All rights reserved.
  */
+
+declare(strict_types=1);
 
 namespace Starisian\Sparxstar\IAtlas\api\auth;
 
@@ -20,10 +19,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * AuthContext DTO — produced by a DictionaryAuthInterface implementation after
  * a credential has been successfully verified.
  *
- * credential_type: 'ephemeral' | 'api_key'
- * scope:           'browse' | 'consumer'
- * key_id:          opaque label/identifier — never the raw key value
- * quota_remaining: requests remaining in the current window for this credential
+ * Stores credential_type ('ephemeral'|'api_key'), scope ('browse'|'consumer'),
+ * key_id (opaque label, null for ephemeral tokens), and quota_remaining (requests
+ * remaining in the current window for this credential).
  */
 readonly class AuthContext {
 
