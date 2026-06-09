@@ -269,7 +269,7 @@ final class Sparxstar3IAtlasDictionaryRestApi {
     private function cached_response( array $data, int $max_age = 3600 ): \WP_REST_Response {
         $data['meta'] = $data['meta'] ?? array();
         $response     = new \WP_REST_Response( $data, 200 );
-        $response->header( 'Cache-Control', 'public, max-age=' . $max_age );
+        $response->header( 'Cache-Control', 'private, max-age=' . $max_age );
         $response->header( 'X-RateLimit-Remaining', (string) $this->get_rate_limit_remaining() );
         return $response;
     }

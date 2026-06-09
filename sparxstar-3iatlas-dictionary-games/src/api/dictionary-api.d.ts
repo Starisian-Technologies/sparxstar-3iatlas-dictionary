@@ -200,7 +200,10 @@ export type PageTokenResponse = ApiSuccess<PageTokenData>;
 // ─── Request parameter types ──────────────────────────────────────────────────
 
 export interface LookupParams {
-    slug: string;
+    /** Word slug. Provide slug OR uuid — at least one is required by the server. */
+    slug?: string;
+    /** AIWA entry UUID. Alternative to slug. */
+    uuid?: string;
     include_audio?: boolean;
 }
 
@@ -208,6 +211,7 @@ export interface SearchParams {
     q: string;
     lang_source?: string;
     per_page?: number;
+    page?: number;
 }
 
 export interface WordlistParams {

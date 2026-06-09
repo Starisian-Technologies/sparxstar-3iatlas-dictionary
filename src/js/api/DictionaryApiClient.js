@@ -169,8 +169,10 @@ export function createDictionaryApiClient(config) {
          * @param {import('./dictionary-api').LookupParams} params
          * @returns {Promise<import('./dictionary-api').LookupResponse>}
          */
-        async lookup({ slug, include_audio = false }) {
-            const p = new URLSearchParams({ slug });
+        async lookup({ slug, uuid, include_audio = false }) {
+            const p = new URLSearchParams();
+            if (slug) p.set('slug', slug);
+            if (uuid) p.set('uuid', uuid);
             if (include_audio) p.set('include_audio', 'true');
             return /** @type {any} */ (get('/lookup', p));
         },
@@ -181,10 +183,11 @@ export function createDictionaryApiClient(config) {
          * @param {import('./dictionary-api').SearchParams} params
          * @returns {Promise<import('./dictionary-api').SearchResponse>}
          */
-        async search({ q, lang_source, per_page }) {
+        async search({ q, lang_source, per_page, page }) {
             const p = new URLSearchParams({ q });
             if (lang_source) p.set('lang_source', lang_source);
             if (per_page != null) p.set('per_page', String(per_page));
+            if (page != null) p.set('page', String(page));
             return /** @type {any} */ (get('/search', p));
         },
 
