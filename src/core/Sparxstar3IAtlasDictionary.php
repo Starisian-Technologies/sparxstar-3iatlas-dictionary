@@ -69,6 +69,22 @@ final class Sparxstar3IAtlasDictionary {
     private function sparxIAtlas_register_hooks(): void {
         add_action( 'init', array( $this, 'sparxIAtlas_register_shortcodes' ) );
         add_action( 'wp_enqueue_scripts', array( $this, 'sparxIAtlas_register_assets' ) );
+        if ( is_admin() ) {
+            add_action( 'admin_notices', array( $this, 'sparxIAtlas_configuration_notices' ) );
+        }
+    }
+
+    /**
+     * Displays admin notices for missing required configuration constants.
+     *
+     * @return void
+     */
+    public function sparxIAtlas_configuration_notices(): void {
+        if ( ! defined( 'SPARXSTAR_DICT_PAGE_SECRET' ) ) {
+            echo '<div class="notice notice-error"><p>' .
+                esc_html__( 'Sparxstar 3iAtlas Dictionary: SPARXSTAR_DICT_PAGE_SECRET is not defined in wp-config.php. Page tokens cannot be minted.', 'sparxstar-3iatlas-dictionary' ) .
+                '</p></div>';
+        }
     }
 
     /**
@@ -223,14 +239,6 @@ final class Sparxstar3IAtlasDictionary {
      */
     private function mint_page_token(): string {
         if ( ! defined( 'SPARXSTAR_DICT_PAGE_SECRET' ) ) {
-            add_action(
-                'admin_notices',
-                static function (): void {
-                    echo '<div class="notice notice-error"><p>' .
-                        esc_html__( 'Sparxstar 3iAtlas Dictionary: SPARXSTAR_DICT_PAGE_SECRET is not defined in wp-config.php. Page tokens cannot be minted.', 'sparxstar-3iatlas-dictionary' ) .
-                        '</p></div>';
-                }
-            );
             return '';
         }
 

@@ -22,12 +22,14 @@ export default function CompleteSentence({ words, language, onResult, onComplete
     const deck = useMemo(
         () =>
             shuffle(
-                words.filter(
-                    (w) =>
-                        w.example?.sentence &&
+                words.filter((w) => {
+                    const example = w.example_sentences?.[0];
+                    return (
+                        example?.sentence &&
                         w.headword &&
-                        new RegExp(escapeRegex(w.headword), 'i').test(w.example.sentence)
-                )
+                        new RegExp(escapeRegex(w.headword), 'i').test(example.sentence)
+                    );
+                })
             ),
         [words]
     );
@@ -54,11 +56,12 @@ export default function CompleteSentence({ words, language, onResult, onComplete
     if (!word) return null;
 
     const target = word.headword;
-    const sentence = word.example.sentence;
+    const example = word.example_sentences?.[0];
+    const sentence = example?.sentence ?? '';
     const sentenceTranslation =
-        language === 'fr' && word.example.translation_fr
-            ? word.example.translation_fr
-            : word.example.translation_en;
+        language === 'fr' && example?.translation_fr
+            ? example.translation_fr
+            : example?.translation_en ?? '';
 
     /* Replace first occurrence of the headword (case-insensitive) with blanks. */
     const regex = new RegExp(`(${escapeRegex(target)})`, 'i');

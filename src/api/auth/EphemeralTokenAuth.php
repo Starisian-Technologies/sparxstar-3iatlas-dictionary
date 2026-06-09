@@ -67,8 +67,10 @@ final class EphemeralTokenAuth implements DictionaryAuthInterface {
             );
         }
 
-        // Decode payload.
-        $json_payload = base64_decode( strtr( $encoded_payload, '-_', '+/' ), true );
+        // Decode payload — restore padding stripped at mint time before strict decode.
+        $remainder      = strlen( $encoded_payload ) % 4;
+        $padded_payload = $remainder ? $encoded_payload . str_repeat( '=', 4 - $remainder ) : $encoded_payload;
+        $json_payload   = base64_decode( strtr( $padded_payload, '-_', '+/' ), true );
         if ( false === $json_payload ) {
             return new \WP_Error(
                 'invalid_page_token',
