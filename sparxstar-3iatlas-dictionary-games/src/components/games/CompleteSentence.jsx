@@ -8,7 +8,9 @@ import AccessoryBar from '../AccessoryBar.jsx';
  * Player types the missing word using the keyboard + AccessoryBar.
  * Wrong answers progressively reveal letters.
  *
- * Only words with an example sentence (word.example_sentences[0].sentence) are used.
+ * Only words with an example sentence are used. Supports both the /game-set shape
+ * (word.example: { sentence, translation_en }) and the /lookup shape
+ * (word.example_sentences[0]: { sentence, translation_en, translation_fr, ... }).
  *
  * Props:
  *   words      {Array}    Game-set words
@@ -23,7 +25,7 @@ export default function CompleteSentence({ words, language, onResult, onComplete
         () =>
             shuffle(
                 words.filter((w) => {
-                    const example = w.example_sentences?.[0];
+                    const example = w.example ?? w.example_sentences?.[0] ?? null;
                     return (
                         example?.sentence &&
                         w.headword &&
@@ -56,7 +58,7 @@ export default function CompleteSentence({ words, language, onResult, onComplete
     if (!word) return null;
 
     const target = word.headword;
-    const example = word.example_sentences?.[0];
+    const example = word.example ?? word.example_sentences?.[0] ?? null;
     const sentence = example?.sentence ?? '';
     const sentenceTranslation =
         language === 'fr' && example?.translation_fr

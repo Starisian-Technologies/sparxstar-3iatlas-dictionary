@@ -111,7 +111,7 @@ Per-IP rate limit (100/15 min) applies to all endpoints as an outer layer.
 | Endpoint | Page token | API key | None |
 |---|---|---|---|
 | GET `/lookup`, `/search`, `/languages`, `/domains`, `/word-of-day`, `/game-set` | ✅ | ✅ | ❌ 401 |
-| POST `/spell` | ✅ | ✅ | ❌ 401 |
+| POST `/spell` | Public (rate-limited, no credentials required) | | |
 | GET `/wordlist` | ❌ 403 | ✅ only | ❌ 401 |
 | GET `/page-token` | Public (referer check + rate limit) | | |
 | POST `/progress/sync` | **DEPRECATED** — do not build against | | |
@@ -122,7 +122,7 @@ Per-IP rate limit (100/15 min) applies to all endpoints as an outer layer.
 ```json
 { "success": true, "data": {}, "meta": { "total": 0, "page": 1, "per_page": 20 } }
 ```
-Errors use the same envelope with `success: false`. 429 includes `Retry-After: 86400`.
+Error responses use the WordPress REST API standard: `{ "code": "...", "message": "...", "data": { "status": 4xx } }`. 429 responses additionally include a `Retry-After: 86400` header.
 
 **Endpoints:**
 

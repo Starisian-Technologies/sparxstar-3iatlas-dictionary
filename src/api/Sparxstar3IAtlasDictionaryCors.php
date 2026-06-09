@@ -39,7 +39,7 @@ final class Sparxstar3IAtlasDictionaryCors {
     public function register_hooks(): void {
         // Priority 1 — run before route registration so headers are set early.
         add_action( 'rest_api_init', array( $this, 'intercept_options_preflight' ), 1 );
-        add_filter( 'rest_pre_serve_request', array( $this, 'add_cors_headers' ), 10, 4 );
+        add_filter( 'rest_pre_serve_request', array( $this, 'add_cors_headers' ), 10, 3 );
     }
 
     /**

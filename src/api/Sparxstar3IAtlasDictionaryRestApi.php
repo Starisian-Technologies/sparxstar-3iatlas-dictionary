@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace Starisian\Sparxstar\IAtlas\api;
 
+use Starisian\Sparxstar\IAtlas\api\auth\ApiKeyAuth;
 use Starisian\Sparxstar\IAtlas\api\auth\DictionaryAuthResolver;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -115,20 +116,27 @@ final class Sparxstar3IAtlasDictionaryRestApi {
 
     /**
      * Permission callback: API key ONLY.
-     * Returns 403 if an ephemeral token is presented, 401 if nothing.
+     *
+     * Calls ApiKeyAuth directly rather than through the composite resolver — the
+     * resolver prefers a valid page token, which would cause /wordlist to return 403
+     * even when a valid API key is also present in the request.
      *
      * @param \WP_REST_Request $request The incoming request.
      * @return true|\WP_Error
      */
     public function permission_consumer_only( \WP_REST_Request $request ): bool|\WP_Error {
-        $resolver = new DictionaryAuthResolver();
-        $result   = $resolver->resolve( $request );
+        $has_api_key = '' !== trim( (string) $request->get_header( 'X-Api-Key' ) );
 
-        if ( is_wp_error( $result ) ) {
-            return $result;
+        if ( $has_api_key ) {
+            $result = ( new ApiKeyAuth() )->resolve( $request );
+            if ( is_wp_error( $result ) ) {
+                return $result;
+            }
+            $request->set_param( '_auth_context', $result );
+            return true;
         }
 
-        if ( 'ephemeral' === $result->credential_type ) {
+        if ( '' !== trim( (string) $request->get_header( 'X-Page-Token' ) ) ) {
             return new \WP_Error(
                 'forbidden',
                 __( 'This endpoint requires an API key. Ephemeral page tokens are not accepted here.', 'sparxstar-3iatlas-dictionary' ),
@@ -136,8 +144,11 @@ final class Sparxstar3IAtlasDictionaryRestApi {
             );
         }
 
-        $request->set_param( '_auth_context', $result );
-        return true;
+        return new \WP_Error(
+            'no_credentials',
+            __( 'Authentication required. Provide X-Api-Key.', 'sparxstar-3iatlas-dictionary' ),
+            array( 'status' => 401 )
+        );
     }
 
     public function permission_open(): bool {
