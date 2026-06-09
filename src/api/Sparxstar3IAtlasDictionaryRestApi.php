@@ -259,7 +259,10 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         return new \WP_Error(
             'rate_limited',
             'Too many requests. Retry after 15 minutes.',
-            array( 'status' => 429 )
+            array(
+                'status'  => 429,
+                'headers' => array( 'Retry-After' => (string) self::RATE_WINDOW ),
+            )
         );
     }
 
@@ -560,7 +563,7 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         );
 
         $response = $this->cached_response( $payload, 3600 );
-        $response->header( 'Cache-Control', 'private, no-store' );
+        $response->header( 'Cache-Control', 'private, no-cache' );
 
         $word_uuids    = array_column( $words, 'uuid' );
         $etag          = md5( $lang . ':' . $page . ':' . $per_page . ':' . (string) $query->found_posts . ':' . implode( ',', $word_uuids ) );

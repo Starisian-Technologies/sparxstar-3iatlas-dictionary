@@ -39,7 +39,7 @@ final class Sparxstar3IAtlasDictionaryCors {
     public function register_hooks(): void {
         // Priority 1 — run before route registration so headers are set early.
         add_action( 'rest_api_init', array( $this, 'intercept_options_preflight' ), 1 );
-        add_filter( 'rest_pre_serve_request', array( $this, 'add_cors_headers' ), 10, 3 );
+        add_filter( 'rest_pre_serve_request', array( $this, 'add_cors_headers' ), 10, 4 );
     }
 
     /**
@@ -84,13 +84,18 @@ final class Sparxstar3IAtlasDictionaryCors {
      * Add CORS headers to the response for matched origins on dictionary routes.
      * Hooked into rest_pre_serve_request.
      *
-     * @param bool              $served  Whether the request has already been served.
-     * @param \WP_REST_Response $result  The response object.
-     * @param \WP_REST_Request  $request The request object.
+     * @param bool                        $served  Whether the request has already been served.
+     * @param \WP_REST_Response|\WP_Error $result  Response or error; headers only applied when a WP_REST_Response is passed.
+     * @param \WP_REST_Request            $request The request object.
+     * @param \WP_REST_Server             $server  The REST server instance (required by filter signature).
      * @return bool
      */
-    public function add_cors_headers( bool $served, \WP_REST_Response $result, \WP_REST_Request $request ): bool {
+    public function add_cors_headers( bool $served, \WP_REST_Response|\WP_Error $result, \WP_REST_Request $request, \WP_REST_Server $server ): bool { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
         if ( ! $this->is_dictionary_route( $request ) ) {
+            return $served;
+        }
+
+        if ( ! $result instanceof \WP_REST_Response ) {
             return $served;
         }
 
