@@ -23,6 +23,7 @@ use WP_Post;
 use Throwable;
 use RuntimeException;
 use function defined;
+use function add_action;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -68,6 +69,25 @@ final class Sparxstar3IAtlasDictionary {
     private function sparxIAtlas_register_hooks(): void {
         add_action( 'init', array( $this, 'sparxIAtlas_register_shortcodes' ) );
         add_action( 'wp_enqueue_scripts', array( $this, 'sparxIAtlas_register_assets' ) );
+        if ( is_admin() ) {
+            add_action( 'admin_notices', array( $this, 'sparxIAtlas_configuration_notices' ) );
+        }
+    }
+
+    /**
+     * Displays admin notices for missing required configuration constants.
+     *
+     * @return void
+     */
+    public function sparxIAtlas_configuration_notices(): void {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+        if ( ! defined( 'SPARXSTAR_DICT_PAGE_SECRET' ) ) {
+            echo '<div class="notice notice-error"><p>' .
+                esc_html__( 'Sparxstar 3iAtlas Dictionary: SPARXSTAR_DICT_PAGE_SECRET is not defined in wp-config.php. Page tokens cannot be minted.', 'sparxstar-3iatlas-dictionary' ) .
+                '</p></div>';
+        }
     }
 
     /**
@@ -140,6 +160,7 @@ final class Sparxstar3IAtlasDictionary {
                     'root_id'    => 'sparxstar-dictionary-root',
                     'graphqlUrl' => $graphql_url,
                     'restUrl'    => \untrailingslashit( \rest_url( 'sparxstar/v1/dictionary' ) ),
+                    'pageToken'  => '',
                 )
             );
             // Ensure assets are enqueued (in case they weren't caught by the global check, e.g., in a widget)
@@ -189,9 +210,20 @@ final class Sparxstar3IAtlasDictionary {
                 ( new \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionarySpellChecker() )->register_hooks();
             }
 
+            // CORS handler — must be registered early (priority 1 on rest_api_init).
+            if ( class_exists( \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryCors::class ) ) {
+                ( new \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryCors() )->register_hooks();
+            }
+
             // Instantiate Auto Linker
             if ( class_exists( Sparxstar3IAtlasAutoLinker::class ) ) {
                 new Sparxstar3IAtlasAutoLinker();
+            }
+
+            // WP-CLI commands — only register when CLI is active.
+            if ( defined( 'WP_CLI' ) && WP_CLI && class_exists( \Starisian\Sparxstar\IAtlas\cli\Sparxstar3IAtlasDictionaryCliCommands::class ) ) {
+                $cli_handler = new \Starisian\Sparxstar\IAtlas\cli\Sparxstar3IAtlasDictionaryCliCommands();
+                \WP_CLI::add_command( 'sparxstar-dict key', $cli_handler );
             }
         } catch ( \Throwable $throwable ) {
             if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {

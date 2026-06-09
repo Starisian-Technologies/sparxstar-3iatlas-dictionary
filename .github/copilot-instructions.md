@@ -49,20 +49,25 @@ Every other 3iAtlas tool (WordPad, RLC, Sound to Symbol) is a consumer of this p
 
 ## Open Questions — Do Not Implement Without a Spec Decision
 
-| ID | Question | Blocking |
-|---|---|---|
-| OQ-V1 | AIWA logo asset path and tagline copy for the desktop sidebar footer | Sidebar footer final content |
-| OQ-G1 | `syncNow()` two-mode spec: standalone (WP user meta) vs. full-system (governed pipeline) | Progress sync implementation |
-| OQ-G3 | Letter Reveal animation — pottery vessel emoji (🏺) is a placeholder; replace with AIWA-approved cultural visual | Letter Reveal polish |
-| OQ-G4 | DomainFlash "I knew it" — fires `aiwa_game_word_correct`; confirm if a separate hook is needed | myCred hook map |
+| ID | Status | Question | Blocking |
+|---|---|---|---|
+| OQ-V1 | ⏸ Open | AIWA logo asset path and tagline copy for the desktop sidebar footer | Sidebar footer final content |
+| OQ-G1 | ✅ Closed | WP nonce auth for `/progress/sync` — endpoint retired per identity decision §6.2 | — |
+| OQ-G3 | ⏸ Open | Letter Reveal animation — pottery vessel emoji (🏺) is a placeholder; replace with AIWA-approved cultural visual | Letter Reveal polish |
+| OQ-G4 | ⏸ Open | DomainFlash "I knew it" — fires `aiwa_game_word_correct`; confirm if a separate hook is needed | myCred hook map |
+| OQ-G5 | ✅ Closed | Sync destination = 3iAtlas Game Service, suite-JWT authenticated | — |
+| OQ-I3 | ⏸ Open | Account-claim flow: merging guest device progress into a new suite account | Game Service intake spec |
+| OQ-I4 | ⏸ Open | Tier verification: who approves teacher accounts for Lower Basic sessions | Identity Service spec |
 
 ---
 
 ## Known Intentional Gaps — Do Not Fix These Without a Spec
 
-**`useProgressSync.syncNow()` is a no-op (OQ-G1)**
-Progress sync to the server is intentionally deferred. The outbox is written to IndexedDB.
-Do not implement `syncNow()` as a simple REST POST. Before implementing OQ-G1, a spec decision is needed on two-mode behaviour: standalone (write to WordPress user meta) vs. full-system (route through governed pipeline). Implementing blind will require a refactor.
+**`useProgressSync.syncNow()` is a no-op — do not implement until `GAME-SERVICE-INTAKE-SPEC-v1.0` lands**
+OQ-G1 is closed: sync destination is the 3iAtlas Game Service (RLC Node engine), authenticated by suite JWT from `sparxstar-identity`. The IndexedDB outbox and event schema are frozen. `syncNow()` must not POST to the deprecated WordPress `/progress/sync` endpoint. Implement only when `GAME-SERVICE-INTAKE-SPEC-v1.0` is committed to `.github/instructions/`.
+
+**`POST /progress/sync` is deprecated**
+The WordPress route is frozen and scheduled for removal after the Game Service intake is live. Its `@deprecated` docblock is in the source. Never extend it. Never build a client against it.
 
 **`// TODO: Replace with Helios token introspection`**
 These appear across `src/api/` (RestApi, SpellChecker, RateLimitTrait). They are **integration stubs, not technical debt**. They correctly mark where Helios authentication attaches when the full SPARXSTAR stack is present. In standalone mode, WordPress user checks are correct degraded behaviour. Do not remove them or replace them with a different auth model without a platform decision.
@@ -94,15 +99,30 @@ These appear across `src/api/` (RestApi, SpellChecker, RateLimitTrait). They are
 
 **Base namespace:** `sparxstar/v1/dictionary`
 
-**Auth model:**
-- All GET endpoints: public, rate-limited (100 req / 15 min / IP via WordPress transients)
-- `POST /progress/sync`: temporary non-Helios guard (Bearer token presence + `is_user_logged_in()` + capability check). Mark with `// TODO: Replace with Helios token introspection`.
-- `POST /spell`: public, rate-limited
+**Auth model — Webster Model (June 2026):**
+The website is free to use; the API requires credentials. Two credential types:
+- **Ephemeral page token** (`X-Page-Token` header) — minted server-side on page render, TTL 60 min, scope `browse`. Frontend auto-refreshes via `GET /page-token` on 401.
+- **Consumer API key** (`X-Api-Key` header) — long-lived, SHA-256 hashed at rest, 10k req/day. Issued via `wp sparxstar-dict key generate --label=<name>`.
+
+Per-IP rate limit (100/15 min) applies to all endpoints as an outer layer.
+
+**Rule: every new endpoint must declare its auth row in the table before implementation.**
+
+| Endpoint | Page token | API key | None |
+|---|---|---|---|
+| GET `/lookup`, `/search`, `/languages`, `/domains`, `/word-of-day`, `/game-set` | ✅ | ✅ | ❌ 401 |
+| POST `/spell` | Public (rate-limited, no credentials required) | | |
+| GET `/wordlist` | ❌ 403 | ✅ only | ❌ 401 |
+| GET `/page-token` | Public (referer check + rate limit) | | |
+| POST `/progress/sync` | **DEPRECATED** — do not build against | | |
+
+**Auth doorway:** `src/api/auth/DictionaryAuthInterface.php`. When `sparxstar-identity` ships, its RS256 JWT verifier becomes a third implementation — no endpoint changes.
 
 **Response envelope (all endpoints):**
 ```json
 { "success": true, "data": {}, "meta": { "total": 0, "page": 1, "per_page": 20 } }
 ```
+Error responses use the WordPress REST API standard: `{ "code": "...", "message": "...", "data": { "status": 4xx } }`. 429 responses additionally include a `Retry-After: 86400` header.
 
 **Endpoints:**
 
@@ -110,13 +130,14 @@ These appear across `src/api/` (RestApi, SpellChecker, RateLimitTrait). They are
 |---|---|---|
 | GET | `/lookup` | Full entry by slug or UUID |
 | GET | `/search` | Search by query string |
-| GET | `/wordlist` | Lightweight list for offline caching (ETag required) |
+| GET | `/wordlist` | Lightweight list for offline caching — consumer API key only |
 | GET | `/languages` | Language taxonomy terms with counts |
 | GET | `/domains` | Domain taxonomy terms with counts |
 | GET | `/game-set` | Curated word set for game use |
 | GET | `/word-of-day` | Single deterministic daily entry |
-| POST | `/progress/sync` | Batch game event sync → myCred hooks |
+| GET | `/page-token` | Mint fresh ephemeral token for the React app |
 | POST | `/spell` | Spell-check against dictionary entries |
+| POST | `/progress/sync` | **DEPRECATED** — frozen, removal pending Game Service |
 
 **`/game-set` rules:**
 - Parameters: `lang_source` (required), `domain` (optional), `limit` (default 20, max 50), `include_audio` (bool)
@@ -210,6 +231,10 @@ This repo is SPARXSTAR-family but operates in standalone mode. Standalone means:
 - The Helios TODO stubs are correct — they mark future integration points
 - `syncNow()` no-op is correct — it marks a future governed pipeline integration point
 - Do not attempt to replicate Sirus, Helios, Mḗh₁n̥s, or Dheghom behaviour locally
+
+**Suite identity (June 2026):**
+All 3iAtlas products share one identity system — the `sparxstar-identity` service (RS256 JWT, Cloudflare Workers). WordPress authentication is prohibited for all user-facing features. The Dictionary React app uses an ephemeral page token (HMAC-SHA256, server-minted) for browse access and will use suite JWTs for authenticated play when the Identity Service is live. Do not add `wp_nonce` or `is_user_logged_in()` to any new user-facing endpoint.
+
 
 **Eshu migration awareness:**
 The platform direction moves PHP processing pipelines toward Eshu MCP and ACF/CPT toward Dheghom vault storage. New capabilities that need persistent storage should be designed lightly. Do not over-invest in WordPress/ACF for new storage layers if they will migrate.

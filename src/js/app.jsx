@@ -41,6 +41,62 @@ const GRAPHQL_ENDPOINT = settings.graphqlUrl || '/graphql';
 const REST_URL = settings.restUrl || '/wp-json/sparxstar/v1/dictionary';
 
 // ---------------------------------------------------------------------------
+// apiFetch — authenticated fetch helper for dictionary REST endpoints.
+// GraphQL calls go to graphqlUrl (different path) — do NOT use apiFetch there.
+// ---------------------------------------------------------------------------
+
+/**
+ * Refresh the ephemeral page token by calling GET /page-token.
+ * Stores the new token in window.sparxstarDictionarySettings.pageToken.
+ *
+ * @returns {Promise<string>} The new token, or empty string on failure.
+ */
+async function refreshPageToken() {
+    try {
+        const res = await fetch(`${REST_URL}/page-token`);
+        if (!res.ok) return '';
+        const json = await res.json();
+        const token = json?.data?.token ?? '';
+        if (token && window.sparxstarDictionarySettings) {
+            window.sparxstarDictionarySettings.pageToken = token;
+        }
+        return token;
+    } catch {
+        return '';
+    }
+}
+
+/**
+ * Authenticated fetch for dictionary REST API endpoints.
+ *
+ * 1. Reads window.sparxstarDictionarySettings?.pageToken.
+ * 2. Adds X-Page-Token header.
+ * 3. Makes the fetch.
+ * 4. On 401: refreshes the token, retries once.
+ * 5. Returns the Response.
+ *
+ * Do NOT use this for GraphQL calls — those go to graphqlUrl.
+ *
+ * @param {string} url     Full URL (should start with REST_URL).
+ * @param {object} options fetch() options (optional).
+ * @returns {Promise<Response>}
+ */
+async function apiFetch(url, options = {}) {
+    const token = window.sparxstarDictionarySettings?.pageToken ?? '';
+    const headers = { ...(options.headers || {}), 'X-Page-Token': token };
+
+    let res = await fetch(url, { ...options, headers });
+
+    if (res.status === 401) {
+        const newToken = await refreshPageToken();
+        const retryHeaders = { ...(options.headers || {}), 'X-Page-Token': newToken };
+        res = await fetch(url, { ...options, headers: retryHeaders });
+    }
+
+    return res;
+}
+
+// ---------------------------------------------------------------------------
 // Apollo client
 // ---------------------------------------------------------------------------
 const httpLink = new HttpLink({ uri: GRAPHQL_ENDPOINT });
@@ -1567,7 +1623,7 @@ export default function DictionaryApp() {
 
     // Fetch source languages from REST API
     useEffect(() => {
-        fetch(`${REST_URL}/languages`)
+        apiFetch(`${REST_URL}/languages`)
             .then((r) => (r.ok ? r.json() : null))
             .then((json) => {
                 if (json && json.success && Array.isArray(json.data?.languages)) {
@@ -1590,7 +1646,7 @@ export default function DictionaryApp() {
         } catch {
             /* ignore malformed cache */
         }
-        fetch(`${REST_URL}/word-of-day`)
+        apiFetch(`${REST_URL}/word-of-day`)
             .then((r) => (r.ok ? r.json() : null))
             .then((json) => {
                 const slug = json?.success ? json.data?.word?.slug : null;

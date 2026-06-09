@@ -11,6 +11,70 @@ This is the authoritative lexical data store and REST API service for the entire
 
 ---
 
+## Dictionary Role — Read Before Writing Any Code
+
+**Authoritative spec:** `.github/instructions/3IATLAS-DICTIONARY-ROLE-AND-PIPELINE-SPEC-v1.0.md`
+
+The dictionary is a **downstream governed publication service**. It is **linguistically read-only** after import.
+
+```
+Community / Speakers / Linguists / Elders
+        ↓
+DVE (intake, review, normalization, approval)
+        ↓
+AIWA Dictionary  ← you are here
+(import, store, lock, serve)
+        ↓
+3iAtlas Apps (games, workbooks, browse, API consumers)
+```
+
+**What this means for code:**
+- The dictionary does NOT intake words. No community submission pathways for new entries.
+- The dictionary does NOT adjudicate or flag entries. No review queues, no quality routing.
+- Linguistic fields (headword, language, definitions, pronunciation, siblings, speaker community tags) are **locked after import**. WordPress admins cannot edit them directly.
+- Operational fields (publish status, visibility, API eligibility, featured flag) are editable.
+- All corrections originate upstream in DVE as a new Approved Entry Package, imported via WP-CLI.
+- `aiwa_entry_uuid` is minted by DVE. The dictionary preserves it. Never regenerate it. Never let WordPress mint a UUID for an approved entry.
+
+**Import v1 — WP-CLI batch, deliberate and rare:**
+```bash
+wp aiwa-dictionary import --file=approved-entry-batch.json --dry-run   # validates, no write
+wp aiwa-dictionary import --file=approved-entry-batch.json --publish    # validates and writes
+```
+
+**Entry lifecycle states:** `active`, `deprecated`, `merged`, `hidden`, `withdrawn` — never delete a UUID once published.
+
+---
+
+## Language Model — Two Layers, Never Mixed
+
+**Authoritative spec:** `.github/instructions/3IATLAS-DICTIONARY-MULTILANGUAGE-MODEL-SPEC-v1.0.md`
+
+The dictionary maintains two independent language layers. They answer different questions.
+
+| Layer | Field | Question answered | Who uses it |
+|---|---|---|---|
+| **Primary Language Layer** | `starmus_tax_language` | Where does this word belong linguistically? | Games (strict mode), curriculum, formal learning |
+| **Speaker Community Layer** | `aiwa_speaker_community` taxonomy | Who uses or recognizes this word in lived speech? | Browse app (ecology mode), literacy, real-speech |
+
+**The rule: never silently mix.** A result set that combines primary-language matches with speaker-community matches without labeling them separately is a spec violation.
+
+**Search modes — always explicit:**
+
+| Mode | Param | Returns | Use for |
+|---|---|---|---|
+| `mode=strict` | `lang_source=mandinka` | Primary language matches only | Games, quizzes, formal lessons |
+| `mode=ecology` | `speaker_community=mandinka-speakers` | Primary language first, then speaker-community matches labeled | Browse, literacy, urban speech |
+| `mode=cross_language` | on `/lookup` | Cross-language sibling entries with relation type | Detail views, S2S, WordPad |
+
+Default mode when omitted: `strict`. The game service must always use `strict`. It must never use `ecology`.
+
+**Speaker community taxonomy is controlled.** Valid terms: `mandinka-speakers`, `wolof-speakers`, `fula-speakers`, `jola-speakers`, `serer-speakers`, `soninke-speakers`, `mixed-urban-gambia`, `banjul-market`, `serekunda-urban`, `senegambia-region`, `school-gambia`, `islamic-religious-context`. Freeform tags are not permitted.
+
+**Community usage status per tag:** `observed` → `speaker_confirmed` → `editorial_approved`. Games must only trust `editorial_approved` tags in strict mode.
+
+---
+
 ## Absolute Rules — Never Violate
 
 - **Never modify the `aiwa-cpt-dictionary` CPT slug.** Live data depends on it. Changing it destroys existing entries.
@@ -40,20 +104,55 @@ This is the authoritative lexical data store and REST API service for the entire
 
 ## Data Model — Key CPT and Fields
 
-**CPT:** `aiwa-cpt-dictionary`
-**Taxonomies:** `starmus_tax_language` (source language — Mandinka, Wolof, etc.), `starmus_tax_dialect`, `starmus_tax_alpha` (alphabetical grouping)
+**Authoritative specs:** `.github/instructions/3IATLAS-DICTIONARY-APPROVED-ENTRY-SPEC-v1.0.md` and `.github/instructions/3IATLAS-DICTIONARY-ENRICHMENT-FIELDS-SPEC-v1.0.md`
 
-Key ACF fields on `aiwa-cpt-dictionary`:
-- `aiwa_extract` — definition/extract text
-- `aiwa_translation_english` — English translation
-- `aiwa_translation_french` — French translation
-- `aiwa_ipa_pronunciation` — IPA pronunciation
-- `aiwa_phonetic` — phonetic pronunciation
-- `aiwa_audio_file` — audio recording URL
-- `aiwa_word_photo` — image URL
-- `aiwa_origin` — word origin notes
-- `aiwa_synonyms` / `aiwa_antonyms` — related words
-- `aiwa_example_sentences` — repeater field with sub-fields: sentence, IPA, phonetic, EN translation, FR translation
+**CPT:** `aiwa-cpt-dictionary`
+
+**Taxonomies:**
+- `starmus_tax_language` — Primary Language Layer (Mandinka, Wolof, Fula, etc.) — one term per entry
+- `starmus_tax_dialect` — dialect grouping
+- `starmus_tax_alpha` — alphabetical grouping
+- `aiwa_domain` — semantic domain (hierarchical: animals → domestic-animals / wild-animals, etc.)
+- `aiwa_speaker_community` — Speaker Community Layer (controlled vocabulary; see Language Model section)
+- `starmus_part_of_speech` — part of speech
+
+**ACF fields on `aiwa-cpt-dictionary` — linguistic (locked after import):**
+
+| Field | Description |
+|---|---|
+| `aiwa_entry_uuid` | DVE-minted UUID. Canonical cross-suite identifier. Immutable. |
+| `aiwa_extract` | Definition / extract text |
+| `aiwa_translation_english` | English gloss |
+| `aiwa_translation_french` | French gloss |
+| `aiwa_ipa_pronunciation` | IPA pronunciation |
+| `aiwa_phonetic` | Phonetic pronunciation in plain text |
+| `aiwa_audio_file` | Approved audio asset URL |
+| `aiwa_word_photo` | Image URL |
+| `aiwa_origin` | Origin and cultural notes |
+| `aiwa_synonyms` | ACF relationship — intra-language synonym entries |
+| `aiwa_antonyms` | ACF relationship — intra-language antonym entries |
+| `aiwa_rhyme_entries` | ACF relationship — entries that rhyme in the source language (new) |
+| `aiwa_cross_language_siblings` | ACF relationship — related entries in other languages |
+| `aiwa_cross_language_relation_type` | Relation type per sibling: `same_concept`, `loanword`, `cognate`, `shared_regional_usage`, `religious_term`, `market_usage`, `school_usage`, `false_friend`, `uncertain` |
+| `aiwa_community_usage_status` | Per speaker-community tag: `observed`, `speaker_confirmed`, `editorial_approved` |
+| `aiwa_example_sentences` | Repeater: sentence, IPA, phonetic, EN translation, FR translation |
+| `aiwa_level` | AIWA Level: `AIWA-0` through `AIWA-5` (sovereign educational scale) |
+| `aiwa_cefr_approx` | Optional CEFR approximation: `A1`–`C2` (reference mapping only) |
+| `aiwa_oxford_tier` | Optional Oxford reference: `oxford_3000`, `oxford_5000` |
+| `aiwa_concepticon_id` | Integer reference to concepticon.clld.org (sparse academic anchor) |
+| `aiwa_clics_id` | Reference to CLICS cross-linguistic colexification database (sparse) |
+
+**AIWA Level scale (pending AIWA curriculum board final confirmation):**
+
+| Value | Label | CEFR Approx |
+|---|---|---|
+| `AIWA-0` | Picture / First Exposure | Pre-A1 |
+| `AIWA-1` | Beginner Survival | A1 |
+| `AIWA-2` | Everyday Sentence | A2 |
+| `AIWA-3` | Storytelling and Explanation | B1 |
+| `AIWA-4` | School, Civic, Formal | B2 |
+| `AIWA-5` | Literary, Technical, Specialist | C1–C2 |
+
 - `aiwa_sentence_ipa` (key: `field_696e6b18c17f4`) — registered in PostTypes.php but absent from SCF JSON. **PostTypes.php is authoritative. Do not add this field to the SCF JSON.**
 
 ---
@@ -72,29 +171,59 @@ Do not add this field to the SCF JSON. Do not remove it from PostTypes.php.
 
 `sparxstar/v1/dictionary`
 
-**Auth model:**
-- All GET endpoints: public, no auth required, rate-limited (100 requests / 15 min / IP via WordPress transients)
-- POST `/progress/sync`: temporary non-Helios guard (Bearer token presence + logged-in user + capability check) until Helios token introspection is implemented
-- Add `// TODO: Replace with Helios token introspection` comment on every rate-limit check
+### Auth Model — Webster Model (June 2026)
+
+**Supersedes:** 3IATLAS-SUITE-ARCHITECTURE-v1.0 "Read endpoints: Public, no auth required" — see 3IATLAS-IDENTITY-AND-GAME-SERVICES-DECISION-v1.0 §6.3 and API Lockdown issue.
+
+**The website is free to use; the API requires credentials.** Two credential types:
+
+- **Ephemeral page token** — HMAC-SHA256, minted server-side on page render, injected via `wp_localize_script` as `sparxstarDictionarySettings.pageToken`. Sent as `X-Page-Token` header. TTL 60 min, scope `browse`, quota 600 req/token. Frontend retries on 401 via `GET /page-token` refresh endpoint.
+- **Consumer API key** — long-lived, stored hashed (SHA-256) in WP option `aiwa_dict_api_keys`. Sent as `X-Api-Key` header. Daily quota 10,000/key (filterable). Issued via WP-CLI: `wp sparxstar-dict key generate --label=<name>`.
+
+**Rule: all new endpoints must declare their row in the auth table before implementation.**
+
+| Endpoint | Ephemeral page token | API key | No credential |
+|---|---|---|---|
+| GET `/lookup`, `/search`, `/languages`, `/domains`, `/word-of-day` | ✅ | ✅ | ❌ 401 |
+| POST `/spell` | ✅ | ✅ | ❌ 401 |
+| GET `/game-set` | ✅ | ✅ | ❌ 401 |
+| GET `/wordlist` | ❌ 403 | ✅ only | ❌ 401 |
+| GET `/page-token` | Public (referer check + rate limit) | | |
+| POST `/progress/sync` | **DEPRECATED** — do not touch | | |
+
+Existing per-IP rate limiting (100/15 min) remains as an outer layer on all endpoints.
+
+**Consumer key onboarding (one step):** issue a key AND add its origin to `aiwa_dict_cors_origins` option. These always happen together.
+
+**WP-CLI key management:**
+```bash
+wp sparxstar-dict key generate --label=<name>  # prints plaintext once; stores hash only
+wp sparxstar-dict key list
+wp sparxstar-dict key revoke --label=<name>
+```
+
+**Auth implementation:** `src/api/auth/DictionaryAuthInterface.php` — single doorway. When `sparxstar-identity` ships, its RS256 JWT verifier becomes a third implementation behind this doorway with no endpoint code changes.
 
 **Response envelope (all endpoints):**
 ```json
 { "success": true, "data": {}, "meta": { "total": 0, "page": 1, "per_page": 20 } }
 ```
+Error responses use the same envelope with `success: false`. 429 includes `Retry-After: 86400`.
 
-**Core Phase 1 endpoints (implemented):**
+**Endpoints:**
 
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
-| GET | `/lookup` | Public | Full entry by slug or UUID |
-| GET | `/search` | Public | Search entries by query string |
-| GET | `/wordlist` | Public | Lightweight word list for offline caching |
-| GET | `/languages` | Public | All language taxonomy terms with word counts |
-| GET | `/domains` | Public | Semantic domain taxonomy terms with counts |
-| GET | `/game-set` | Public | Curated word set for game use (richer than wordlist) |
-| GET | `/word-of-day` | Public | Single deterministic daily entry |
-| POST | `/progress/sync` | Temporary non-Helios guard | Batch game event sync → myCred points |
-| POST | `/spell` | Public (rate-limited) | Spell-checking service for dictionary entries |
+| GET | `/lookup` | Browse or consumer | Full entry by slug or UUID |
+| GET | `/search` | Browse or consumer | Search entries by query string |
+| GET | `/wordlist` | Consumer key only | Lightweight word list for offline caching |
+| GET | `/languages` | Browse or consumer | All language taxonomy terms with word counts |
+| GET | `/domains` | Browse or consumer | Semantic domain taxonomy terms with counts |
+| GET | `/game-set` | Browse or consumer | Curated word set for game use (richer than wordlist) |
+| GET | `/word-of-day` | Browse or consumer | Single deterministic daily entry |
+| GET | `/page-token` | Public (referer + rate limit) | Mint fresh ephemeral token for the React app |
+| POST | `/spell` | Browse or consumer | Spell-checking service for dictionary entries |
+| POST | `/progress/sync` | **DEPRECATED** — frozen | Do not build clients against this endpoint |
 
 **`/game-set` parameters:** `lang_source` (required), `domain` (optional), `limit` (default 20, max 50), `include_audio` (bool)
 **`/game-set` exclusion rule:** Exclude entries missing headword, translation_en, or IPA. Games require all three.
@@ -295,10 +424,31 @@ changes applied to the existing `app.jsx` (not a rebuild):
 - `package-lock.json` re-synced with `package.json` (missing stylelint deps added) so
   `npm ci` works again.
 
-### Open Questions (UI fix)
-| ID | Question | Blocking |
-|---|---|---|
-| OQ-V1 | AIWA logo asset path and tagline copy for the desktop sidebar footer | Sidebar footer final content |
+### Open Questions
+
+| ID | Status | Question | Blocking |
+|---|---|---|---|
+| OQ-V1 | ⏸ Open | AIWA logo asset path and tagline copy for the desktop sidebar footer | Sidebar footer final content |
+| OQ-G1 | ✅ Closed (historical) | WP nonce auth for `/progress/sync` — decision was correct for the WP endpoint; endpoint itself is now retired per 3IATLAS-IDENTITY-AND-GAME-SERVICES-DECISION-v1.0 §6.2 | — |
+| OQ-G3 | ⏸ Open | Animation asset for Letter Reveal — pottery vessel emoji (🏺) is placeholder; replace with AIWA-approved cultural visual | Letter Reveal polish |
+| OQ-G4 | ⏸ Open | DomainFlash "I knew it" — currently fires `aiwa_game_word_correct`; confirm if a separate hook is needed | myCred hook map |
+| OQ-G5 | ✅ Closed | Sync destination — 3iAtlas Game Service (RLC Node engine), authenticated by suite JWT from `sparxstar-identity` (RS256; apps verify with public key only) | — |
+| OQ-I3 | ⏸ Open | Account-claim flow: merging guest device progress into a new suite account | Game Service intake spec |
+| OQ-I4 | ⏸ Open | Tier verification: who approves teacher (Lower Basic session-opening) accounts | Identity Service spec |
+
+---
+
+### Progress Sync — Current State (June 2026)
+
+- **Server route `/progress/sync`:** live but **DEPRECATED**. `@deprecated` docblock added. Never extend. Removal scheduled after the Game Service intake is live.
+- **Client `syncNow()`:** intentional no-op. **DO NOT IMPLEMENT** until `GAME-SERVICE-INTAKE-SPEC-v1.0` is committed to `.github/instructions/` in this repo.
+- **Event schema is FROZEN as contract:** `word_uuid`, `game_type`, `outcome`, `attempts`, `xp`, `timestamp`, production-vs-recognition distinction (per PR #59 Fix 2). Any change to this schema is a spec violation.
+- **IndexedDB outbox behavior:** unchanged, correct, keep.
+- **Sync target:** 3iAtlas Game Service (§3 of decision record). Suite JWT from `sparxstar-identity`. Guest play stays device-local.
+
+### Authentication Rule (suite-wide, permanent)
+
+WordPress authentication is prohibited for all user-facing features. WordPress sessions are admin-only. User identity comes from the suite Identity Service (`sparxstar-identity`) when its spec lands. Do not add `wp_nonce` / `is_user_logged_in()` gates to any new user-facing endpoint.
 
 ---
 
@@ -387,6 +537,17 @@ For continuation work:
 - Treat documented boot blockers as bug fixes first (autoloader constants and form CSS enqueue path).
 - Keep intentional gaps (`syncNow()` no-op and Helios stubs) unchanged until a dedicated spec lands.
 
+### Dictionary Architecture — June 2026 (active)
+
+Four specs committed to `.github/instructions/` that define the dictionary's final architecture. Any code that contradicts these specs is a violation.
+
+| Spec | Status | Summary |
+|---|---|---|
+| `3IATLAS-DICTIONARY-ROLE-AND-PIPELINE-SPEC-v1.0.md` | Active | DVE upstream / dictionary downstream. Linguistically read-only after import. WP-CLI batch import. Entry lifecycle states. Edit lock rules. |
+| `3IATLAS-DICTIONARY-APPROVED-ENTRY-SPEC-v1.0.md` | Active | Approved Entry Package format. Required fields. UUID ownership (DVE mints, dictionary preserves). AIWA Level scale. Replacement and deprecation packages. |
+| `3IATLAS-DICTIONARY-MULTILANGUAGE-MODEL-SPEC-v1.0.md` | Active | Primary Language Layer + Speaker Community Layer. Strict / ecology / cross-language search modes. No silent mixing. Controlled speaker community taxonomy. Cross-language relation types. Community usage status. JWT language claims (for identity service). |
+| `3IATLAS-DICTIONARY-ENRICHMENT-FIELDS-SPEC-v1.0.md` | Active | AIWA Level sovereign scale. CEFR/Oxford as reference mappings only. Concepticon and CLICS academic anchors. Rhyme entries field. Domain taxonomy expansion. Updated `/game-set` and `/wordlist` filter params. |
+
 ### Phase 3 — Integration Tests ⏸ Pending
 
 Phase 3 covers cross-tool REST integration verification. The authoritative scope is in `3IATLAS-SUITE-ARCHITECTURE-v1.0.md`:
@@ -406,8 +567,6 @@ Key files added:
 - `src/js/hooks/useGameSet.js` — IndexedDB-backed game set cache
 - `src/js/hooks/useGameSession.js` — session tracking with sessionRef pattern
 - `src/js/hooks/useProgressSync.js` — IndexedDB outbox (syncNow is intentional no-op — OQ-G1)
-
-**Known intentional gap:** `useProgressSync.syncNow()` is a no-op pending OQ-G1 resolution. Do not implement without a two-mode spec decision (standalone: WordPress user meta; full-system: governed pipeline).
 
 **sessionRef pattern:** `recordResult` and `completeSession` in `useGameSession.js` use `sessionRef.current` to avoid stale React closure bugs. Do not remove this pattern.
 

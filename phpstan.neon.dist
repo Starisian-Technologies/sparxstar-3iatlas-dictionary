@@ -26,6 +26,12 @@ parameters:
     - node_modules/*
     - assets/*
 
+  # WP-CLI is an optional CLI-only dependency; no stubs are installed for it.
+  # These errors are expected and intentional — suppress globally.
+  ignoreErrors:
+    - '#^Call to static method .+ on an unknown class WP_CLI\.$#'
+    - '#^Function WP_CLI.+ not found\.$#'
+
   # Pre-existing findings are captured in phpstan-baseline.neon (baseline-first).
   # New code must pass clean at this level; clear baseline entries as files are fixed.
   reportUnmatchedIgnoredErrors: false

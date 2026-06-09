@@ -14,28 +14,6 @@ import ListenWrite from './games/ListenWrite.jsx';
 const useGameSet = GameSetHookModule.useGameSet ?? GameSetHookModule.default;
 const useGameSession = useGameSessionModule.useGameSession ?? useGameSessionModule.default;
 
-/**
- * Refresh the ephemeral page token by calling GET /page-token.
- * Updates window.sparxstarDictionarySettings.pageToken on success.
- *
- * @param {string} restUrl Base REST URL.
- * @returns {Promise<string>} The new token, or empty string on failure.
- */
-async function refreshPageToken(restUrl) {
-    try {
-        const res = await fetch(`${restUrl}/page-token`);
-        if (!res.ok) return '';
-        const json = await res.json();
-        const token = json?.data?.token ?? '';
-        if (token && typeof window !== 'undefined' && window.sparxstarDictionarySettings) {
-            window.sparxstarDictionarySettings.pageToken = token;
-        }
-        return token;
-    } catch {
-        return '';
-    }
-}
-
 /** Word count options available in session setup. */
 const WORD_COUNTS = [10, 20, 30];
 
@@ -183,34 +161,18 @@ export default function GameShell({
             return;
         }
         setDomainsLoading(true);
-
-        async function fetchDomains() {
-            const url = `${restUrl}/domains?lang_source=${encodeURIComponent(sourceLanguage)}`;
-            const token = typeof window !== 'undefined' ? (window.sparxstarDictionarySettings?.pageToken ?? '') : '';
-            let res = await fetch(url, {
-                signal: controller.signal,
-                headers: { 'X-Page-Token': token },
-            });
-
-            if (res.status === 401) {
-                const newToken = await refreshPageToken(restUrl);
-                res = await fetch(url, {
-                    signal: controller.signal,
-                    headers: { 'X-Page-Token': newToken },
-                });
-            }
-
-            if (!res.ok) return;
-            const json = await res.json();
-            if (!cancelled && json?.success && Array.isArray(json.data?.domains)) {
-                setDomains(json.data.domains);
-            }
-        }
-
-        fetchDomains()
+        fetch(`${restUrl}/domains?lang_source=${encodeURIComponent(sourceLanguage)}`, {
+            signal: controller.signal,
+        })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((json) => {
+                if (!cancelled && json?.success && Array.isArray(json.data?.domains)) {
+                    setDomains(json.data.domains);
+                }
+            })
             .catch((error) => {
-                if (error?.name !== 'AbortError') {
-                    // Domain list failure is non-fatal — setup still works without it.
+                if (error?.name === 'AbortError') {
+                    return;
                 }
             })
             .finally(() => {
