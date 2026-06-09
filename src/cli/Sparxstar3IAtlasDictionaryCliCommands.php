@@ -115,7 +115,7 @@ class Sparxstar3IAtlasDictionaryCliCommands {
      * @param array<string,string> $assoc_args Named arguments (unused).
      * @return void
      */
-    public function list( array $args, array $assoc_args ): void {
+    public function list_( array $args, array $assoc_args ): void {
         $keys = get_option( ApiKeyAuth::KEYS_OPTION, array() );
         if ( ! is_array( $keys ) || 0 === count( $keys ) ) {
             \WP_CLI::log( 'No API keys registered.' );

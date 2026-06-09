@@ -56,6 +56,15 @@ final class EphemeralTokenAuth implements DictionaryAuthInterface {
 
         [ $encoded_payload, $provided_sig ] = $parts;
 
+        // Fail closed: if the secret is not configured no token can be valid.
+        if ( ! defined( 'SPARXSTAR_DICT_PAGE_SECRET' ) ) {
+            return new \WP_Error(
+                'configuration_error',
+                __( 'Page token verification is not configured.', 'sparxstar-3iatlas-dictionary' ),
+                array( 'status' => 500 )
+            );
+        }
+
         // Verify signature using constant-time comparison.
         $secret          = $this->get_secret();
         $expected_sig    = hash_hmac( 'sha256', $encoded_payload, $secret );

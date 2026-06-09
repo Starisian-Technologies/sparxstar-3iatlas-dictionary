@@ -13,7 +13,6 @@ declare(strict_types=1);
 namespace Starisian\Sparxstar\IAtlas\api;
 
 use Starisian\Sparxstar\IAtlas\api\auth\DictionaryAuthResolver;
-use Starisian\Sparxstar\IAtlas\api\auth\AuthContext;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit( 1 );
@@ -52,7 +51,6 @@ final class Sparxstar3IAtlasDictionaryRestApi {
             array( 'GET', '/domains', 'handle_domains' ),
             array( 'GET', '/game-set', 'handle_game_set' ),
             array( 'GET', '/word-of-day', 'handle_word_of_day' ),
-            array( 'POST', '/spell', 'handle_spell' ),
         );
 
         foreach ( $browse_routes as $route ) {
@@ -256,26 +254,6 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         $response->header( 'Cache-Control', 'public, max-age=' . $max_age );
         $response->header( 'X-RateLimit-Remaining', (string) $this->get_rate_limit_remaining() );
         return $response;
-    }
-
-    /**
-     * Handle POST /spell — delegates to the spell-checker class.
-     * Stub: returns 501 if the spell-checker is not available.
-     *
-     * @param \WP_REST_Request $request The incoming request.
-     * @return \WP_REST_Response|\WP_Error
-     */
-    public function handle_spell( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
-        if ( ! $this->check_rate_limit() ) {
-            return $this->rate_limit_error();
-        }
-        // The actual spell-checking logic lives in Sparxstar3IAtlasDictionarySpellChecker.
-        // This route entry exists so the permission matrix is enforced here.
-        return new \WP_Error(
-            'not_implemented',
-            __( 'Use the dedicated spell-checker endpoint.', 'sparxstar-3iatlas-dictionary' ),
-            array( 'status' => 501 )
-        );
     }
 
     private function if_none_match_contains( string $if_none_match, string $etag_value ): bool {
@@ -564,14 +542,16 @@ final class Sparxstar3IAtlasDictionaryRestApi {
             ),
         );
 
-        $response      = $this->cached_response( $payload, 3600 );
+        $response = $this->cached_response( $payload, 3600 );
+        $response->header( 'Cache-Control', 'private, no-store' );
+
         $word_uuids    = array_column( $words, 'uuid' );
         $etag          = md5( $lang . ':' . $page . ':' . $per_page . ':' . (string) $query->found_posts . ':' . implode( ',', $word_uuids ) );
         $etag_value    = '"' . $etag . '"';
         $if_none_match = trim( (string) $request->get_header( 'If-None-Match' ) );
         if ( $this->if_none_match_contains( $if_none_match, $etag_value ) ) {
             $not_modified = new \WP_REST_Response( null, 304 );
-            $not_modified->header( 'Cache-Control', 'public, max-age=3600' );
+            $not_modified->header( 'Cache-Control', 'private, no-store' );
             $not_modified->header( 'ETag', $etag_value );
             return $not_modified;
         }

@@ -110,7 +110,12 @@ final class Sparxstar3IAtlasDictionaryCors {
      */
     private function emit_cors_headers( \WP_REST_Response $response, string $origin ): void {
         $response->header( 'Access-Control-Allow-Origin', $origin );
-        $response->header( 'Vary', 'Origin' );
+        $existing_vary = $response->get_headers()['Vary'] ?? '';
+        if ( '' === $existing_vary ) {
+            $response->header( 'Vary', 'Origin' );
+        } elseif ( ! in_array( 'Origin', array_map( 'trim', explode( ',', $existing_vary ) ), true ) ) {
+            $response->header( 'Vary', $existing_vary . ', Origin' );
+        }
         $response->header( 'Access-Control-Allow-Methods', 'GET, POST, OPTIONS' );
         $response->header( 'Access-Control-Allow-Headers', 'Content-Type, If-None-Match, X-Api-Key, X-Page-Token' );
         $response->header( 'Access-Control-Expose-Headers', 'ETag, X-RateLimit-Remaining, Retry-After' );

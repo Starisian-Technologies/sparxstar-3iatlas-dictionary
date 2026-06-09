@@ -8,8 +8,8 @@ declare(strict_types=1);
  * Tests 11–13: OPTIONS preflight, non-allowlisted origin rejection, and
  * Expose-Headers verification.
  *
- * WP stubs are provided by bootstrap.php. Tests that need a live WordPress
- * install (wp-env) are marked as skipped when register_post_type() is absent.
+ * WP stubs are provided by bootstrap.php. Tests run without a live WordPress
+ * install (wp-env). Tests are skipped when a full WordPress environment is detected.
  *
  * @group dictionary-auth
  *
@@ -77,7 +77,7 @@ final class CorsTest extends TestCase {
      */
     public function test_options_preflight_allowlisted_origin_returns_200(): void {
         if ( $this->wp_available ) {
-            $this->markTestSkipped( 'Requires wp-env' );
+            $this->markTestSkipped( 'Skipping: test uses WP stubs; skipped when a full WordPress environment is available.' );
         }
 
         $this->set_allowlist( [ 'https://example.com' ] );
@@ -121,7 +121,7 @@ final class CorsTest extends TestCase {
      */
     public function test_non_allowlisted_origin_gets_no_cors_headers(): void {
         if ( $this->wp_available ) {
-            $this->markTestSkipped( 'Requires wp-env' );
+            $this->markTestSkipped( 'Skipping: test uses WP stubs; skipped when a full WordPress environment is available.' );
         }
 
         $this->set_allowlist( [ 'https://example.com' ] );
@@ -144,7 +144,7 @@ final class CorsTest extends TestCase {
      */
     public function test_cors_headers_not_added_to_non_dictionary_routes(): void {
         if ( $this->wp_available ) {
-            $this->markTestSkipped( 'Requires wp-env' );
+            $this->markTestSkipped( 'Skipping: test uses WP stubs; skipped when a full WordPress environment is available.' );
         }
 
         $this->set_allowlist( [ 'https://example.com' ] );
@@ -168,7 +168,7 @@ final class CorsTest extends TestCase {
      */
     public function test_get_response_has_expose_headers(): void {
         if ( $this->wp_available ) {
-            $this->markTestSkipped( 'Requires wp-env' );
+            $this->markTestSkipped( 'Skipping: test uses WP stubs; skipped when a full WordPress environment is available.' );
         }
 
         $this->set_allowlist( [ 'https://sparxstar.app' ] );
@@ -204,7 +204,7 @@ final class CorsTest extends TestCase {
      */
     public function test_empty_origin_does_not_trigger_cors(): void {
         if ( $this->wp_available ) {
-            $this->markTestSkipped( 'Requires wp-env' );
+            $this->markTestSkipped( 'Skipping: test uses WP stubs; skipped when a full WordPress environment is available.' );
         }
 
         $this->set_allowlist( [ 'https://example.com' ] );
