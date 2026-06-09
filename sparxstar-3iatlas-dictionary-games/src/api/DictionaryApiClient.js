@@ -78,6 +78,9 @@ export function createDictionaryApiClient(config) {
      * @returns {Promise<unknown>}
      */
     async function parseResponse(res) {
+        if (res.status === 304) {
+            return null;
+        }
         let json;
         try {
             json = await res.json();
