@@ -111,6 +111,8 @@ class Sparxstar3IAtlasDictionaryCliCommands {
      *
      *     wp sparxstar-dict key list
      *
+     * @subcommand list
+     *
      * @param array<int,string>    $args       Positional arguments (unused).
      * @param array<string,string> $assoc_args Named arguments (unused).
      * @return void

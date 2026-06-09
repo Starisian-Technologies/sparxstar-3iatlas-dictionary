@@ -8,7 +8,7 @@ import AccessoryBar from '../AccessoryBar.jsx';
  * Player types the missing word using the keyboard + AccessoryBar.
  * Wrong answers progressively reveal letters.
  *
- * Only words with an example sentence (word.example.sentence) are used.
+ * Only words with an example sentence (word.example_sentences[0].sentence) are used.
  *
  * Props:
  *   words      {Array}    Game-set words

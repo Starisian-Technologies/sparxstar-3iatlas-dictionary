@@ -108,7 +108,7 @@ final class Sparxstar3IAtlasDictionaryRestApi {
             return $result;
         }
 
-        // Attach quota remaining so handlers can emit X-RateLimit-Remaining.
+        // Attach auth context so handlers can access credential type and per-key quota.
         $request->set_param( '_auth_context', $result );
         return true;
     }
@@ -183,7 +183,7 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         $token     = $this->mint_ephemeral_token();
         $expires   = time() + 3600;
 
-        return new \WP_REST_Response(
+        $response = new \WP_REST_Response(
             array(
                 'success' => true,
                 'data'    => array(
@@ -194,6 +194,8 @@ final class Sparxstar3IAtlasDictionaryRestApi {
             ),
             200
         );
+        $response->header( 'Cache-Control', 'no-store' );
+        return $response;
     }
 
     /**
@@ -395,7 +397,8 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         return $this->cached_response(
             array(
                 'success' => true,
-                'data'    => $this->build_entry( $post->ID ),
+                'data'    => array( 'word' => $this->build_entry( $post->ID ) ),
+                'meta'    => array(),
             )
         );
     }
@@ -455,7 +458,7 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         return $this->cached_response(
             array(
                 'success' => true,
-                'data'    => $items,
+                'data'    => array( 'results' => $items ),
                 'meta'    => array(
                     'total'    => (int) $query->found_posts,
                     'page'     => $page,
