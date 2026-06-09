@@ -69,8 +69,8 @@ final class EphemeralTokenAuth implements DictionaryAuthInterface {
         }
 
         // Verify signature using constant-time comparison.
-        $secret          = $this->get_secret();
-        $expected_sig    = hash_hmac( 'sha256', $encoded_payload, $secret );
+        $secret       = $this->get_secret();
+        $expected_sig = hash_hmac( 'sha256', $encoded_payload, $secret );
         if ( ! hash_equals( $expected_sig, $provided_sig ) ) {
             return new \WP_Error(
                 'invalid_page_token',

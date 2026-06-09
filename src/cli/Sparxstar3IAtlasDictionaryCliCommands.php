@@ -116,11 +116,11 @@ class Sparxstar3IAtlasDictionaryCliCommands {
      *
      * @subcommand list
      *
-     * @param array<int,string>    $args       Positional arguments (unused).
-     * @param array<string,string> $assoc_args Named arguments (unused).
+     * @param array<int,string>    $_args       Positional arguments (unused by this subcommand).
+     * @param array<string,string> $_assoc_args Named arguments (unused by this subcommand).
      * @return void
      */
-    public function list_( array $args, array $assoc_args ): void {
+    public function list_( array $_args, array $_assoc_args ): void {
         $keys = get_option( ApiKeyAuth::KEYS_OPTION, array() );
         if ( ! is_array( $keys ) || 0 === count( $keys ) ) {
             \WP_CLI::log( 'No API keys registered.' );
@@ -132,7 +132,7 @@ class Sparxstar3IAtlasDictionaryCliCommands {
             if ( ! is_array( $entry ) ) {
                 continue;
             }
-            $hash  = (string) ( $entry['key_hash'] ?? '' );
+            $hash   = (string) ( $entry['key_hash'] ?? '' );
             $rows[] = array(
                 'label'       => (string) ( $entry['label'] ?? '(no label)' ),
                 'hash_prefix' => '' !== $hash ? substr( $hash, 0, 8 ) . '...' : '(unknown)',

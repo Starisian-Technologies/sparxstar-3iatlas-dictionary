@@ -87,10 +87,10 @@ final class Sparxstar3IAtlasDictionaryCors {
      * @param bool              $served  Whether the request has already been served.
      * @param \WP_REST_Response $result  The response object.
      * @param \WP_REST_Request  $request The request object.
-     * @param \WP_REST_Server   $server  The REST server instance.
+     * @param \WP_REST_Server   $_server The REST server instance (required by filter signature; unused).
      * @return bool
      */
-    public function add_cors_headers( bool $served, \WP_REST_Response $result, \WP_REST_Request $request, \WP_REST_Server $server ): bool {
+    public function add_cors_headers( bool $served, \WP_REST_Response $result, \WP_REST_Request $request, \WP_REST_Server $_server ): bool {
         if ( ! $this->is_dictionary_route( $request ) ) {
             return $served;
         }
