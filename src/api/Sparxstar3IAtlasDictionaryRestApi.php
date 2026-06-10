@@ -236,6 +236,30 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         return $encoded_payload . '.' . $signature;
     }
 
+    /**
+     * Mint a page token for server-side injection into wp_localize_script.
+     * Returns empty string when the secret is not defined or is empty.
+     *
+     * @return string
+     */
+    public static function mint_initial_page_token(): string {
+        if ( ! defined( 'SPARXSTAR_DICT_PAGE_SECRET' ) ) {
+            return '';
+        }
+        $secret = (string) constant( 'SPARXSTAR_DICT_PAGE_SECRET' );
+        if ( '' === $secret ) {
+            return '';
+        }
+        $now             = time();
+        $payload         = array(
+            'iat'   => $now,
+            'exp'   => $now + 3600,
+            'scope' => 'browse',
+        );
+        $encoded_payload = rtrim( strtr( base64_encode( (string) wp_json_encode( $payload ) ), '+/', '-_' ), '=' );
+        return $encoded_payload . '.' . hash_hmac( 'sha256', $encoded_payload, $secret );
+    }
+
     private function parse_bearer_token( string $authorization_header ): ?string {
         $authorization_header = trim( $authorization_header );
 

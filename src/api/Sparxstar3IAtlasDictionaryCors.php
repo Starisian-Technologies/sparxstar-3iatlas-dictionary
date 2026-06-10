@@ -27,9 +27,11 @@ final class Sparxstar3IAtlasDictionaryCors {
     /**
      * The REST route prefix this CORS handler is scoped to.
      *
+     * Inlined to avoid a load-order dependency on Sparxstar3IAtlasDictionaryRestApi.
+     *
      * @var string
      */
-    private const ROUTE_PREFIX = '/' . Sparxstar3IAtlasDictionaryRestApi::REST_NAMESPACE;
+    private const ROUTE_PREFIX = '/sparxstar/v1/dictionary';
 
     /**
      * Register all CORS-related hooks.
