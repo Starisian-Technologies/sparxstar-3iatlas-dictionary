@@ -492,9 +492,10 @@ final class Sparxstar3IAtlasDictionaryRestApi {
             return $this->rate_limit_error();
         }
 
-        $lang     = sanitize_text_field( (string) ( $request->get_param( 'lang_source' ) ?? '' ) );
-        $per_page = min( 2000, max( 1, absint( $request->get_param( 'per_page' ) ?? 1000 ) ) );
-        $page     = max( 1, absint( $request->get_param( 'page' ) ?? 1 ) );
+        $lang          = sanitize_text_field( (string) ( $request->get_param( 'lang_source' ) ?? '' ) );
+        $per_page      = min( 2000, max( 1, absint( $request->get_param( 'per_page' ) ?? 1000 ) ) );
+        $page          = max( 1, absint( $request->get_param( 'page' ) ?? 1 ) );
+        $include_audio = filter_var( $request->get_param( 'include_audio' ) ?? false, FILTER_VALIDATE_BOOLEAN );
 
         $args = array(
             'post_type'      => self::CPT,
@@ -545,12 +546,19 @@ final class Sparxstar3IAtlasDictionaryRestApi {
                 continue;
             }
 
-            $words[] = array(
+            $word = array(
                 'headword' => $post->post_title,
                 'slug'     => $post->post_name,
                 'uuid'     => (string) get_post_meta( $post->ID, 'aiwa_entry_uuid', true ),
                 'language' => $language_map[ $post->ID ] ?? '',
             );
+
+            if ( $include_audio ) {
+                $audio             = get_field( 'aiwa_audio_file', $post->ID );
+                $word['audio_url'] = is_array( $audio ) ? ( $audio['url'] ?? null ) : ( $audio ?: null );
+            }
+
+            $words[] = $word;
         }
 
         $payload = array(
@@ -567,7 +575,7 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         $response->header( 'Cache-Control', 'private, no-cache' );
 
         $word_uuids    = array_column( $words, 'uuid' );
-        $etag          = md5( $lang . ':' . $page . ':' . $per_page . ':' . (string) $query->found_posts . ':' . implode( ',', $word_uuids ) );
+        $etag          = md5( $lang . ':' . $page . ':' . $per_page . ':' . ( $include_audio ? '1' : '0' ) . ':' . (string) $query->found_posts . ':' . implode( ',', $word_uuids ) );
         $etag_value    = '"' . $etag . '"';
         $if_none_match = trim( (string) $request->get_header( 'If-None-Match' ) );
         if ( $this->if_none_match_contains( $if_none_match, $etag_value ) ) {
