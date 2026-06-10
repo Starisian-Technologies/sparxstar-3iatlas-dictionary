@@ -105,6 +105,28 @@ class Sparxstar3IAtlasDictionaryCliCommands {
     }
 
     /**
+     * Alias for `generate`. Creates a new API key.
+     *
+     * ## OPTIONS
+     *
+     * [--label=<name>]
+     * : Human-readable label for this key (required).
+     *
+     * ## EXAMPLES
+     *
+     *     wp sparxstar-dict key create --label=partner-acme
+     *
+     * @subcommand create
+     *
+     * @param array<int,string>    $args       Positional arguments.
+     * @param array<string,string> $assoc_args Named arguments.
+     * @return void
+     */
+    public function create( array $args, array $assoc_args ): void {
+        $this->generate( $args, $assoc_args );
+    }
+
+    /**
      * List all registered API keys.
      *
      * Displays label, hash prefix (first 8 chars), daily quota, and active status.

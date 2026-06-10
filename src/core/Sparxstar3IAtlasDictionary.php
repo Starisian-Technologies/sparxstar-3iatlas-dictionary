@@ -221,7 +221,7 @@ final class Sparxstar3IAtlasDictionary {
             }
 
             // WP-CLI commands — only register when CLI is active.
-            if ( defined( 'WP_CLI' ) && WP_CLI && class_exists( \Starisian\Sparxstar\IAtlas\cli\Sparxstar3IAtlasDictionaryCliCommands::class ) ) {
+            if ( defined( 'WP_CLI' ) && WP_CLI && class_exists( '\WP_CLI' ) && class_exists( \Starisian\Sparxstar\IAtlas\cli\Sparxstar3IAtlasDictionaryCliCommands::class ) ) {
                 $cli_handler = new \Starisian\Sparxstar\IAtlas\cli\Sparxstar3IAtlasDictionaryCliCommands();
                 \WP_CLI::add_command( 'sparxstar-dict key', $cli_handler );
             }

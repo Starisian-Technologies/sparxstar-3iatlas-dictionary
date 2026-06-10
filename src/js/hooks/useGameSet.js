@@ -21,7 +21,7 @@ async function refreshPageToken(restUrl) {
         if (!res.ok) return '';
         const json = await res.json();
         const token = json?.data?.token ?? '';
-        if (token && window.sparxstarDictionarySettings) {
+        if (token && typeof window !== 'undefined' && window.sparxstarDictionarySettings) {
             window.sparxstarDictionarySettings.pageToken = token;
         }
         return token;
@@ -86,7 +86,7 @@ export function useGameSet({ restUrl, langSource, domain = '', limit = 20, inclu
                 });
                 if (domain) params.set('domain', domain);
 
-                const pageToken = window.sparxstarDictionarySettings?.pageToken ?? '';
+                const pageToken = typeof window !== 'undefined' ? window.sparxstarDictionarySettings?.pageToken ?? '' : '';
                 let res = await fetch(`${restUrl}/game-set?${params}`, {
                     headers: { 'X-Page-Token': pageToken },
                 });
