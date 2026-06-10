@@ -79,7 +79,7 @@ export function createDictionaryApiClient(config) {
      */
     async function parseResponse(res) {
         if (res.status === 304) {
-            return null;
+            throw new DictionaryApiError('not_modified', 'Not Modified', 304);
         }
         let json;
         try {

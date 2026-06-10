@@ -64,6 +64,8 @@ export interface WordlistEntry {
     slug: string;
     uuid: string;
     language: string;
+    /** Present (string or null) only when include_audio=true was requested. */
+    audio_url?: string | null;
 }
 
 export interface LanguageTerm {

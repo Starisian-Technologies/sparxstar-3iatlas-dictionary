@@ -156,6 +156,48 @@ if ( ! function_exists( 'register_post_type' ) ) {
             return true;
         }
     }
+    if ( ! function_exists( 'wp_cache_add' ) ) {
+        function wp_cache_add( string $key, mixed $data, string $group = '', int $expire = 0 ): bool {
+            $store_key = $group . ':' . $key;
+            if ( array_key_exists( $store_key, $GLOBALS['__wp_object_cache'] ) ) {
+                return false;
+            }
+            $GLOBALS['__wp_object_cache'][ $store_key ] = $data;
+            return true;
+        }
+    }
+    if ( ! function_exists( 'wp_cache_incr' ) ) {
+        function wp_cache_incr( string $key, int $offset = 1, string $group = '' ): int|false {
+            $store_key = $group . ':' . $key;
+            if ( ! array_key_exists( $store_key, $GLOBALS['__wp_object_cache'] ) ) {
+                return false;
+            }
+            $GLOBALS['__wp_object_cache'][ $store_key ] = (int) $GLOBALS['__wp_object_cache'][ $store_key ] + $offset;
+            return $GLOBALS['__wp_object_cache'][ $store_key ];
+        }
+    }
+    if ( ! function_exists( 'wp_cache_decr' ) ) {
+        function wp_cache_decr( string $key, int $offset = 1, string $group = '' ): int|false {
+            $store_key = $group . ':' . $key;
+            if ( ! array_key_exists( $store_key, $GLOBALS['__wp_object_cache'] ) ) {
+                return false;
+            }
+            $GLOBALS['__wp_object_cache'][ $store_key ] = max( 0, (int) $GLOBALS['__wp_object_cache'][ $store_key ] - $offset );
+            return $GLOBALS['__wp_object_cache'][ $store_key ];
+        }
+    }
+    if ( ! function_exists( 'wp_cache_delete' ) ) {
+        function wp_cache_delete( string $key, string $group = '' ): bool {
+            $store_key = $group . ':' . $key;
+            unset( $GLOBALS['__wp_object_cache'][ $store_key ] );
+            return true;
+        }
+    }
+    if ( ! function_exists( 'wp_using_ext_object_cache' ) ) {
+        function wp_using_ext_object_cache(): bool {
+            return false;
+        }
+    }
     if ( ! function_exists( 'get_option' ) ) {
         function get_option( string $key, mixed $default = false ): mixed {
             return $GLOBALS['__wp_options_store'][ $key ] ?? $default;
@@ -188,4 +230,9 @@ if ( ! function_exists( 'register_post_type' ) ) {
 // Initialise the options store used by stubs.
 if ( ! isset( $GLOBALS['__wp_options_store'] ) ) {
     $GLOBALS['__wp_options_store'] = [];
+}
+
+// Initialise the object cache store used by wp_cache_* stubs.
+if ( ! isset( $GLOBALS['__wp_object_cache'] ) ) {
+    $GLOBALS['__wp_object_cache'] = [];
 }

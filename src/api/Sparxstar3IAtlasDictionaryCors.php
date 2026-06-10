@@ -27,9 +27,11 @@ final class Sparxstar3IAtlasDictionaryCors {
     /**
      * The REST route prefix this CORS handler is scoped to.
      *
+     * Inlined to avoid a load-order dependency on Sparxstar3IAtlasDictionaryRestApi.
+     *
      * @var string
      */
-    private const ROUTE_PREFIX = '/' . Sparxstar3IAtlasDictionaryRestApi::REST_NAMESPACE;
+    private const ROUTE_PREFIX = '/sparxstar/v1/dictionary';
 
     /**
      * Register all CORS-related hooks.
@@ -90,7 +92,7 @@ final class Sparxstar3IAtlasDictionaryCors {
      * @param \WP_REST_Server             $server  The REST server instance (required by filter signature).
      * @return bool
      */
-    public function add_cors_headers( bool $served, \WP_REST_Response|\WP_Error $result, \WP_REST_Request $request, \WP_REST_Server $server ): bool { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+    public function add_cors_headers( bool $served, \WP_REST_Response|\WP_Error $result, \WP_REST_Request $request, \WP_REST_Server $server ): bool { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- $server is required by the rest_pre_serve_request filter signature but intentionally unused
         if ( ! $this->is_dictionary_route( $request ) ) {
             return $served;
         }
@@ -117,10 +119,11 @@ final class Sparxstar3IAtlasDictionaryCors {
      */
     private function emit_cors_headers( \WP_REST_Response $response, string $origin ): void {
         $response->header( 'Access-Control-Allow-Origin', $origin );
-        $existing_vary = $response->get_headers()['Vary'] ?? '';
+        $headers       = array_change_key_case( $response->get_headers(), CASE_LOWER );
+        $existing_vary = $headers['vary'] ?? '';
         if ( '' === $existing_vary ) {
             $response->header( 'Vary', 'Origin' );
-        } elseif ( ! in_array( 'Origin', array_map( 'trim', explode( ',', $existing_vary ) ), true ) ) {
+        } elseif ( ! in_array( 'origin', array_map( 'strtolower', array_map( 'trim', explode( ',', $existing_vary ) ) ), true ) ) {
             $response->header( 'Vary', $existing_vary . ', Origin' );
         }
         $response->header( 'Access-Control-Allow-Methods', 'GET, POST, OPTIONS' );

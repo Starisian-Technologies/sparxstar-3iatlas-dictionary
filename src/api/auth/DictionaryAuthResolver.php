@@ -44,7 +44,14 @@ final class DictionaryAuthResolver implements DictionaryAuthInterface {
             if ( ! is_wp_error( $result ) ) {
                 return $result;
             }
-            // Page token invalid/expired — fall through to API key if also present.
+            // Propagate real errors (quota exceeded 429, configuration failure 500,
+            // invalid/expired token 401) so the client receives the correct status code
+            // and can act accordingly. Only fall through to API key on missing_page_token,
+            // which cannot happen here since $has_page_token is already true, but satisfies
+            // the interface contract if the header disappears between the check and resolve.
+            if ( 'missing_page_token' !== $result->get_error_code() ) {
+                return $result;
+            }
         }
 
         if ( $has_api_key ) {

@@ -83,13 +83,15 @@ async function refreshPageToken() {
  */
 async function apiFetch(url, options = {}) {
     const token = window.sparxstarDictionarySettings?.pageToken ?? '';
-    const headers = { ...(options.headers || {}), 'X-Page-Token': token };
+    const headers = new Headers(options.headers || {});
+    headers.set('X-Page-Token', token);
 
     let res = await fetch(url, { ...options, headers });
 
     if (res.status === 401) {
         const newToken = await refreshPageToken();
-        const retryHeaders = { ...(options.headers || {}), 'X-Page-Token': newToken };
+        const retryHeaders = new Headers(options.headers || {});
+        retryHeaders.set('X-Page-Token', newToken);
         res = await fetch(url, { ...options, headers: retryHeaders });
     }
 
