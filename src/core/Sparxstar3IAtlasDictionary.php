@@ -83,9 +83,9 @@ final class Sparxstar3IAtlasDictionary {
         if ( ! current_user_can( 'manage_options' ) ) {
             return;
         }
-        if ( ! defined( 'SPARXSTAR_DICT_PAGE_SECRET' ) ) {
+        if ( ! defined( 'SPARXSTAR_DICT_PAGE_SECRET' ) || '' === (string) constant( 'SPARXSTAR_DICT_PAGE_SECRET' ) ) {
             echo '<div class="notice notice-error"><p>' .
-                esc_html__( 'Sparxstar 3iAtlas Dictionary: SPARXSTAR_DICT_PAGE_SECRET is not defined in wp-config.php. Page tokens cannot be minted.', 'sparxstar-3iatlas-dictionary' ) .
+                esc_html__( 'Sparxstar 3iAtlas Dictionary: SPARXSTAR_DICT_PAGE_SECRET is not defined or is empty in wp-config.php. Page tokens cannot be minted.', 'sparxstar-3iatlas-dictionary' ) .
                 '</p></div>';
         }
     }

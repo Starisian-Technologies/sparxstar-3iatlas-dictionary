@@ -27,10 +27,14 @@ parameters:
     - assets/*
 
   # WP-CLI is an optional CLI-only dependency; no stubs are installed for it.
-  # These errors are expected and intentional — suppress globally.
+  # Suppress only in files that legitimately use WP_CLI.
   ignoreErrors:
-    - '#^Call to static method .+ on an unknown class WP_CLI\.$#'
-    - '#^Function WP_CLI.+ not found\.$#'
+    - message: '#^Call to static method .+ on an unknown class WP_CLI\.$#'
+      path: src/cli/Sparxstar3IAtlasDictionaryCliCommands.php
+    - message: '#^Call to static method .+ on an unknown class WP_CLI\.$#'
+      path: src/core/Sparxstar3IAtlasDictionary.php
+    - message: '#^Function WP_CLI.+ not found\.$#'
+      path: src/cli/Sparxstar3IAtlasDictionaryCliCommands.php
 
   # Pre-existing findings are captured in phpstan-baseline.neon (baseline-first).
   # New code must pass clean at this level; clear baseline entries as files are fixed.

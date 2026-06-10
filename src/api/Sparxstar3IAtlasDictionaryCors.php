@@ -121,7 +121,7 @@ final class Sparxstar3IAtlasDictionaryCors {
         $existing_vary = $headers['vary'] ?? '';
         if ( '' === $existing_vary ) {
             $response->header( 'Vary', 'Origin' );
-        } elseif ( ! in_array( 'Origin', array_map( 'trim', explode( ',', $existing_vary ) ), true ) ) {
+        } elseif ( ! in_array( 'origin', array_map( 'strtolower', array_map( 'trim', explode( ',', $existing_vary ) ) ), true ) ) {
             $response->header( 'Vary', $existing_vary . ', Origin' );
         }
         $response->header( 'Access-Control-Allow-Methods', 'GET, POST, OPTIONS' );

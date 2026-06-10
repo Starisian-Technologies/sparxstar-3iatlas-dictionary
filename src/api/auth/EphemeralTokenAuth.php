@@ -78,7 +78,14 @@ final class EphemeralTokenAuth implements DictionaryAuthInterface {
             );
         }
 
-        $secret       = $this->get_secret();
+        $secret = $this->get_secret();
+        if ( '' === $secret ) {
+            return new \WP_Error(
+                'configuration_error',
+                __( 'Page token verification is not configured.', 'sparxstar-3iatlas-dictionary' ),
+                array( 'status' => 500 )
+            );
+        }
         $expected_sig = hash_hmac( 'sha256', $encoded_payload, $secret );
         if ( ! hash_equals( $expected_sig, $provided_sig ) ) {
             return new \WP_Error(
