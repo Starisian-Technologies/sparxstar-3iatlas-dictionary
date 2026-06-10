@@ -193,6 +193,11 @@ if ( ! function_exists( 'register_post_type' ) ) {
             return true;
         }
     }
+    if ( ! function_exists( 'wp_using_ext_object_cache' ) ) {
+        function wp_using_ext_object_cache(): bool {
+            return false;
+        }
+    }
     if ( ! function_exists( 'get_option' ) ) {
         function get_option( string $key, mixed $default = false ): mixed {
             return $GLOBALS['__wp_options_store'][ $key ] ?? $default;

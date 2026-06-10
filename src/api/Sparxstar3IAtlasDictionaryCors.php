@@ -92,7 +92,7 @@ final class Sparxstar3IAtlasDictionaryCors {
      * @param \WP_REST_Server             $server  The REST server instance (required by filter signature).
      * @return bool
      */
-    public function add_cors_headers( bool $served, \WP_REST_Response|\WP_Error $result, \WP_REST_Request $request, \WP_REST_Server $server ): bool { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+    public function add_cors_headers( bool $served, \WP_REST_Response|\WP_Error $result, \WP_REST_Request $request, \WP_REST_Server $server ): bool { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- $server is required by the rest_pre_serve_request filter signature but intentionally unused
         if ( ! $this->is_dictionary_route( $request ) ) {
             return $served;
         }

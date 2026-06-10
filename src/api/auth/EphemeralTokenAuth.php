@@ -137,26 +137,44 @@ final class EphemeralTokenAuth implements DictionaryAuthInterface {
         $transient_key = 'aiwa_dict_ptquota_' . $token_hash;
         $ttl           = max( 1, $exp - time() );
 
-        wp_cache_add( $cache_key, 0, $cache_group, $ttl );
-        $new_count = wp_cache_incr( $cache_key, 1, $cache_group );
-
-        if ( false !== $new_count ) {
-            // Atomic path — new_count is the post-increment value.
-            if ( $new_count > self::TOKEN_QUOTA ) {
-                wp_cache_decr( $cache_key, 1, $cache_group );
-                return new \WP_Error(
-                    'quota_exceeded',
-                    __( 'Page token quota exceeded.', 'sparxstar-3iatlas-dictionary' ),
-                    array(
-                        'status'      => 429,
-                        'retry_after' => 86400,
-                        'headers'     => array( 'Retry-After' => '86400' ),
-                    )
-                );
+        if ( wp_using_ext_object_cache() ) {
+            // Persistent external cache (Redis/Memcached) — atomic incr is reliable.
+            wp_cache_add( $cache_key, 0, $cache_group, $ttl );
+            $new_count = wp_cache_incr( $cache_key, 1, $cache_group );
+            if ( false !== $new_count ) {
+                if ( $new_count > self::TOKEN_QUOTA ) {
+                    wp_cache_decr( $cache_key, 1, $cache_group );
+                    return new \WP_Error(
+                        'quota_exceeded',
+                        __( 'Page token quota exceeded.', 'sparxstar-3iatlas-dictionary' ),
+                        array(
+                            'status'      => 429,
+                            'retry_after' => 86400,
+                            'headers'     => array( 'Retry-After' => '86400' ),
+                        )
+                    );
+                }
+                $remaining = self::TOKEN_QUOTA - $new_count;
+            } else {
+                // wp_cache_incr unexpectedly failed on persistent backend — use transient.
+                $used = (int) ( get_transient( $transient_key ) ?: 0 );
+                if ( $used >= self::TOKEN_QUOTA ) {
+                    return new \WP_Error(
+                        'quota_exceeded',
+                        __( 'Page token quota exceeded.', 'sparxstar-3iatlas-dictionary' ),
+                        array(
+                            'status'      => 429,
+                            'retry_after' => 86400,
+                            'headers'     => array( 'Retry-After' => '86400' ),
+                        )
+                    );
+                }
+                set_transient( $transient_key, $used + 1, $ttl );
+                $remaining = self::TOKEN_QUOTA - ( $used + 1 );
             }
-            $remaining = self::TOKEN_QUOTA - $new_count;
         } else {
-            // Non-atomic fallback (non-persistent object cache).
+            // Non-persistent backend (default WP object cache resets every request) —
+            // skip wp_cache_incr and use transients directly for durable quota tracking.
             $used = (int) ( get_transient( $transient_key ) ?: 0 );
             if ( $used >= self::TOKEN_QUOTA ) {
                 return new \WP_Error(
