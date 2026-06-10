@@ -68,7 +68,16 @@ final class EphemeralTokenAuth implements DictionaryAuthInterface {
             );
         }
 
-        // Verify signature using constant-time comparison.
+        // Validate signature format before cryptographic comparison so that
+        // hash_equals always compares equal-length strings (constant-time guarantee).
+        if ( ! preg_match( '/^[a-f0-9]{64}$/', $provided_sig ) ) {
+            return new \WP_Error(
+                'invalid_page_token',
+                __( 'Page token signature is invalid.', 'sparxstar-3iatlas-dictionary' ),
+                array( 'status' => 401 )
+            );
+        }
+
         $secret       = $this->get_secret();
         $expected_sig = hash_hmac( 'sha256', $encoded_payload, $secret );
         if ( ! hash_equals( $expected_sig, $provided_sig ) ) {
@@ -112,31 +121,50 @@ final class EphemeralTokenAuth implements DictionaryAuthInterface {
             );
         }
 
-        // Check and decrement quota.
+        // Check and increment quota.
+        // Prefer wp_cache_incr (atomic on Redis/Memcached); fall back to
+        // transient read-then-write on non-persistent backends (best-effort).
         $token_hash    = hash( 'sha256', $raw_token );
+        $cache_key     = 'ptquota_' . $token_hash;
+        $cache_group   = 'aiwa_dict';
         $transient_key = 'aiwa_dict_ptquota_' . $token_hash;
         $ttl           = max( 1, $exp - time() );
 
-        $used = get_transient( $transient_key );
-        if ( false === $used ) {
-            $used = 0;
-        }
-        $used = (int) $used;
+        wp_cache_add( $cache_key, 0, $cache_group, $ttl );
+        $new_count = wp_cache_incr( $cache_key, 1, $cache_group );
 
-        if ( $used >= self::TOKEN_QUOTA ) {
-            return new \WP_Error(
-                'quota_exceeded',
-                __( 'Page token quota exceeded.', 'sparxstar-3iatlas-dictionary' ),
-                array(
-                    'status'      => 429,
-                    'retry_after' => 86400,
-                    'headers'     => array( 'Retry-After' => '86400' ),
-                )
-            );
+        if ( false !== $new_count ) {
+            // Atomic path — new_count is the post-increment value.
+            if ( $new_count > self::TOKEN_QUOTA ) {
+                wp_cache_decr( $cache_key, 1, $cache_group );
+                return new \WP_Error(
+                    'quota_exceeded',
+                    __( 'Page token quota exceeded.', 'sparxstar-3iatlas-dictionary' ),
+                    array(
+                        'status'      => 429,
+                        'retry_after' => 86400,
+                        'headers'     => array( 'Retry-After' => '86400' ),
+                    )
+                );
+            }
+            $remaining = self::TOKEN_QUOTA - $new_count;
+        } else {
+            // Non-atomic fallback (non-persistent object cache).
+            $used = (int) ( get_transient( $transient_key ) ?: 0 );
+            if ( $used >= self::TOKEN_QUOTA ) {
+                return new \WP_Error(
+                    'quota_exceeded',
+                    __( 'Page token quota exceeded.', 'sparxstar-3iatlas-dictionary' ),
+                    array(
+                        'status'      => 429,
+                        'retry_after' => 86400,
+                        'headers'     => array( 'Retry-After' => '86400' ),
+                    )
+                );
+            }
+            set_transient( $transient_key, $used + 1, $ttl );
+            $remaining = self::TOKEN_QUOTA - ( $used + 1 );
         }
-
-        set_transient( $transient_key, $used + 1, $ttl );
-        $remaining = self::TOKEN_QUOTA - ( $used + 1 );
 
         return new AuthContext(
             credential_type: 'ephemeral',

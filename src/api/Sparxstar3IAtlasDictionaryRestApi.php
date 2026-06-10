@@ -218,6 +218,10 @@ final class Sparxstar3IAtlasDictionaryRestApi {
      * @return string The signed token string.
      */
     private function mint_ephemeral_token(): string {
+        if ( ! defined( 'SPARXSTAR_DICT_PAGE_SECRET' ) ) {
+            return '';
+        }
+
         $now     = time();
         $payload = array(
             'iat'   => $now,
