@@ -65,6 +65,7 @@ An Approved Entry Package is a JSON object. A batch import file is an array of t
   "oxford_tier": "string — optional Oxford reference tier (oxford_3000, oxford_5000)",
   "concepticon_id": "integer — optional Concepticon database ID",
   "clics_id": "string — optional CLICS database reference",
+  "borrowing_status": "string — native | borrowed_integrated | borrowed_active | code_mixed | archaic | neologism | contested",
   "approval_status": "string — approved | provisional",
   "approved_by": "string — name or identifier of approving authority",
   "approval_date": "string — ISO 8601 date (YYYY-MM-DD)",
@@ -77,6 +78,8 @@ An Approved Entry Package is a JSON object. A batch import file is an array of t
 ---
 
 ## 3. Required vs Optional Fields
+
+**`borrowing_status`** describes how the word sits in the living language: `native`, `borrowed_integrated`, `borrowed_active`, `code_mixed`, `archaic`, `neologism`, or `contested`. See `3IATLAS-PRODUCT-IDENTITY-SPEC-v1.0` §4 (Soup Model) and `3IATLAS-DICTIONARY-MULTILANGUAGE-MODEL-SPEC-v2.0` §4 for full definitions. This field is set by DVE and is linguistically locked after import.
 
 **Required — batch is rejected if any entry is missing these:**
 
@@ -94,7 +97,7 @@ An Approved Entry Package is a JSON object. A batch import file is an array of t
 
 **Optional — missing is acceptable; API returns null for these fields:**
 
-`translation_fr`, `ipa`, `phonetic`, `origin`, `audio_url`, `audio_asset_id`, `example_sentences`, `synonyms`, `antonyms`, `rhyme_entries`, `cross_language_siblings`, `speaker_communities`, `domain`, `aiwa_level`, `cefr_approx`, `oxford_tier`, `concepticon_id`, `clics_id`, `slug`, `public_notes`, `internal_notes`
+`translation_fr`, `ipa`, `phonetic`, `origin`, `audio_url`, `audio_asset_id`, `example_sentences`, `synonyms`, `antonyms`, `rhyme_entries`, `cross_language_siblings`, `speaker_communities`, `domain`, `aiwa_level`, `cefr_approx`, `oxford_tier`, `concepticon_id`, `clics_id`, `borrowing_status`, `slug`, `public_notes`, `internal_notes`
 
 ---
 
@@ -186,6 +189,7 @@ The WP-CLI importer must enforce these rules before writing any record:
 10. `cefr_approx` if present must be one of: `A1`, `A2`, `B1`, `B2`, `C1`, `C2`.
 11. `oxford_tier` if present must be one of: `oxford_3000`, `oxford_5000`.
 12. Cross-language sibling UUIDs must exist in the dictionary. Unknown UUIDs are flagged in the validation report and the sibling link is skipped (not a blocking error — the entry is still imported).
+13. `borrowing_status` if present must be one of: `native`, `borrowed_integrated`, `borrowed_active`, `code_mixed`, `archaic`, `neologism`, `contested`.
 
 ---
 

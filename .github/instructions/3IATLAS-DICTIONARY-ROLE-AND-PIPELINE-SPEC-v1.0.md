@@ -216,3 +216,15 @@ The dictionary does not:
 DVE is the upstream lexical validation and onboarding pipeline. The dictionary does not accept raw community submissions directly as authoritative entries. The dictionary imports approved lexical records from DVE, preserves canonical identifiers, stores approved metadata, locks linguistic fields after import, and exposes the records through search, browse, game, workbook, and API services.
 
 The dictionary crew builds the approved dictionary service. The linguistic justice system lives upstream.
+
+---
+
+## 13. Intake Topology and Platform Boundaries (Cross-Reference)
+
+The intake topology governing how language data enters the platform is documented in `3IATLAS-SUITE-ARCHITECTURE-v2.0` and governed by ADR-008 and ADR-011.
+
+**ADR-008 — Two doors:** All data entering the platform uses either the Communication Door (Sky — human acts, speaker contributions) or the Machine Door (ESU — automated transcription, archive imports, AI suggestions). The dictionary is downstream of both doors. It receives only DVE-approved records — it does not interact directly with the intake topology.
+
+**ADR-011 — Unconditional capture:** The intake pipeline denies nothing. Unverified submissions are quarantined, not rejected. Governance is asynchronous. This rule governs the intake pipeline (Sky + DVE), not the dictionary itself. The dictionary's principle is complementary: it receives only finished, DVE-approved records. The quarantine lives upstream.
+
+These ADRs do not change anything about the dictionary's role. They formalize the upstream pipeline that ensures the dictionary receives only what has been properly governed.
