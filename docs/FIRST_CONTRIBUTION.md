@@ -2,7 +2,7 @@
 
 1. Fork the repository.
 2. Clone your fork and create a branch.
-3. Run `composer install` and `npm install`.
+3. Run `composer install` and `pnpm install`.
 4. Pick a "good first issue" or open a new one.
 5. Make your changes in `src/` or `tests/` as needed.
 6. Run `composer run lint:php` and `composer run test:php` before committing.

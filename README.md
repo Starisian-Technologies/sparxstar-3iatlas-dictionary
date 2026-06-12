@@ -36,11 +36,12 @@ A comprehensive WordPress plugin for managing dictionary entries with full WPGra
 ## 🛠️ Installation
 
 1. Clone or download the repository into your `wp-content/plugins/` directory.
-2. Install dependencies and build the assets:
+2. This project uses [pnpm](https://pnpm.io/) for JS dependencies (enable it with `corepack enable`). Install dependencies and build the assets:
 
     ```bash
-    npm install
-    npm run build
+    corepack enable        # one-time: provisions the pinned pnpm version
+    pnpm install
+    pnpm run build
     ```
 
 3. Activate the plugin through the WordPress admin interface.
@@ -125,9 +126,9 @@ query GetDictionaryEntries {
 
 ### Build Commands
 
-- `npm run build`: Compile and minify assets for production.
-- `npm run watch`: specific watch command for development.
-- `npm run lint`: Run ESLint and Stylelint.
+- `pnpm run build`: Compile and minify assets for production.
+- `pnpm run watch`: specific watch command for development.
+- `pnpm run lint`: Run ESLint and Stylelint.
 
 ## 🤝 Contributing
 
