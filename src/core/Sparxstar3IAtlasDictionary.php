@@ -173,7 +173,7 @@ final class Sparxstar3IAtlasDictionary {
             return '<p>' . esc_html__( 'An error occurred while loading the dictionary.', 'sparxstar-3iatlas-dictionary' ) . '</p>';
         }
 
-        return '<div id="sparxstar-dictionary-root" data-title="' . esc_attr( $atts['title'] ) . '"></div>';
+        return '<div id="sparxstar-dictionary-root" style="width:100%;min-height:100vh;" data-title="' . esc_attr( $atts['title'] ) . '"></div>';
     }
 
     /**
