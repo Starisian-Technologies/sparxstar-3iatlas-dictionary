@@ -29,6 +29,10 @@ import {
     LayoutGrid,
     Users,
     Leaf,
+    Plus,
+    Send,
+    CheckCircle2,
+    AlertCircle,
 } from 'lucide-react';
 import '../css/sparxstar-3iatlas-dictionary-style.css';
 import GameShell from './games/GameShell.jsx';
@@ -1600,6 +1604,241 @@ const DesktopEmptyPanel = ({ wordOfDay, language, onSelect }) => (
 );
 
 // ---------------------------------------------------------------------------
+// ProposalModal — submits a word proposal to POST /proposals (IngestManifest v0.1)
+// ---------------------------------------------------------------------------
+
+const PROPOSAL_STATES = { idle: 'idle', submitting: 'submitting', success: 'success', error: 'error' };
+
+function ProposalModal({ initialHeadword = '', languages = [], onClose }) {
+    const [headword, setHeadword]       = useState(initialHeadword);
+    const [language, setLanguage]       = useState(languages[0]?.slug ?? '');
+    const [glossEn, setGlossEn]         = useState('');
+    const [example, setExample]         = useState('');
+    const [dialectRegion, setDialectRegion] = useState('');
+    const [notes, setNotes]             = useState('');
+    const [status, setStatus]           = useState(PROPOSAL_STATES.idle);
+
+    // Sync language default once languages arrive
+    useEffect(() => {
+        if (!language && languages.length > 0) {
+            setLanguage(languages[0].slug ?? '');
+        }
+    }, [languages, language]);
+
+    const handleSubmit = useCallback(async (e) => {
+        e.preventDefault();
+        if (!headword.trim() || !language.trim()) return;
+        setStatus(PROPOSAL_STATES.submitting);
+
+        try {
+            const body = { headword: headword.trim(), language: language.trim() };
+            if (glossEn.trim())       body.gloss_en       = glossEn.trim();
+            if (example.trim())       body.example        = example.trim();
+            if (dialectRegion.trim()) body.dialect_region = dialectRegion.trim();
+            if (notes.trim())         body.notes          = notes.trim();
+
+            const res = await apiFetch(`${REST_URL}/proposals`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+
+            if (res.ok) {
+                setStatus(PROPOSAL_STATES.success);
+                setTimeout(onClose, 2200);
+            } else {
+                setStatus(PROPOSAL_STATES.error);
+            }
+        } catch {
+            setStatus(PROPOSAL_STATES.error);
+        }
+    }, [headword, language, glossEn, example, dialectRegion, notes, onClose]);
+
+    const isSubmitting = status === PROPOSAL_STATES.submitting;
+
+    return (
+        <div
+            className="aiwa-proposal-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="proposal-modal-title"
+            onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        >
+            <div className="aiwa-proposal-modal">
+                <div className="aiwa-proposal-header">
+                    <h2 id="proposal-modal-title" className="aiwa-proposal-title">
+                        Suggest a Word
+                    </h2>
+                    <button
+                        type="button"
+                        className="aiwa-proposal-close"
+                        aria-label="Close proposal form"
+                        onClick={onClose}
+                    >
+                        <X size={18} />
+                    </button>
+                </div>
+
+                {status === PROPOSAL_STATES.success ? (
+                    <div className="aiwa-proposal-feedback aiwa-proposal-feedback--success">
+                        <CheckCircle2 size={32} aria-hidden="true" />
+                        <p>Thank you! Your suggestion has been submitted for review.</p>
+                    </div>
+                ) : (
+                    <form onSubmit={handleSubmit} className="aiwa-proposal-form" noValidate>
+                        <div className="aiwa-proposal-field">
+                            <label htmlFor="proposal-headword" className="aiwa-proposal-label">
+                                Word or phrase <span aria-hidden="true">*</span>
+                            </label>
+                            <input
+                                id="proposal-headword"
+                                type="text"
+                                required
+                                value={headword}
+                                onChange={(e) => setHeadword(e.target.value)}
+                                className="aiwa-proposal-input"
+                                placeholder="e.g. teranga"
+                                maxLength={200}
+                                disabled={isSubmitting}
+                                autoFocus
+                            />
+                        </div>
+
+                        <div className="aiwa-proposal-field">
+                            <label htmlFor="proposal-language" className="aiwa-proposal-label">
+                                Language <span aria-hidden="true">*</span>
+                            </label>
+                            {languages.length > 0 ? (
+                                <select
+                                    id="proposal-language"
+                                    required
+                                    value={language}
+                                    onChange={(e) => setLanguage(e.target.value)}
+                                    className="aiwa-proposal-select"
+                                    disabled={isSubmitting}
+                                >
+                                    {languages.map((l) => (
+                                        <option key={l.slug} value={l.slug}>
+                                            {l.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <input
+                                    id="proposal-language"
+                                    type="text"
+                                    required
+                                    value={language}
+                                    onChange={(e) => setLanguage(e.target.value)}
+                                    className="aiwa-proposal-input"
+                                    placeholder="e.g. mandinka"
+                                    maxLength={35}
+                                    disabled={isSubmitting}
+                                />
+                            )}
+                        </div>
+
+                        <div className="aiwa-proposal-field">
+                            <label htmlFor="proposal-gloss" className="aiwa-proposal-label">
+                                English meaning <span className="aiwa-proposal-optional">(optional)</span>
+                            </label>
+                            <input
+                                id="proposal-gloss"
+                                type="text"
+                                value={glossEn}
+                                onChange={(e) => setGlossEn(e.target.value)}
+                                className="aiwa-proposal-input"
+                                placeholder="e.g. hospitality, generosity"
+                                maxLength={500}
+                                disabled={isSubmitting}
+                            />
+                        </div>
+
+                        <div className="aiwa-proposal-field">
+                            <label htmlFor="proposal-example" className="aiwa-proposal-label">
+                                Example sentence <span className="aiwa-proposal-optional">(optional)</span>
+                            </label>
+                            <textarea
+                                id="proposal-example"
+                                value={example}
+                                onChange={(e) => setExample(e.target.value)}
+                                className="aiwa-proposal-textarea"
+                                placeholder="How is this word used in context?"
+                                rows={2}
+                                maxLength={1000}
+                                disabled={isSubmitting}
+                            />
+                        </div>
+
+                        <div className="aiwa-proposal-field">
+                            <label htmlFor="proposal-dialect" className="aiwa-proposal-label">
+                                Dialect or region <span className="aiwa-proposal-optional">(optional)</span>
+                            </label>
+                            <input
+                                id="proposal-dialect"
+                                type="text"
+                                value={dialectRegion}
+                                onChange={(e) => setDialectRegion(e.target.value)}
+                                className="aiwa-proposal-input"
+                                placeholder="e.g. Banjul, Kombo"
+                                maxLength={200}
+                                disabled={isSubmitting}
+                            />
+                        </div>
+
+                        <div className="aiwa-proposal-field">
+                            <label htmlFor="proposal-notes" className="aiwa-proposal-label">
+                                Additional notes <span className="aiwa-proposal-optional">(optional)</span>
+                            </label>
+                            <textarea
+                                id="proposal-notes"
+                                value={notes}
+                                onChange={(e) => setNotes(e.target.value)}
+                                className="aiwa-proposal-textarea"
+                                placeholder="Anything else that might help our linguists?"
+                                rows={2}
+                                maxLength={2000}
+                                disabled={isSubmitting}
+                            />
+                        </div>
+
+                        {status === PROPOSAL_STATES.error && (
+                            <div className="aiwa-proposal-feedback aiwa-proposal-feedback--error" role="alert">
+                                <AlertCircle size={16} aria-hidden="true" />
+                                <span>Something went wrong. Please try again.</span>
+                            </div>
+                        )}
+
+                        <div className="aiwa-proposal-actions">
+                            <button
+                                type="button"
+                                className="aiwa-proposal-btn aiwa-proposal-btn--cancel"
+                                onClick={onClose}
+                                disabled={isSubmitting}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                className="aiwa-proposal-btn aiwa-proposal-btn--submit"
+                                disabled={isSubmitting || !headword.trim() || !language.trim()}
+                            >
+                                {isSubmitting ? (
+                                    <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+                                ) : (
+                                    <Send size={16} aria-hidden="true" />
+                                )}
+                                {isSubmitting ? 'Sending…' : 'Submit'}
+                            </button>
+                        </div>
+                    </form>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// ---------------------------------------------------------------------------
 // Main DictionaryApp
 // ---------------------------------------------------------------------------
 
@@ -1619,6 +1858,8 @@ export default function DictionaryApp() {
     const [languages, setLanguages] = useState([]);
     const [topTab, setTopTab] = useState('browse');
     const [wordOfDaySlug, setWordOfDaySlug] = useState(null);
+    const [showProposalModal, setShowProposalModal] = useState(false);
+    const [proposalSeedWord, setProposalSeedWord] = useState('');
 
     const virtuosoRef = useRef(null);
     const isDesktop = useIsDesktop();
@@ -1808,7 +2049,26 @@ export default function DictionaryApp() {
                 </div>
             )}
 
-            {!loading && !error && (
+            {!loading && !error && filteredWords.length === 0 && searchTerm.trim() && (
+                <div className="flex-1 flex flex-col items-center justify-center text-center p-8 gap-4">
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">
+                        No results for <strong>&ldquo;{searchTerm.trim()}&rdquo;</strong>
+                    </p>
+                    <button
+                        type="button"
+                        className="aiwa-proposal-trigger"
+                        onClick={() => {
+                            setProposalSeedWord(searchTerm.trim());
+                            setShowProposalModal(true);
+                        }}
+                    >
+                        <Plus size={16} aria-hidden="true" />
+                        Suggest this word
+                    </button>
+                </div>
+            )}
+
+            {!loading && !error && (filteredWords.length > 0 || !searchTerm.trim()) && (
                 <div className="relative flex-1 overflow-hidden">
                     <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
                         {filteredWords.length} words found
@@ -2037,6 +2297,14 @@ export default function DictionaryApp() {
                         />
                     </div>
                 )}
+
+                {showProposalModal && (
+                    <ProposalModal
+                        initialHeadword={proposalSeedWord}
+                        languages={languages}
+                        onClose={() => { setShowProposalModal(false); setProposalSeedWord(''); }}
+                    />
+                )}
             </div>
         );
     }
@@ -2209,6 +2477,14 @@ export default function DictionaryApp() {
                     onSelectWord={handleSelectWord}
                     favorites={favorites}
                     onFavoriteToggle={handleFavoriteToggle}
+                />
+            )}
+
+            {showProposalModal && (
+                <ProposalModal
+                    initialHeadword={proposalSeedWord}
+                    languages={languages}
+                    onClose={() => { setShowProposalModal(false); setProposalSeedWord(''); }}
                 />
             )}
         </div>

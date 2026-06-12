@@ -60,6 +60,262 @@ body {
     --shadow-lg: 0 8px 24px rgb(0 0 0 / 12%);
 }
 
+/* ---------------------------------------------------------------------------
+   Word Proposal — trigger button and modal
+   --------------------------------------------------------------------------- */
+
+/* "Suggest this word" pill shown in the empty search state */
+.aiwa-proposal-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    border-radius: 999px;
+    border: none;
+    background: linear-gradient(135deg, #E91E8C, #7B3FA0);
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 600;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+
+.aiwa-proposal-trigger:hover {
+    opacity: 0.88;
+}
+
+/* Full-screen overlay */
+.aiwa-proposal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgb(0 0 0 / 50%);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+    animation: aiwa-overlay-in 0.18s ease;
+}
+
+@media (min-width: 640px) {
+    .aiwa-proposal-overlay {
+        align-items: center;
+        padding: 24px;
+    }
+}
+
+@keyframes aiwa-overlay-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* Modal panel */
+.aiwa-proposal-modal {
+    background: #fff;
+    width: 100%;
+    max-width: 480px;
+    border-radius: 20px 20px 0 0;
+    padding: 24px 20px 32px;
+    box-shadow: var(--shadow-lg);
+    animation: aiwa-modal-up 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    max-height: 92vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+@media (min-width: 640px) {
+    .aiwa-proposal-modal {
+        border-radius: 16px;
+        padding: 28px 28px 32px;
+        animation: aiwa-modal-in 0.2s ease;
+    }
+}
+
+@keyframes aiwa-modal-up {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+}
+
+@keyframes aiwa-modal-in {
+    from { opacity: 0; transform: scale(0.96) translateY(8px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Modal header */
+.aiwa-proposal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.aiwa-proposal-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+    font-family: var(--font-sans);
+}
+
+.aiwa-proposal-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: #f3f4f6;
+    color: #6b7280;
+    cursor: pointer;
+    transition: background 0.12s;
+    flex-shrink: 0;
+}
+
+.aiwa-proposal-close:hover {
+    background: #e5e7eb;
+}
+
+/* Form */
+.aiwa-proposal-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.aiwa-proposal-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.aiwa-proposal-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #374151;
+    font-family: var(--font-sans);
+}
+
+.aiwa-proposal-optional {
+    font-weight: 400;
+    color: #9ca3af;
+}
+
+.aiwa-proposal-input,
+.aiwa-proposal-select,
+.aiwa-proposal-textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-family: var(--font-sans);
+    color: #111827;
+    background: #fafafa;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.aiwa-proposal-input:focus,
+.aiwa-proposal-select:focus,
+.aiwa-proposal-textarea:focus {
+    border-color: #E91E8C;
+    box-shadow: 0 0 0 3px rgb(233 30 140 / 12%);
+    background: #fff;
+}
+
+.aiwa-proposal-input:disabled,
+.aiwa-proposal-select:disabled,
+.aiwa-proposal-textarea:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.aiwa-proposal-textarea {
+    resize: vertical;
+    min-height: 62px;
+}
+
+.aiwa-proposal-select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 34px;
+}
+
+/* Feedback states */
+.aiwa-proposal-feedback {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-family: var(--font-sans);
+}
+
+.aiwa-proposal-feedback--success {
+    flex-direction: column;
+    text-align: center;
+    padding: 32px 16px;
+    color: #15803d;
+    background: #f0fdf4;
+}
+
+.aiwa-proposal-feedback--error {
+    color: #b91c1c;
+    background: #fef2f2;
+}
+
+/* Action row */
+.aiwa-proposal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 6px;
+}
+
+.aiwa-proposal-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 20px;
+    border-radius: 10px;
+    border: none;
+    font-size: 0.875rem;
+    font-weight: 600;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    transition: opacity 0.15s, background 0.12s;
+}
+
+.aiwa-proposal-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.aiwa-proposal-btn--cancel {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.aiwa-proposal-btn--cancel:hover:not(:disabled) {
+    background: #e5e7eb;
+}
+
+.aiwa-proposal-btn--submit {
+    background: linear-gradient(135deg, #E91E8C, #7B3FA0);
+    color: #fff;
+}
+
+.aiwa-proposal-btn--submit:hover:not(:disabled) {
+    opacity: 0.88;
+}
+
 /* Container */
 .sparx-dict-form-container {
     max-width: 900px;

@@ -210,6 +210,10 @@ final class Sparxstar3IAtlasDictionary {
                 ( new \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionarySpellChecker() )->register_hooks();
             }
 
+            if ( class_exists( \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryProposals::class ) ) {
+                ( new \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryProposals() )->register_hooks();
+            }
+
             // CORS handler — must be registered early (priority 1 on rest_api_init).
             if ( class_exists( \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryCors::class ) ) {
                 ( new \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryCors() )->register_hooks();
