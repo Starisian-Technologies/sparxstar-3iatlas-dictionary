@@ -17,6 +17,17 @@
     }
 }
 
+/* --- Mount contract — host div must size itself or WordPress containers squeeze it --- */
+
+#sparxstar-dictionary-root {
+    width: 100%;
+    min-height: 100vh;
+    /* Opt out of any inherited margin/padding that could create horizontal scroll */
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
 /* --- Base Styles --- */
 
 body {

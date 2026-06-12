@@ -99,6 +99,18 @@ async function apiFetch(url, options = {}) {
 }
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns true only when v is a non-empty string that isn't a spreadsheet
+ * artifact ("#N/A", "#VALUE!", etc. from CSV imports).
+ */
+function isValidText(v) {
+    return typeof v === 'string' && v.trim() !== '' && !v.trim().startsWith('#');
+}
+
+// ---------------------------------------------------------------------------
 // Apollo client
 // ---------------------------------------------------------------------------
 const httpLink = new HttpLink({ uri: GRAPHQL_ENDPOINT });
@@ -969,7 +981,7 @@ const DetailView = ({
                                                 </p>
                                             </div>
                                         )}
-                                        {exampleCount > 0 && (
+                                        {exampleCount > 0 && isValidText(d.aiwaExampleSentences[0].sentenceExample) && (
                                             <div>
                                                 <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2">
                                                     How people use it
@@ -981,13 +993,14 @@ const DetailView = ({
                                                     <p className="text-base text-gray-900 dark:text-gray-100">
                                                         {d.aiwaExampleSentences[0].sentenceExample}
                                                     </p>
-                                                    <p className="text-sm text-gray-500 dark:text-gray-400 italic mt-1">
-                                                        {language === 'fr'
-                                                            ? d.aiwaExampleSentences[0]
-                                                                  .sentenceFrenchTranslation
-                                                            : d.aiwaExampleSentences[0]
-                                                                  .sentenceEnglishTranslation}
-                                                    </p>
+                                                    {(() => {
+                                                        const t = language === 'fr'
+                                                            ? d.aiwaExampleSentences[0].sentenceFrenchTranslation
+                                                            : d.aiwaExampleSentences[0].sentenceEnglishTranslation;
+                                                        return isValidText(t) ? (
+                                                            <p className="text-sm text-gray-500 dark:text-gray-400 italic mt-1">{t}</p>
+                                                        ) : null;
+                                                    })()}
                                                 </div>
                                             </div>
                                         )}
@@ -1003,31 +1016,38 @@ const DetailView = ({
                                         )}
                                         <div className="space-y-5">
                                             {d.aiwaExampleSentences &&
-                                                d.aiwaExampleSentences.map((ex, idx) => (
-                                                    <div
-                                                        key={idx}
-                                                        className="pl-4 border-l-4 border-gray-200 dark:border-gray-700"
-                                                    >
-                                                        <p className="text-base text-gray-900 dark:text-gray-100">
-                                                            {ex.sentenceExample}
-                                                        </p>
-                                                        {ex.sentenceIpaPronounciation && (
-                                                            <p className="text-xs text-gray-400 font-mono mt-0.5">
-                                                                /{ex.sentenceIpaPronounciation}/
-                                                            </p>
-                                                        )}
-                                                        {ex.sentencePhoneticPronunciation && (
-                                                            <p className="text-xs text-gray-400 mt-0.5">
-                                                                [{ex.sentencePhoneticPronunciation}]
-                                                            </p>
-                                                        )}
-                                                        <p className="text-sm text-gray-500 dark:text-gray-400 italic mt-1">
-                                                            {language === 'fr'
-                                                                ? ex.sentenceFrenchTranslation
-                                                                : ex.sentenceEnglishTranslation}
-                                                        </p>
-                                                    </div>
-                                                ))}
+                                                d.aiwaExampleSentences
+                                                    .filter((ex) => isValidText(ex.sentenceExample))
+                                                    .map((ex, idx) => {
+                                                        const translation = language === 'fr'
+                                                            ? ex.sentenceFrenchTranslation
+                                                            : ex.sentenceEnglishTranslation;
+                                                        return (
+                                                            <div
+                                                                key={idx}
+                                                                className="pl-4 border-l-4 border-gray-200 dark:border-gray-700"
+                                                            >
+                                                                <p className="text-base text-gray-900 dark:text-gray-100">
+                                                                    {ex.sentenceExample}
+                                                                </p>
+                                                                {isValidText(ex.sentenceIpaPronounciation) && (
+                                                                    <p className="text-xs text-gray-400 font-mono mt-0.5">
+                                                                        /{ex.sentenceIpaPronounciation}/
+                                                                    </p>
+                                                                )}
+                                                                {isValidText(ex.sentencePhoneticPronunciation) && (
+                                                                    <p className="text-xs text-gray-400 mt-0.5">
+                                                                        [{ex.sentencePhoneticPronunciation}]
+                                                                    </p>
+                                                                )}
+                                                                {isValidText(translation) && (
+                                                                    <p className="text-sm text-gray-500 dark:text-gray-400 italic mt-1">
+                                                                        {translation}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
                                         </div>
                                     </div>
                                 )}
@@ -1114,7 +1134,7 @@ const DetailView = ({
                                     </section>
                                 )}
 
-                                {exampleCount > 0 && (
+                                {exampleCount > 0 && isValidText(d.aiwaExampleSentences[0].sentenceExample) && (
                                     <section>
                                         <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2">
                                             How people use it
@@ -1126,13 +1146,14 @@ const DetailView = ({
                                             <p className="text-base text-gray-900 dark:text-gray-100">
                                                 {d.aiwaExampleSentences[0].sentenceExample}
                                             </p>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400 italic mt-1">
-                                                {language === 'fr'
-                                                    ? d.aiwaExampleSentences[0]
-                                                          .sentenceFrenchTranslation
-                                                    : d.aiwaExampleSentences[0]
-                                                          .sentenceEnglishTranslation}
-                                            </p>
+                                            {(() => {
+                                                const t = language === 'fr'
+                                                    ? d.aiwaExampleSentences[0].sentenceFrenchTranslation
+                                                    : d.aiwaExampleSentences[0].sentenceEnglishTranslation;
+                                                return isValidText(t) ? (
+                                                    <p className="text-sm text-gray-500 dark:text-gray-400 italic mt-1">{t}</p>
+                                                ) : null;
+                                            })()}
                                         </div>
                                     </section>
                                 )}
@@ -1727,6 +1748,20 @@ export default function DictionaryApp() {
         return entries;
     }, [allWords, sourceLanguage, searchTerm, activeFilter]);
 
+    // Real server-side count for the selected language (from /languages REST endpoint).
+    // GraphQL is capped by WPGraphQL's max query amount, so allWords.length can be lower
+    // than the true total. Use the REST count when idle; filtered count when searching.
+    const sourceLangTotal = useMemo(() => {
+        if (!sourceLanguage) return null;
+        const lang = languages.find((l) => l.slug === sourceLanguage);
+        return lang ? lang.count : null;
+    }, [languages, sourceLanguage]);
+
+    const searchPlaceholderCount = useMemo(() => {
+        if (searchTerm.trim() || activeFilter !== 'all') return filteredWords.length;
+        return sourceLangTotal ?? filteredWords.length;
+    }, [searchTerm, activeFilter, filteredWords.length, sourceLangTotal]);
+
     const prefetchWord = useCallback((slug) => {
         client.query({
             query: GET_SINGLE_WORD_DETAILS,
@@ -1782,7 +1817,7 @@ export default function DictionaryApp() {
                     <input
                         id="aiwa-dict-search"
                         type="search"
-                        placeholder={`Search ${filteredWords.length.toLocaleString()} words\u2026`}
+                        placeholder={`Search ${searchPlaceholderCount.toLocaleString()} words\u2026`}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 pl-10 pr-4 py-2.5 rounded-xl focus:outline-none transition-all text-sm"
