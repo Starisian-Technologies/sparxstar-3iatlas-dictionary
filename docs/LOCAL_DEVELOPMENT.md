@@ -30,9 +30,9 @@ volumes:
 ## Commands
 
 - `composer install`
-- `npm install`
+- `pnpm install`
 - `docker compose up -d`
 - Run unit tests: `composer run test:php`
 - Lint PHP: `composer run lint:php`
 - Analyze: `composer run analyze:php`
-- Build assets: `npm run build`
+- Build assets: `pnpm run build`

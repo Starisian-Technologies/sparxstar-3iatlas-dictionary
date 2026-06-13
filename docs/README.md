@@ -10,7 +10,7 @@
 
 1. Clone this repo.
 2. Rename namespaces and plugin headers.
-3. Run `composer install` and `npm install` if using JS tooling.
+3. Run `composer install` and `pnpm install` if using JS tooling.
 4. Implement features in `src/` and enqueue assets from `assets/`.
 
 ### When to Fork vs. Extend

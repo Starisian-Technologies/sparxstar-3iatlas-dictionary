@@ -2,7 +2,7 @@
 
 ## Checklist
 
-- [ ] Tests pass (`composer run test:php` and `npm test`)
+- [ ] Tests pass (`composer run test:php` and `pnpm test`)
 - [ ] Linting passes (`composer run lint:php`)
 - [ ] Documentation updated
 

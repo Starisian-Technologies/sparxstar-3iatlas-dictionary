@@ -18,4 +18,4 @@
 - `composer lint:php`
 - `composer analyze:php`
 - `composer test:php`
-- `npm test`
+- `pnpm test`
