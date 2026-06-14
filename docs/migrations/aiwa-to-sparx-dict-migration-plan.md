@@ -1,7 +1,7 @@
 # Migration Plan: `aiwa_*` → `sparx_dict_*` (de-brand the storage layer)
 
 **Status:** Proposed (planning artifact — no code or schema changed by this PR)
-**Implements:** ADR-014 (SPX Prefix Standard) · Owner directive 2026-06-13
+**Implements:** ADR-017 (SPARXSTAR Naming Convention — supersedes the ADR-014 "SPX Prefix Standard" draft; ADR-017 owner-ratification pending) · Owner directive 2026-06-13
 **Owner approval:** Field-naming decision approved 2026-06-13 — *"new fields are `sparx_dict_*`; existing `aiwa_*` fields get a migration plan to `sparx_dict_*` as a separate PR. Don't build new work on top of client-branded columns."*
 **Repo-local ADR number:** pending — see Open Question 1 (ADR-015 repo prefix not yet assigned).
 
@@ -17,7 +17,7 @@ The one exception is the game-signal namespace (§4), which *is* on the wire and
 
 ---
 
-## 2. Targets are tiered (ADR-014) — not a flat `sparx_dict_*`
+## 2. Targets are tiered (ADR-017) — not a flat `sparx_dict_*`
 
 | Artifact type | Tier | Target pattern | Example |
 |---|---|---|---|
@@ -28,7 +28,9 @@ The one exception is the game-signal namespace (§4), which *is* on the wire and
 | `wp_options` names | medium | `sparx_dict_*` | `aiwa_dict_api_keys` → `sparx_dict_api_keys` |
 | Action/filter hooks | full | `sparxstar_dict_*` | `aiwa_game_word_correct` → `sparxstar_dict_game_word_correct` |
 | CSS classes | css | `spx-dict-*` | `spx-dictionary-root` → `spx-dict-root` |
-| PHP classes | short | `SPX*` | (new code only; existing grandfathered until touched) |
+| PHP service layer (classes/interfaces/fns) | — | **governed by AI Manifest Protocol v5.0** | closed-vocab composition `SPX\{Auth}\{Sys}\{Prod}\{Domain}\{Entity}\{Action}{Suffix}`; `allowed_class_suffixes` = `Service`/`Interface` only |
+
+> PHP class/interface/function names are **not** decided by this plan — they're set deterministically by `spx-vocab.json` + the Protocol validator. New code conforms from creation; existing grandfathered until touched. This affects the migration/importer command class names — see Open Question 7.
 
 ---
 
@@ -92,7 +94,7 @@ Representative mapping (full list maintained in the migration command):
 
 ## 4. Migration mechanics
 
-A dedicated, **idempotent** WP-CLI command (new class, ADR-014 compliant, e.g. `SPXDictionaryMigrateCommand` → `wp sparx-dict migrate-fields`):
+A dedicated, **idempotent** WP-CLI command (new PHP class — its name set by the AI Manifest Protocol's closed vocabulary, not asserted here; see Open Question 7) exposing `wp sparx-dict migrate-fields`:
 
 - `--dry-run` (default): report row counts per mapping, write nothing.
 - `--run`: execute inside a transaction where the storage engine allows.
@@ -134,11 +136,12 @@ A dedicated, **idempotent** WP-CLI command (new class, ADR-014 compliant, e.g. `
 ## 7. Open questions (need a ruling before PR-2)
 
 1. **Repo-local ADR prefix** (ADR-015): this repo has no assigned prefix yet (e.g. `DICT-ADR-` / `3IA-ADR-`). Needed to file this plan as a formal repo-local ADR rather than a `docs/migrations/` artifact.
-2. **CPT slug — rename vs grandfather?** `aiwa_cpt_dictionary` → `sparx_dict_word` rewrites `wp_posts.post_type` and changes admin/rewrite bases. ADR-014 left "rename existing production CPTs" explicitly undecided. Owner call. (Owner example named `sparx_dict_word`, implying rename.)
+2. **CPT slug — rename vs grandfather?** `aiwa_cpt_dictionary` → `sparx_dict_word` rewrites `wp_posts.post_type` and changes admin/rewrite bases. ADR-017 explicitly defers this as "a per-repo migration decision." Owner call. (Owner example named `sparx_dict_word`, implying rename.)
 3. **`starmus_*` taxonomies** (`starmus_tax_language`, `starmus_part_of_speech`): also non-`sparx` prefixes (Starmus = audio-acquisition product). De-brand to `sparx_dict_language` / `sparx_dict_pos`, or are these **shared cross-suite taxonomies** intentionally owned by Starmus? Not assumed — needs a ruling.
 4. **Game-signal rename ownership** (Bucket E): coordination with the Rewards/MyCred listener and the `sparxstar-3iatlas-dictionary-games` frontend. Who owns that cross-repo change, and is `sparxstar_dict_game_*` the agreed hook name?
 5. **ACF field-key renames** (`aiwa_field_N` → `field_*`): include in PR-2 or leave as opaque internal identifiers?
 6. **`_en`/`_fr` vs `_english`/`_french`** suffix convention for the translation/search/sentence fields — confirm.
+7. **WP-CLI command class naming under the Manifest Protocol** (ADR-017). `allowed_class_suffixes` is `Service`/`Interface` only — there is no `Command` suffix. The migration command and the (held) importer command classes need conformant coordinates from `spx-vocab.json`; their PHP class names can't be finalized without it. Resolve whether WP-CLI commands fall under the Protocol's service-layer governance and, if so, their `{Auth}/{Sys}/{Prod}/{Domain}/{Entity}/{Action}` coordinates + suffix.
 
 ---
 
