@@ -1,0 +1,40 @@
+# Workflow 3 — ADR Change Handler (receiver)
+# Lives in: EACH consuming repo
+# What it does: receives the dispatch event and runs conformance.
+# For now, just logs the notification. As conformance checks are built,
+# they plug in here.
+#
+# File: .github/workflows/adr-conformance.yml (in each consuming repo)
+
+name: ADR Conformance Check
+
+on:
+  repository_dispatch:
+    types: [adr-registry-changed]
+
+jobs:
+  conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v4
+
+      - name: Log the registry change
+        run: |
+          echo "=== ADR Registry Change Detected ==="
+          echo "Change type: ${{ github.event.client_payload.change_type }}"
+          echo "Changed files:"
+          echo "${{ github.event.client_payload.changed_files }}"
+          echo "==================================="
+
+      # Future: pull the registry, diff against this repo's citations,
+      # flag any ADR/INV/OQ that this repo cites but that has been
+      # amended or superseded since the last conformance pass.
+      #
+      # For now, the notification is the value — it tells the next
+      # session that opens this repo "the registry changed, check
+      # your citations."
+
+      - name: Post notification
+        run: |
+          echo "::notice title=ADR Registry Changed::The platform registry was updated (${{ github.event.client_payload.change_type }}). Check your ADR/INV citations on the next PR."
