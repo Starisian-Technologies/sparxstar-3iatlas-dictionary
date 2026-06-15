@@ -1,6 +1,6 @@
 # Migration Plan: `aiwa_*` → `sparx_dict_*` (de-brand the storage layer)
 
-**Status:** Proposed (planning artifact — no code or schema changed by this PR)
+**Status:** Proposed (planning artifact — this document specifies the migration; it performs no rename itself)
 **Implements:** ADR-017 (SPARXSTAR Naming Convention — supersedes the ADR-014 "SPX Prefix Standard" draft; ADR-017 owner-ratification pending) · Owner directive 2026-06-13
 **Owner approval:** Field-naming decision approved 2026-06-13 — *"new fields are `sparx_dict_*`; existing `aiwa_*` fields get a migration plan to `sparx_dict_*` as a separate PR. Don't build new work on top of client-branded columns."*
 **Repo-local ADR number:** pending — see Open Question 1 (ADR-015 repo prefix not yet assigned).
@@ -23,7 +23,7 @@ The one exception is the game-signal namespace (§4), which *is* on the wire and
 |---|---|---|---|
 | Post meta / ACF field names | medium | `sparx_dict_*` | `aiwa_extract` → `sparx_dict_extract` |
 | ACF field group + field keys | medium | `group_sparx_dict_*` / `field_*` | `group_aiwa_dictionary_main` → `group_sparx_dict_main` |
-| CPT slug | medium | `sparx_dict_*` | `aiwa_cpt_dictionary` → `sparx_dict_word` |
+| CPT slug | medium | `sparx_dict_*` | `aiwa-cpt-dictionary` → `sparx_dict_word` |
 | Taxonomy slug | medium | `sparx_dict_*` | `aiwa_domain` → `sparx_dict_domain` |
 | `wp_options` names | medium | `sparx_dict_*` | `aiwa_dict_api_keys` → `sparx_dict_api_keys` |
 | Action/filter hooks | full | `sparxstar_dict_*` | `aiwa_game_word_correct` → `sparxstar_dict_game_word_correct` |
@@ -71,7 +71,7 @@ Representative mapping (full list maintained in the migration command):
 **Read/write call sites:** `src/api/Sparxstar3IAtlasDictionaryRestApi.php` (all `get_field`/`get_post_meta`/`meta_query`), `src/frontend/Sparxstar3IAtlasDictionaryForm.php`, `src/core/Sparxstar3IAtlasDictionaryCore.php`.
 
 ### Bucket B — CPT slug
-`aiwa_cpt_dictionary` → `sparx_dict_word`. Confirmed call sites: `register_post_type` (`Sparxstar3IAtlasPostTypes.php:940`), `save_post_aiwa_cpt_dictionary` hook and `get_post_type() !== 'aiwa_cpt_dictionary'` guard (`Sparxstar3IAtlasDictionaryCore.php`). Data migration: `wp_posts.post_type`. **Rewrite/permalink impact — see Open Question 2.**
+`aiwa-cpt-dictionary` → `sparx_dict_word`. The registered slug is **hyphenated** (`register_post_type('aiwa-cpt-dictionary')`, `Sparxstar3IAtlasPostTypes.php:941`), so `wp_posts.post_type` stores `aiwa-cpt-dictionary` and the correct dynamic hook is `save_post_aiwa-cpt-dictionary`. **Existing inconsistency to reconcile during migration:** `Sparxstar3IAtlasDictionaryCore.php` hooks `save_post_aiwa_cpt_dictionary` and guards `get_post_type() !== 'aiwa_cpt_dictionary'` with *underscores* — these never match the hyphenated post type and are latent no-ops. PR-2 must correct them to the new `sparx_dict_word` slug. Data migration: `wp_posts.post_type`. **Rewrite/permalink impact — see Open Question 2.**
 
 ### Bucket C — Taxonomy slug
 `aiwa_domain` → `sparx_dict_domain`. Data migration: `wp_term_taxonomy.taxonomy`. Re-register under new slug. *(Related: `starmus_tax_language`, `starmus_part_of_speech` are also non-platform prefixes — Open Question 3.)*
@@ -99,7 +99,7 @@ A dedicated, **idempotent** WP-CLI command (new PHP class — its name set by th
 - `--dry-run` (default): report row counts per mapping, write nothing.
 - `--run`: execute inside a transaction where the storage engine allows.
 - For each `old → new` meta key: `UPDATE {$wpdb->postmeta} SET meta_key=<new> WHERE meta_key=<old>` **and** the `_<old>` → `_<new>` reference row, scoped to CPT posts.
-- CPT: `UPDATE {$wpdb->posts} SET post_type='sparx_dict_word' WHERE post_type='aiwa_cpt_dictionary'`, then `flush_rewrite_rules()`.
+- CPT: `UPDATE {$wpdb->posts} SET post_type='sparx_dict_word' WHERE post_type='aiwa-cpt-dictionary'`, then `flush_rewrite_rules()`.
 - Taxonomy: `UPDATE {$wpdb->term_taxonomy} SET taxonomy='sparx_dict_domain' WHERE taxonomy='aiwa_domain'`.
 - Options: copy → new `option_name`, delete old.
 - Idempotent: re-running detects already-migrated keys and no-ops.
@@ -136,7 +136,7 @@ A dedicated, **idempotent** WP-CLI command (new PHP class — its name set by th
 ## 7. Open questions (need a ruling before PR-2)
 
 1. **Repo-local ADR prefix** (ADR-015): this repo has no assigned prefix yet (e.g. `DICT-ADR-` / `3IA-ADR-`). Needed to file this plan as a formal repo-local ADR rather than a `docs/migrations/` artifact.
-2. **CPT slug — rename vs grandfather?** `aiwa_cpt_dictionary` → `sparx_dict_word` rewrites `wp_posts.post_type` and changes admin/rewrite bases. ADR-017 explicitly defers this as "a per-repo migration decision." Owner call. (Owner example named `sparx_dict_word`, implying rename.)
+2. **CPT slug — rename vs grandfather?** `aiwa-cpt-dictionary` → `sparx_dict_word` rewrites `wp_posts.post_type` and changes admin/rewrite bases. ADR-017 explicitly defers this as "a per-repo migration decision." Owner call. (Owner example named `sparx_dict_word`, implying rename.)
 3. **`starmus_*` taxonomies** (`starmus_tax_language`, `starmus_part_of_speech`): also non-`sparx` prefixes (Starmus = audio-acquisition product). De-brand to `sparx_dict_language` / `sparx_dict_pos`, or are these **shared cross-suite taxonomies** intentionally owned by Starmus? Not assumed — needs a ruling.
 4. **Game-signal rename ownership** (Bucket E): coordination with the Rewards/MyCred listener and the `sparxstar-3iatlas-dictionary-games` frontend. Who owns that cross-repo change, and is `sparxstar_dict_game_*` the agreed hook name?
 5. **ACF field-key renames** (`aiwa_field_N` → `field_*`): include in PR-2 or leave as opaque internal identifiers?
