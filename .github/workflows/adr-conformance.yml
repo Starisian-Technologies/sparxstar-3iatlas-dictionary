@@ -23,11 +23,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Log the registry change
+        env:
+          CHANGE_TYPE: ${{ github.event.client_payload.change_type }}
+          CHANGED_FILES: ${{ github.event.client_payload.changed_files }}
         run: |
           echo "=== ADR Registry Change Detected ==="
-          echo "Change type: ${{ github.event.client_payload.change_type }}"
+          echo "Change type: ${CHANGE_TYPE}"
           echo "Changed files:"
-          echo "${{ github.event.client_payload.changed_files }}"
+          echo "${CHANGED_FILES}"
           echo "==================================="
 
       # Future: pull the registry, diff against this repo's citations,
@@ -39,5 +42,7 @@ jobs:
       # your citations."
 
       - name: Post notification
+        env:
+          CHANGE_TYPE: ${{ github.event.client_payload.change_type }}
         run: |
-          echo "::notice title=ADR Registry Changed::The platform registry was updated (${{ github.event.client_payload.change_type }}). Check your ADR/INV citations on the next PR."
+          echo "::notice title=ADR Registry Changed::The platform registry was updated (${CHANGE_TYPE}). Check your ADR/INV citations on the next PR."

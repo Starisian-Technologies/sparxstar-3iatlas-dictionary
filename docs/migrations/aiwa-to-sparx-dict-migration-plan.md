@@ -23,7 +23,7 @@ The one exception is the game-signal namespace (§4), which *is* on the wire and
 |---|---|---|---|
 | Post meta / ACF field names | medium | `sparx_dict_*` | `aiwa_extract` → `sparx_dict_extract` |
 | ACF field group + field keys | medium | `group_sparx_dict_*` / `field_*` | `group_aiwa_dictionary_main` → `group_sparx_dict_main` |
-| CPT slug | medium | `sparx_dict_*` | `aiwa-cpt-dictionary` → `sparx_dict_word` |
+| CPT slug | **LOCKED — do not rename** | `aiwa-cpt-dictionary` stays | grandfathered by repo rule; see Bucket B |
 | Taxonomy slug | medium | `sparx_dict_*` | `aiwa_domain` → `sparx_dict_domain` |
 | `wp_options` names | medium | `sparx_dict_*` | `aiwa_dict_api_keys` → `sparx_dict_api_keys` |
 | Action/filter hooks | full | `sparxstar_dict_*` | `aiwa_game_word_correct` → `sparxstar_dict_game_word_correct` |
@@ -68,12 +68,14 @@ Representative mapping (full list maintained in the migration command):
 
 > `_en`/`_fr` over `_english`/`_french` aligns with the wire keys (`translation_en`) and is a naming decision to confirm. ACF field **keys** (`aiwa_field_1`, `aiwa_field_qc_1`, …) are opaque internal identifiers; renaming them is optional cleanup (Open Question 5).
 
-**Source-of-truth files:** `src/includes/Sparxstar3IAtlasPostTypes.php` (ACF registration) **and** `acf-json/sparxstar-dictionary-scf.json` (ACF local-JSON sync). Both must change together or ACF will resync the old names.
+**Source-of-truth files:** `src/includes/Sparxstar3IAtlasPostTypes.php` (ACF registration) **and** `acf-json/sparxstar-dictionary-scf.json` (ACF local-JSON sync). Both must change together or ACF will resync the old names. **Known exception:** `aiwa_sentence_ipa` is registered in `PostTypes.php` but **intentionally absent** from `scf.json` (the other four `aiwa_sentence_*` subfields are present). PR-2 must preserve that asymmetry — rename it in `PostTypes.php` only and **not** "correct" the JSON by adding it.
 
 **Read/write call sites:** `src/api/Sparxstar3IAtlasDictionaryRestApi.php` (all `get_field`/`get_post_meta`/`meta_query`), `src/frontend/Sparxstar3IAtlasDictionaryForm.php`, `src/core/Sparxstar3IAtlasDictionaryCore.php`.
 
-### Bucket B — CPT slug
-`aiwa-cpt-dictionary` → `sparx_dict_word`. The registered slug is **hyphenated** (`register_post_type('aiwa-cpt-dictionary')`, `Sparxstar3IAtlasPostTypes.php:941`), so `wp_posts.post_type` stores `aiwa-cpt-dictionary` and the correct dynamic hook is `save_post_aiwa-cpt-dictionary`. **Existing inconsistency to reconcile during migration:** `Sparxstar3IAtlasDictionaryCore.php` hooks `save_post_aiwa_cpt_dictionary` and guards `get_post_type() !== 'aiwa_cpt_dictionary'` with *underscores* — these never match the hyphenated post type and are latent no-ops. PR-2 must correct them to the new `sparx_dict_word` slug. Data migration: `wp_posts.post_type`. **Rewrite/permalink impact — see Open Question 2.**
+### Bucket B — CPT slug: **LOCKED — do NOT rename**
+The CPT slug stays `aiwa-cpt-dictionary`. This is a deliberate **exception to the ADR-017 `sparx_dict_*` default**, because the repo has an explicit overriding rule: `AGENTS.md` and `AIWA-Dictionary-Direction-v3.md` state *"Never modify the `aiwa-cpt-dictionary` CPT slug. Live data depends on it. Changing it destroys existing entries."* So **no `wp_posts.post_type` rewrite.** A rename would require a *future* ADR that explicitly overrides that rule and ships a full permalink + data-migration plan (Open Question 2).
+
+**What PR-2 *does* fix here (a bug, not a rename):** the registered slug is hyphenated (`register_post_type('aiwa-cpt-dictionary')`, `Sparxstar3IAtlasPostTypes.php:941`), but `Sparxstar3IAtlasDictionaryCore.php` hooks `save_post_aiwa_cpt_dictionary` and guards `get_post_type() !== 'aiwa_cpt_dictionary'` with *underscores* — these never match the hyphenated post type and are latent no-ops. PR-2 corrects them to target the **existing** slug (`save_post_aiwa-cpt-dictionary`, `=== 'aiwa-cpt-dictionary'`). No data is rewritten.
 
 ### Bucket C — Taxonomy slug
 Client-branded taxonomies registered in `Sparxstar3IAtlasPostTypes.php`:
@@ -108,7 +110,7 @@ A dedicated, **idempotent** WP-CLI command (new PHP class — its name set by th
 - `--dry-run` (default): report row counts per mapping, write nothing.
 - `--run`: execute inside a transaction where the storage engine allows.
 - For each `old → new` meta key: `UPDATE {$wpdb->postmeta} SET meta_key=<new> WHERE meta_key=<old>` **and** the `_<old>` → `_<new>` reference row, scoped to CPT posts.
-- CPT: `UPDATE {$wpdb->posts} SET post_type='sparx_dict_word' WHERE post_type='aiwa-cpt-dictionary'`, then `flush_rewrite_rules()`.
+- CPT: **no `wp_posts.post_type` rewrite** — the `aiwa-cpt-dictionary` slug is locked (Bucket B). PR-2 only fixes the underscore/hyphen `Core.php` hook + guard to target the existing slug.
 - Taxonomy (per client-branded slug): `UPDATE {$wpdb->term_taxonomy} SET taxonomy='sparx_dict_domain' WHERE taxonomy='aiwa_domain'` and `… SET taxonomy='sparx_dict_alpha_letter' WHERE taxonomy='aiwa-alpha-letter'`.
 - Options: copy → new `option_name`, delete old.
 - Idempotent: re-running detects already-migrated keys and no-ops.
@@ -123,7 +125,7 @@ A dedicated, **idempotent** WP-CLI command (new PHP class — its name set by th
 | PR | Contents | Risk | Depends on |
 |---|---|---|---|
 | **PR-1 (this)** | This plan. | none | — |
-| **PR-2** | Buckets A–D: ACF reg + `acf-json` + all PHP read/write sites + CPT + taxonomy + options, **plus** the idempotent WP-CLI data-migration command. Atomic. | medium (internal) | PR-1 review/sign-off + Open Q 1–3 |
+| **PR-2** | Buckets A, C, D: ACF reg + `acf-json` + all PHP read/write sites + taxonomy + options, **plus** the idempotent WP-CLI data-migration command. Includes Bucket B's `Core.php` underscore/hyphen hook bug-fix (no slug rename). Atomic. | medium (internal) | PR-1 review/sign-off + Open Q 1–3 |
 | **PR-3** | Bucket E: game hooks + event-`type` strings, coordinated with Rewards listener + both frontend copies. | high (cross-system, wire) | Rewards/Open Q 4 |
 | **PR-4** | Bucket F: CSS `spx-dict-*`, rebuild assets, doc/spec reconciliation. | low | PR-2 |
 
@@ -133,10 +135,10 @@ A dedicated, **idempotent** WP-CLI command (new PHP class — its name set by th
 
 ## 6. Rollout & safety
 
-- **Full DB backup** before `--run`. This rewrites `wp_postmeta`, `wp_posts`, `wp_term_taxonomy`, `wp_options`.
+- **Full DB backup** before `--run`. This rewrites `wp_postmeta`, `wp_term_taxonomy`, `wp_options` (the CPT slug in `wp_posts` is **not** changed — Bucket B).
 - Run `--dry-run` first; review counts against expected entry volume.
 - Maintenance window: brief, since reads break the instant code lands without data, and vice-versa — deploy code + run migration together.
-- After CPT slug change: `flush_rewrite_rules()` + verify entry permalinks + ACF field-group sync (`acf-json`) loads cleanly.
+- After taxonomy slug changes: re-register taxonomies + `flush_rewrite_rules()` only if a taxonomy's rewrite config changed; verify ACF field-group sync (`acf-json`) loads cleanly. Entry permalinks are unaffected (CPT slug unchanged).
 - Re-run any search index / cached REST responses (cache invalidation) post-migration.
 - Because the REST/import **field** contract is unchanged, no consumer coordination is needed for Buckets A–D. Bucket E is the only consumer-facing change and is gated behind PR-3.
 
@@ -145,7 +147,7 @@ A dedicated, **idempotent** WP-CLI command (new PHP class — its name set by th
 ## 7. Open questions (need a ruling before PR-2)
 
 1. **Repo-local ADR prefix** (ADR-015): this repo has no assigned prefix yet (e.g. `DICT-ADR-` / `3IA-ADR-`). Needed to file this plan as a formal repo-local ADR rather than a `docs/migrations/` artifact.
-2. **CPT slug — rename vs grandfather?** `aiwa-cpt-dictionary` → `sparx_dict_word` rewrites `wp_posts.post_type` and changes admin/rewrite bases. ADR-017 explicitly defers this as "a per-repo migration decision." Owner call. (Owner example named `sparx_dict_word`, implying rename.)
+2. **CPT slug — already locked; can/should ADR-017 ever override?** The repo rule (`AGENTS.md`, `AIWA-Dictionary-Direction-v3.md`) is explicit: never change `aiwa-cpt-dictionary` (live data + permalinks depend on it). This plan therefore treats it as **grandfathered/locked** — that is the default, not an open choice. The only real question is whether a *future ADR* should deliberately override that rule with a full permalink + `wp_posts.post_type` data-migration plan. Absent such an ADR, the slug stays as-is.
 3. **`starmus_*` taxonomies** (`starmus_tax_language`, `starmus_part_of_speech`, `starmus_tax_dialect`): also non-`sparx` prefixes (Starmus = audio-acquisition product). De-brand to `sparx_dict_language` / `sparx_dict_pos` / `sparx_dict_dialect`, or are these **shared cross-suite taxonomies** intentionally owned by Starmus? Not assumed — needs a ruling.
 4. **Game-signal rename ownership** (Bucket E): coordination with the Rewards/MyCred listener and the `sparxstar-3iatlas-dictionary-games` frontend. Who owns that cross-repo change, and is `sparxstar_dict_game_*` the agreed hook name?
 5. **ACF field-key renames** (`aiwa_field_N` → `field_*`): include in PR-2 or leave as opaque internal identifiers?
