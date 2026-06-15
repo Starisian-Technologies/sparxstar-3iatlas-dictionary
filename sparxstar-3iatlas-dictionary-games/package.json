@@ -11,6 +11,7 @@
     },
     "scripts": {
         "build": "webpack",
+        "dev": "webpack --watch",
         "watch": "webpack --watch",
         "lint": "eslint \"src/**/*.{js,jsx}\" --fix",
         "format": "prettier --write .",
