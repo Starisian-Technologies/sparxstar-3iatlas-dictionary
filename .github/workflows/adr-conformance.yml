@@ -12,6 +12,9 @@ on:
   repository_dispatch:
     types: [adr-registry-changed]
 
+permissions:
+  contents: read
+
 jobs:
   conformance:
     runs-on: ubuntu-latest
