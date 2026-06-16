@@ -105,7 +105,7 @@ Data migration: `wp_term_taxonomy.taxonomy` for each. Re-register under the new 
 
 ## 4. Migration mechanics
 
-A dedicated, **idempotent** WP-CLI command (new PHP class — its name set by the AI Manifest Protocol's closed vocabulary, not asserted here; see Open Question 7) exposing `wp sparx-dict migrate-fields`:
+A dedicated, **idempotent** WP-CLI command (new PHP class — its name set by the AI Manifest Protocol's closed vocabulary, not asserted here; see Open Question 7) under the existing CLI root, exposing `wp sparxstar-dict migrate-fields`:
 
 - `--dry-run` (default): report row counts per mapping, write nothing.
 - `--run`: execute inside a transaction where the storage engine allows.
@@ -158,4 +158,4 @@ A dedicated, **idempotent** WP-CLI command (new PHP class — its name set by th
 
 ## 8. Rollback
 
-The migration command ships its inverse mapping; `wp sparx-dict migrate-fields --run --reverse` restores prior keys. Combined with the pre-run DB backup, rollback is a code revert (PR-2) + reverse migration.
+The migration command ships its inverse mapping; `wp sparxstar-dict migrate-fields --run --reverse` restores prior keys. Combined with the pre-run DB backup, rollback is a code revert (PR-2) + reverse migration.
