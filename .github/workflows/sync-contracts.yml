@@ -50,15 +50,23 @@ jobs:
 
       - name: Copy contracts
         run: |
+          set -euo pipefail
+          if [ -z "$(ls -A source/schemas 2>/dev/null)" ]; then
+            echo "No contract files in schemas/ — nothing to sync."
+            exit 0
+          fi
           rm -rf target/Contracts/IAMC/Dictionary/
           mkdir -p target/Contracts/IAMC/Dictionary/
-          cp -r source/schemas/* target/Contracts/IAMC/Dictionary/
+          # Trailing /. copies directory contents (incl. dotfiles) without
+          # relying on glob expansion, which would error on an empty dir.
+          cp -r source/schemas/. target/Contracts/IAMC/Dictionary/
 
       - name: Push if changed
         working-directory: target
         env:
           SOURCE_SHA: ${{ github.sha }}
         run: |
+          set -euo pipefail
           git config user.name "sparxstar-contract-sync[bot]"
           git config user.email "contract-sync@starisian.com"
           git add -A
