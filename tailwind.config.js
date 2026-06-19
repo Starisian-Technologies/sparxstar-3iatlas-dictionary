@@ -13,9 +13,9 @@ module.exports = {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['"Noto Sans"', 'system-ui', 'sans-serif'],
+                sans: ['Lexend', '"Noto Sans"', 'system-ui', 'sans-serif'],
                 mono: ['"Noto Sans Mono"', 'monospace'],
-                serif: ['"Noto Serif"', 'serif'],
+                serif: ['Lexend', '"Noto Serif"', 'serif'],
             },
             fontSize: {
                 base: ['1.05rem', { lineHeight: '1.6' }], // Improves legibility for dense orthography

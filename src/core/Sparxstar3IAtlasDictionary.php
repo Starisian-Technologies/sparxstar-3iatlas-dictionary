@@ -116,9 +116,16 @@ final class Sparxstar3IAtlasDictionary {
             );
 
             wp_register_style(
+                'sparxstar-lexend-font',
+                'https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap',
+                array(),
+                null
+            );
+
+            wp_register_style(
                 'sparxstar-dictionary-style',
                 SPARX_3IATLAS_URL . 'assets/css/sparxstar-3iatlas-dictionary-app.min.css',
-                array(),
+                array( 'sparxstar-lexend-font' ),
                 SPARX_3IATLAS_VERSION
             );
         } catch ( \Throwable $throwable ) {

@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -17,16 +19,20 @@
     }
 }
 
-/* --- Mount contract — host div must size itself or WordPress containers squeeze it --- */
+/* --- Mount contract — overlay the full viewport, escaping WordPress template wrappers --- */
 
 #sparxstar-dictionary-root {
-    width: 100%;
-    min-height: 100vh;
-
-    /* Opt out of any inherited margin/padding that could create horizontal scroll */
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 99999 !important;
+    overflow: hidden;
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    background: #fff;
 }
 
 /* --- Base Styles --- */
@@ -35,9 +41,9 @@ body {
     /* Prevent "bounce" scrolling on the body itself to make it feel like an app */
     overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
+    overflow: hidden;
 
-    /* System fonts for native feel */
-    font-family: system-ui, -apple-system, 'Segoe UI', roboto, arial, sans-serif;
+    font-family: 'Lexend', system-ui, -apple-system, sans-serif;
 }
 
 /* Ensure React root takes full height for virtual scrolling */
@@ -65,8 +71,8 @@ body {
     --color-bg-section: #fff;
     --color-text: #1f2937;
     --color-text-light: #6b7280;
-    --font-serif: ui-serif, georgia, cambria, 'Times New Roman', times, serif;
-    --font-sans: system-ui, -apple-system, 'Segoe UI', roboto, 'Noto Sans', arial, sans-serif;
+    --font-serif: 'Lexend', ui-serif, georgia, cambria, 'Times New Roman', times, serif;
+    --font-sans: 'Lexend', system-ui, -apple-system, 'Segoe UI', roboto, 'Noto Sans', arial, sans-serif;
     --shadow-sm: 0 1px 3px rgb(0 0 0 / 5%);
     --shadow-md: 0 4px 12px rgb(0 0 0 / 8%);
     --shadow-lg: 0 8px 24px rgb(0 0 0 / 12%);
