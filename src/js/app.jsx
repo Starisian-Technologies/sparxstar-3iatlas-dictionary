@@ -1644,6 +1644,12 @@ export default function DictionaryApp() {
     const virtuosoRef = useRef(null);
     const isDesktop = useIsDesktop();
 
+    // Lock body scroll while the dictionary overlay is mounted; restore on unmount.
+    useEffect(() => {
+        document.body.classList.add('sparx-dict-active');
+        return () => document.body.classList.remove('sparx-dict-active');
+    }, []);
+
     // Fetch source languages from REST API
     useEffect(() => {
         apiFetch(`${REST_URL}/languages`)
