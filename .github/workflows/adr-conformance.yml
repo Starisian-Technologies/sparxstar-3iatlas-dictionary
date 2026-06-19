@@ -42,13 +42,9 @@ jobs:
       # your citations."
 
       - name: Post notification
-        env:
-          CHANGE_TYPE: ${{ github.event.client_payload.change_type }}
         run: |
-          # Escape per GitHub workflow-command rules (%->%25, CR->%0D, LF->%0A)
-          # so an untrusted dispatch payload cannot inject or spoof a workflow
-          # command inside the annotation message.
-          esc="${CHANGE_TYPE//'%'/'%25'}"
-          esc="${esc//$'\r'/'%0D'}"
-          esc="${esc//$'\n'/'%0A'}"
-          echo "::notice title=ADR Registry Changed::The platform registry was updated (${esc}). Check your ADR/INV citations on the next PR."
+          # The notice carries no dynamic payload value: the untrusted dispatch
+          # payload (change_type / changed_files) is already logged safely via
+          # env in the previous step, so there is nothing to inject or spoof
+          # here. The notice just tells the next session "something changed."
+          echo "::notice title=ADR Registry Changed::The platform registry was updated. Check your ADR/INV citations on the next PR."
