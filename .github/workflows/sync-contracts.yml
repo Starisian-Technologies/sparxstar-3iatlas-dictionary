@@ -8,8 +8,8 @@
 #   - target path : Contracts/IAMC/Dictionary/  (Helios used Contracts/IAMC/Helios/)
 #
 # Requires (configure in repo settings before first run):
-#   - vars.CONTRACT_SYNC_CLIENT_ID      GitHub App ID (numeric; the var name
-#                                       says CLIENT_ID but it holds the App ID)
+#   - vars.CONTRACT_SYNC_CLIENT_ID      GitHub App client id (create-github-app-token
+#                                       accepts either the App ID or the client id)
 #   - secrets.CONTRACT_SYNC_PRIVATE_KEY GitHub App private key
 #   - the App installed on Starisian-Technologies/sparxstar-platform-contracts
 
