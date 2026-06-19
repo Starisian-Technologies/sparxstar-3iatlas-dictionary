@@ -25,6 +25,13 @@ on:
 permissions:
   contents: read
 
+# Serialize runs so rapid successive pushes to main can't race and produce
+# conflicting commits/pushes to the shared contracts repo. Do not cancel an
+# in-progress run mid-push — let it finish, then run the next.
+concurrency:
+  group: sync-contracts
+  cancel-in-progress: false
+
 jobs:
   sync:
     runs-on: ubuntu-latest
