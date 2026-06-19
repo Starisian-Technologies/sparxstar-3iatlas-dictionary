@@ -22,12 +22,12 @@ The one exception is the game-signal namespace (§4), which *is* on the wire and
 | Artifact type | Tier | Target pattern | Example |
 |---|---|---|---|
 | Post meta / ACF field names | medium | `sparx_dict_*` | `aiwa_extract` → `sparx_dict_extract` |
-| ACF field group + field keys | medium | `group_sparx_dict_*` / `field_*` | `group_aiwa_dictionary_main` → `group_sparx_dict_main` |
+| ACF field **group** key | medium | `group_sparx_dict_*` | `group_aiwa_dictionary_main` → `group_sparx_dict_main` (field **keys** `aiwa_field_*` are opaque — rename optional, OQ5) |
 | CPT slug | **LOCKED — do not rename** | `aiwa-cpt-dictionary` stays | grandfathered by repo rule; see Bucket B |
 | Taxonomy slug | medium | `sparx_dict_*` | `aiwa_domain` → `sparx_dict_domain` |
 | `wp_options` names | medium | `sparx_dict_*` | `aiwa_dict_api_keys` → `sparx_dict_api_keys` |
-| Action/filter hooks | full | `sparxstar_dict_*` | `aiwa_game_word_correct` → `sparxstar_dict_game_word_correct` |
-| CSS classes | css | `spx-dict-*` | `spx-dictionary-root` → `spx-dict-root` |
+| Action/filter hooks | **LOCKED pending ADR** | `aiwa_*` stays (reserved) | repo rule (`AGENTS.md`) reserves `aiwa_*` for WP hook/event names; a rename needs an explicit ADR override — see Bucket E |
+| CSS classes | css | `spx-dict-*` | `sparxstar-dictionary-root` → `spx-dict-root` |
 | PHP service layer (classes/interfaces/fns) | — | **governed by AI Manifest Protocol v5.0** | closed-vocab composition `SPX\{Auth}\{Sys}\{Prod}\{Domain}\{Entity}\{Action}{Suffix}`; `allowed_class_suffixes` = `Service`/`Interface` only |
 
 > PHP class/interface/function names are **not** decided by this plan — they're set deterministically by `spx-vocab.json` + the Protocol validator. New code conforms from creation; existing grandfathered until touched. This affects the migration/importer command class names — see Open Question 7.
@@ -92,6 +92,7 @@ Data migration: `wp_term_taxonomy.taxonomy` for each. Re-register under the new 
 
 ### Bucket E — Game signals (CROSS-SYSTEM — separate, coordinated PR)
 `aiwa_game_{word_correct,listen_write_correct,session_complete,domain_mastered,streak_3,new_word_practiced,return_visit}` → `sparxstar_dict_game_*` (hook tier).
+- **Repo-rule gate (not just cross-system):** these are WordPress hook/event names, and `AGENTS.md` reserves the `aiwa_*` prefix for exactly that (e.g. `aiwa_game_word_correct`). So renaming them is **doubly blocked** — it needs (a) an explicit ADR override of that repo rule *and* (b) the cross-system coordination below. Absent the ADR, the `aiwa_game_*` names stay.
 - **Wire contract:** the React games send these as `addEvent({ type: 'aiwa_game_*' })` (`src/js/games/GameShell.jsx`, `src/js/hooks/useProgressSync.js`, **and** the parallel package `sparxstar-3iatlas-dictionary-games/`). The REST endpoint switches on the `type` string and re-emits via `do_action()` (`…RestApi.php:1083+`).
 - **Consumers:** whatever `add_action()`s these — the Rewards/MyCred listener (separate system).
 - Renaming requires a coordinated change across: this REST endpoint, both frontend copies, and the Rewards listener. **Do not rename unilaterally.** Owner/Rewards coordination required (Open Question 4).
