@@ -47,7 +47,7 @@ Representative mapping (full list maintained in the migration command):
 |---|---|
 | `aiwa_entry_uuid` | `sparx_dict_uuid` |
 | `aiwa_extract` | `sparx_dict_extract` |
-| `aiwa_translation` (parent group) | `sparx_dict_translation` |
+| `aiwa_translation` (standalone text field) | `sparx_dict_translation` |
 | `aiwa_translation_english` | `sparx_dict_translation_en` |
 | `aiwa_translation_french` | `sparx_dict_translation_fr` |
 | `aiwa_ipa_pronunciation` | `sparx_dict_ipa` |

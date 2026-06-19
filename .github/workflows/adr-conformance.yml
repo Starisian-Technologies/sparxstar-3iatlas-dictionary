@@ -28,9 +28,13 @@ jobs:
           CHANGED_FILES: ${{ github.event.client_payload.changed_files }}
         run: |
           echo "=== ADR Registry Change Detected ==="
-          echo "Change type: ${CHANGE_TYPE}"
-          echo "Changed files:"
-          echo "${CHANGED_FILES}"
+          # The dispatch payload is untrusted. Echoing it verbatim is unsafe even
+          # via env, because the Actions runner parses every stdout line for
+          # workflow commands (::error::, ::set-output::, ...). JSON-encode so any
+          # embedded newline becomes a literal \n and the value stays on one line
+          # that cannot begin with "::".
+          echo "Change type: $(jq -n --arg v "$CHANGE_TYPE" '$v')"
+          echo "Changed files: $(jq -n --arg v "$CHANGED_FILES" '$v')"
           echo "==================================="
 
       # Future: pull the registry, diff against this repo's citations,
