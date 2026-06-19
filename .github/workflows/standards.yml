@@ -1,0 +1,46 @@
+# Platform Standards — calls the org's reusable workflows from
+# starisian-technologies-coding-standards so enforcement stays consistent
+# across every repo and a standards update fixes all repos at once.
+#
+# One file per repo. Jobs included match this repo's composition:
+# PHP WordPress plugin + React games app + CSS + package.json.
+# Pinned to @main per platform policy. Do not fork these checks locally —
+# request changes in the coding-standards repo instead.
+
+name: Platform Standards
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Least-privilege default, consistent with the other workflows in this repo.
+# These reusable checks only read the tree; called workflows that need more
+# declare it on their own jobs (capped by this token).
+permissions:
+  contents: read
+
+jobs:
+  pnpm:
+    uses: Starisian-Technologies/starisian-technologies-coding-standards/.github/workflows/pnpm-enforcement.yml@main
+    with:
+      mode: development
+
+  php:
+    uses: Starisian-Technologies/starisian-technologies-coding-standards/.github/workflows/php-standards.yml@main
+    with:
+      phpstan_level: "5"
+
+  js:
+    uses: Starisian-Technologies/starisian-technologies-coding-standards/.github/workflows/js-standards.yml@main
+
+  css:
+    uses: Starisian-Technologies/starisian-technologies-coding-standards/.github/workflows/css-standards.yml@main
+
+  formatting:
+    uses: Starisian-Technologies/starisian-technologies-coding-standards/.github/workflows/formatting.yml@main
+
+  wp-plugin-check:
+    uses: Starisian-Technologies/starisian-technologies-coding-standards/.github/workflows/wp-plugin-check.yml@main
+    with:
+      categories: "performance,accessibility,security"
