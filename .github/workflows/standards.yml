@@ -14,6 +14,12 @@ on:
   push:
     branches: [main]
 
+# Least-privilege default, consistent with the other workflows in this repo.
+# These reusable checks only read the tree; called workflows that need more
+# declare it on their own jobs (capped by this token).
+permissions:
+  contents: read
+
 jobs:
   pnpm:
     uses: Starisian-Technologies/starisian-technologies-coding-standards/.github/workflows/pnpm-enforcement.yml@main

@@ -57,11 +57,10 @@ jobs:
             - name: Install JS Dependencies
               run: pnpm install --frozen-lockfile
 
-            - name: Lint JS & CSS
-              run: pnpm run lint
-
-            - name: Lint PHP (repo baseline)
-              run: composer run lint:php
+            # phpcs (baseline), PHPStan, eslint, and stylelint now run only via
+            # the reusable Platform Standards workflows (.github/workflows/standards.yml)
+            # — one source of enforcement. This file keeps what standards.yml does
+            # not cover: the strict new-file gate and the test runners.
 
             # New PHP files must meet the full WPCS + VIPWPCS standard (no baseline
             # demotions). Legacy files are exempt and cleaned up incrementally.
@@ -76,9 +75,6 @@ jobs:
                   fi
                   echo "New PHP files:"; echo "$NEW"
                   echo "$NEW" | xargs vendor/bin/phpcs -q --standard=.phpcs-strict.xml.dist
-
-            - name: Static Analysis (PHPStan)
-              run: composer run analyze:php
 
             - name: Test PHP
               run: composer run test:php
