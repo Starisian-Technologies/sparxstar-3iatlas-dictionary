@@ -48,6 +48,12 @@
 
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
+
+  /* Respect motion-sensitive users: kill smooth scroll + transitions. */
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+  }
   body {
     margin: 0;
     background: var(--bg);
@@ -154,7 +160,7 @@
   </div>
 
   <div class="ctl switch">
-    <label for="track">Digraph spacing</label>
+    <label for="track">Letter spacing</label>
     <input id="track" type="checkbox" checked />
   </div>
 
@@ -234,22 +240,31 @@
   var dark = document.getElementById('dark');
   var active = document.getElementById('active');
 
-  function apply() {
-    var font = read.value || ui.value;
-    body.style.setProperty('--app-font', font);
-    body.style.setProperty('--app-size', size.value + 'rem');
-    body.style.setProperty('--app-tracking', track.checked ? '0.015em' : '0em');
-    body.setAttribute('data-theme', dark.checked ? 'dark' : 'light');
-    // label
-    var label = ui.options[ui.selectedIndex].text.split(' ')[0];
-    if (read.value) label = read.options[read.selectedIndex].text.split(' ')[0] + ' (reading)';
-    active.textContent = label;
+  // Bail gracefully if any control is missing rather than throwing on access.
+  if (!body || !ui || !read || !size || !track || !dark || !active) {
+    console.warn('[font-preview] one or more controls not found; skipping wiring.');
+  } else {
+    var apply = function () {
+      var font = read.value || ui.value;
+      body.style.setProperty('--app-font', font);
+      body.style.setProperty('--app-size', size.value + 'rem');
+      body.style.setProperty('--app-tracking', track.checked ? '0.015em' : '0em');
+      body.setAttribute('data-theme', dark.checked ? 'dark' : 'light');
+      // label — guard against selectedIndex === -1 (no option selected)
+      var selectedUi = ui.options[ui.selectedIndex];
+      var label = selectedUi ? selectedUi.text.split(' ')[0] : '';
+      if (read.value) {
+        var selectedRead = read.options[read.selectedIndex];
+        if (selectedRead) label = selectedRead.text.split(' ')[0] + ' (reading)';
+      }
+      active.textContent = label;
+    };
+    [ui, read, size, track, dark].forEach(function (el) {
+      el.addEventListener('input', apply);
+      el.addEventListener('change', apply);
+    });
+    apply();
   }
-  [ui, read, size, track, dark].forEach(function (el) {
-    el.addEventListener('input', apply);
-    el.addEventListener('change', apply);
-  });
-  apply();
 </script>
 </body>
 </html>
