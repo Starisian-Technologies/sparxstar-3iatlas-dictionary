@@ -20,6 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout this repo
+        if: ${{ false }} # Not needed until conformance checks read repo files.
         uses: actions/checkout@v4
 
       - name: Log the registry change
