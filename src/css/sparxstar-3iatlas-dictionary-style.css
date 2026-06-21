@@ -36,8 +36,8 @@ body {
     overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
 
-    /* System fonts for native feel */
-    font-family: system-ui, -apple-system, 'Segoe UI', roboto, arial, sans-serif;
+    /* Inter (loaded via Google Fonts, enqueued in PHP) for wide African-language coverage; system fonts are the swap fallback */
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', roboto, arial, sans-serif;
 }
 
 /* Ensure React root takes full height for virtual scrolling */
@@ -51,7 +51,7 @@ body {
 
 /* Design approach: Editorial magazine style with clean typography and organized sections */
 
-/* Note: No external web fonts are loaded; form typography uses browser/system font stacks only. */
+/* Note: Inter is loaded via Google Fonts (enqueued in PHP); the system font stack is the fallback/swap. */
 
 :root {
     --color-primary: #1a472a;
@@ -66,7 +66,7 @@ body {
     --color-text: #1f2937;
     --color-text-light: #6b7280;
     --font-serif: ui-serif, georgia, cambria, 'Times New Roman', times, serif;
-    --font-sans: system-ui, -apple-system, 'Segoe UI', roboto, 'Noto Sans', arial, sans-serif;
+    --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', roboto, 'Noto Sans', arial, sans-serif;
     --shadow-sm: 0 1px 3px rgb(0 0 0 / 5%);
     --shadow-md: 0 4px 12px rgb(0 0 0 / 8%);
     --shadow-lg: 0 8px 24px rgb(0 0 0 / 12%);

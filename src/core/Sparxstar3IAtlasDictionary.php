@@ -115,10 +115,18 @@ final class Sparxstar3IAtlasDictionary {
                 true
             );
 
+            // Inter from Google Fonts — wide African-language coverage; system fonts are the fallback/swap.
+            wp_register_style(
+                'sparxstar-google-fonts',
+                'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+                array(),
+                null
+            );
+
             wp_register_style(
                 'sparxstar-dictionary-style',
                 SPARX_3IATLAS_URL . 'assets/css/sparxstar-3iatlas-dictionary-app.min.css',
-                array(),
+                array( 'sparxstar-google-fonts' ),
                 SPARX_3IATLAS_VERSION
             );
         } catch ( \Throwable $throwable ) {
