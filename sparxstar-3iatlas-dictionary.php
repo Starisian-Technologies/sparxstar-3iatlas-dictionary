@@ -47,6 +47,10 @@ if ( ! defined( 'SPARX_3IATLAS_NAMESPACE' ) ) {
 if ( ! defined( 'SPARX_3IATLAS_GRAPHQL_SLUG' ) ) {
     define( 'SPARX_3IATLAS_GRAPHQL_SLUG', '\graphql' );
 }
+if ( ! defined( 'SPARX_3IATLAS_GOOGLE_FONTS_URL' ) ) {
+    // Inter — wide African-language coverage; system fonts are the fallback/swap. Single source of truth.
+    define( 'SPARX_3IATLAS_GOOGLE_FONTS_URL', 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap' );
+}
 
 
 // 2. Compatibility Checks (Bootloader level)
