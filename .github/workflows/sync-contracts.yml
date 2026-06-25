@@ -75,6 +75,7 @@ jobs:
         env:
           SOURCE_SHA: ${{ github.sha }}
         run: |
+          set -e
           set -euo pipefail
           git config user.name "sparxstar-contract-sync[bot]"
           git config user.email "contract-sync@starisian.com"
