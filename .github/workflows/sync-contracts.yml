@@ -1,0 +1,97 @@
+# Sync Contracts to Public Repo
+#
+# Publishes this repo's shared contract surface (schemas/) into the platform
+# contracts repo so downstream consumers see a single canonical copy.
+#
+# Adapted from the Helios template for the Dictionary:
+#   - source dir  : schemas/**            (Helios used packages/sparxstar-helios-contracts/src)
+#   - target path : Contracts/IAMC/Dictionary/  (Helios used Contracts/IAMC/Helios/)
+#
+# Requires (configure in repo settings before first run):
+#   - vars.CONTRACT_SYNC_APP_ID         GitHub App ID (numeric; not the OAuth client ID).
+#                                       Falls back to vars.CONTRACT_SYNC_CLIENT_ID for repos
+#                                       still configured with the legacy Helios variable name.
+#   - secrets.CONTRACT_SYNC_PRIVATE_KEY GitHub App private key
+#   - the App installed on Starisian-Technologies/sparxstar-platform-contracts
+
+name: Sync Contracts to Public Repo
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'schemas/**'
+
+permissions:
+  contents: read
+
+# Serialize runs so rapid successive pushes to main can't race and produce
+# conflicting commits/pushes to the shared contracts repo. Do not cancel an
+# in-progress run mid-push — let it finish, then run the next.
+concurrency:
+  group: sync-contracts
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Dictionary
+        uses: actions/checkout@v4
+        with:
+          path: source
+
+      - name: Generate token
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
+        id: token
+        with:
+          app-id: ${{ vars.CONTRACT_SYNC_APP_ID || vars.CONTRACT_SYNC_CLIENT_ID }}
+          private-key: ${{ secrets.CONTRACT_SYNC_PRIVATE_KEY }}
+          owner: Starisian-Technologies
+
+      - name: Checkout contracts repo
+        uses: actions/checkout@v4
+        with:
+          repository: Starisian-Technologies/sparxstar-platform-contracts
+          ref: main
+          token: ${{ steps.token.outputs.token }}
+          # Full history so the rebase-before-push step below is reliable;
+          # the default shallow clone can make 'git pull --rebase' brittle.
+          fetch-depth: 0
+          path: target
+
+      - name: Copy contracts
+        run: |
+          set -euo pipefail
+          # Only sync when real schema files exist — a lone schemas/README.md must
+          # not trigger a publish (which would churn the contracts repo with no
+          # actual contract change).
+          if ! find source/schemas -type f \( -name '*.json' -o -name '*.yml' -o -name '*.yaml' \) 2>/dev/null | grep -q .; then
+            echo "No schema files (.json/.yml/.yaml) in schemas/ — nothing to sync."
+            exit 0
+          fi
+          rm -rf target/Contracts/IAMC/Dictionary/
+          mkdir -p target/Contracts/IAMC/Dictionary/
+          # Trailing /. copies directory contents (incl. dotfiles) without
+          # relying on glob expansion, which would error on an empty dir.
+          cp -r source/schemas/. target/Contracts/IAMC/Dictionary/
+
+      - name: Push if changed
+        working-directory: target
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git config user.name "sparxstar-contract-sync[bot]"
+          git config user.email "contract-sync@starisian.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to sync."
+            exit 0
+          fi
+          git commit -m "chore: sync Dictionary contracts from 3iatlas-dictionary@${SOURCE_SHA}"
+          # Rebase onto anything that landed on the contracts repo between this
+          # job's checkout and now, so the push can't fail non-fast-forward.
+          git pull --rebase origin main
+          git push origin main
