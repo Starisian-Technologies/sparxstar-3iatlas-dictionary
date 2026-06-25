@@ -466,35 +466,75 @@ const AudioButton = ({ url, size = 20 }) => {
 };
 
 /**
- * TwsPronounceButton — fetches synthesized Twi audio from the server-side
- * Piper TTS endpoint and plays it. Shows a spinner while the (first) synthesis
- * runs; cached responses return immediately on subsequent taps.
+ * PronounceButton — fetches synthesized audio from the server-side Piper TTS
+ * endpoint and plays it. Shows a spinner while the (first) synthesis runs;
+ * cached responses return immediately on subsequent taps.
  */
 const TwsPronounceButton = ({ word, size = 20 }) => {
     const [status, setStatus] = useState('idle'); // 'idle' | 'loading' | 'error'
+    const audioRef = useRef(null);
+    const objectUrlRef = useRef(null);
+    const timeoutRef = useRef(null);
+    const isMountedRef = useRef(true);
+
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+            if (audioRef.current) audioRef.current.pause();
+            if (objectUrlRef.current) {
+                URL.revokeObjectURL(objectUrlRef.current);
+                objectUrlRef.current = null;
+            }
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        };
+    }, []);
 
     const play = useCallback(
         async (e) => {
             e.stopPropagation();
             if (status === 'loading') return;
             setStatus('loading');
-            let blobUrl = null;
+            let objectUrl = null;
             try {
                 const res = await apiFetch(
                     `${REST_URL}/pronounce?word=${encodeURIComponent(word)}`
                 );
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const blob = await res.blob();
-                blobUrl = URL.createObjectURL(blob);
-                const audio = new Audio(blobUrl);
-                audio.onended = () => URL.revokeObjectURL(blobUrl);
-                audio.onerror = () => URL.revokeObjectURL(blobUrl);
+                if (!isMountedRef.current) return;
+                objectUrl = URL.createObjectURL(blob);
+                objectUrlRef.current = objectUrl;
+                const audio = new Audio(objectUrl);
+                audioRef.current = audio;
+                audio.onended = () => {
+                    URL.revokeObjectURL(objectUrl);
+                    if (objectUrlRef.current === objectUrl) objectUrlRef.current = null;
+                    if (isMountedRef.current) setStatus('idle');
+                };
+                audio.onerror = () => {
+                    URL.revokeObjectURL(objectUrl);
+                    if (objectUrlRef.current === objectUrl) objectUrlRef.current = null;
+                    if (isMountedRef.current) {
+                        setStatus('error');
+                        timeoutRef.current = setTimeout(() => {
+                            if (isMountedRef.current) setStatus('idle');
+                        }, 2000);
+                    }
+                };
                 await audio.play();
-                setStatus('idle');
+                if (isMountedRef.current) setStatus('idle');
             } catch {
-                if (blobUrl) URL.revokeObjectURL(blobUrl);
-                setStatus('error');
-                setTimeout(() => setStatus('idle'), 2000);
+                if (objectUrl && objectUrlRef.current === objectUrl) {
+                    URL.revokeObjectURL(objectUrl);
+                    objectUrlRef.current = null;
+                }
+                if (isMountedRef.current) {
+                    setStatus('error');
+                    timeoutRef.current = setTimeout(() => {
+                        if (isMountedRef.current) setStatus('idle');
+                    }, 2000);
+                }
             }
         },
         [word, status]
@@ -509,8 +549,8 @@ const TwsPronounceButton = ({ word, size = 20 }) => {
                 background: status === 'error' ? '#FEE2E2' : '#E8F5E9',
                 color: status === 'error' ? '#B91C1C' : '#2E7D32',
             }}
-            aria-label="Play Twi pronunciation (synthesized)"
-            title="Play Twi pronunciation"
+            aria-label="Play synthesized pronunciation"
+            title="Play synthesized pronunciation"
             type="button"
         >
             {status === 'loading' ? (
