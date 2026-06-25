@@ -206,6 +206,10 @@ final class Sparxstar3IAtlasDictionary {
                 ( new \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryRestApi() )->register_hooks();
             }
 
+            if ( class_exists( \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryTts::class ) ) {
+                ( new \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryTts() )->register_hooks();
+            }
+
             if ( class_exists( \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionarySpellChecker::class ) ) {
                 ( new \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionarySpellChecker() )->register_hooks();
             }

@@ -465,6 +465,61 @@ const AudioButton = ({ url, size = 20 }) => {
     );
 };
 
+/**
+ * TwsPronounceButton — fetches synthesized Twi audio from the server-side
+ * Piper TTS endpoint and plays it. Shows a spinner while the (first) synthesis
+ * runs; cached responses return immediately on subsequent taps.
+ */
+const TwsPronounceButton = ({ word, size = 20 }) => {
+    const [status, setStatus] = useState('idle'); // 'idle' | 'loading' | 'error'
+
+    const play = useCallback(
+        async (e) => {
+            e.stopPropagation();
+            if (status === 'loading') return;
+            setStatus('loading');
+            try {
+                const res = await apiFetch(
+                    `${REST_URL}/pronounce?word=${encodeURIComponent(word)}`
+                );
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const audio = new Audio(url);
+                audio.onended = () => URL.revokeObjectURL(url);
+                audio.onerror = () => URL.revokeObjectURL(url);
+                await audio.play();
+                setStatus('idle');
+            } catch {
+                setStatus('error');
+                setTimeout(() => setStatus('idle'), 2000);
+            }
+        },
+        [word, status]
+    );
+
+    return (
+        <button
+            onClick={play}
+            disabled={status === 'loading'}
+            className="p-2 rounded-full transition-colors"
+            style={{
+                background: status === 'error' ? '#FEE2E2' : '#E8F5E9',
+                color: status === 'error' ? '#B91C1C' : '#2E7D32',
+            }}
+            aria-label="Play Twi pronunciation (synthesized)"
+            title="Play Twi pronunciation"
+            type="button"
+        >
+            {status === 'loading' ? (
+                <Loader2 size={size} className="animate-spin" aria-hidden="true" />
+            ) : (
+                <Volume2 size={size} aria-hidden="true" />
+            )}
+        </button>
+    );
+};
+
 const RelatedWordList = ({ title, items, onSelectWord }) => {
     const list = items?.nodes || [];
     if (!list.length) return null;
@@ -866,6 +921,7 @@ const DetailView = ({
                                         size={18}
                                     />
                                 )}
+                                <TwsPronounceButton word={word.title} size={18} />
                                 <button
                                     onClick={() => onFavoriteToggle(slug)}
                                     className={`p-1 rounded-full transition-colors ${isFav ? 'text-pink-500' : 'text-gray-300 hover:text-pink-400'}`}
@@ -1169,6 +1225,7 @@ const DetailView = ({
                                                 size={18}
                                             />
                                         )}
+                                        <TwsPronounceButton word={word.title} size={18} />
                                         {d.aiwaIpaPronunciation && (
                                             <span className="bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-xs font-mono text-gray-600 dark:text-gray-300">
                                                 /{d.aiwaIpaPronunciation}/
