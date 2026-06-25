@@ -58,6 +58,7 @@ jobs:
 
       - name: Copy contracts
         run: |
+          set -e
           set -euo pipefail
           if [ -z "$(ls -A source/schemas 2>/dev/null)" ]; then
             echo "No contract files in schemas/ — nothing to sync."
