@@ -8,8 +8,12 @@
 #   - target path : Contracts/IAMC/Dictionary/  (Helios used Contracts/IAMC/Helios/)
 #
 # Requires (configure in repo settings before first run):
-#   - vars.CONTRACT_SYNC_CLIENT_ID      GitHub App client id (create-github-app-token
-#                                       accepts either the App ID or the client id)
+#   - vars.CONTRACT_SYNC_CLIENT_ID      Identifies the GitHub App for token minting.
+#                                       Passed to create-github-app-token's `app-id:`
+#                                       input, which accepts the App's numeric App ID
+#                                       OR its client id — set either. (Var kept as
+#                                       CLIENT_ID to match existing repo config; the
+#                                       numeric App ID is the least ambiguous value.)
 #   - secrets.CONTRACT_SYNC_PRIVATE_KEY GitHub App private key
 #   - the App installed on Starisian-Technologies/sparxstar-platform-contracts
 
@@ -54,11 +58,11 @@ jobs:
         with:
           repository: Starisian-Technologies/sparxstar-platform-contracts
           token: ${{ steps.token.outputs.token }}
+          ref: main
           path: target
 
       - name: Copy contracts
         run: |
-          set -e
           set -euo pipefail
           if [ -z "$(ls -A source/schemas 2>/dev/null)" ]; then
             echo "No contract files in schemas/ — nothing to sync."
@@ -75,7 +79,6 @@ jobs:
         env:
           SOURCE_SHA: ${{ github.sha }}
         run: |
-          set -e
           set -euo pipefail
           git config user.name "sparxstar-contract-sync[bot]"
           git config user.email "contract-sync@starisian.com"
@@ -85,4 +88,7 @@ jobs:
             exit 0
           fi
           git commit -m "chore: sync Dictionary contracts from 3iatlas-dictionary@${SOURCE_SHA}"
+          # Rebase onto anything that landed on the contracts repo between this
+          # job's checkout and now, so the push can't fail non-fast-forward.
+          git pull --rebase origin main
           git push origin main
