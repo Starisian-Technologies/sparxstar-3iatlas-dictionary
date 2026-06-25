@@ -8,12 +8,7 @@
 #   - target path : Contracts/IAMC/Dictionary/  (Helios used Contracts/IAMC/Helios/)
 #
 # Requires (configure in repo settings before first run):
-#   - vars.CONTRACT_SYNC_CLIENT_ID      Identifies the GitHub App for token minting.
-#                                       Passed to create-github-app-token's `app-id:`
-#                                       input, which accepts the App's numeric App ID
-#                                       OR its client id — set either. (Var kept as
-#                                       CLIENT_ID to match existing repo config; the
-#                                       numeric App ID is the least ambiguous value.)
+#   - vars.CONTRACT_SYNC_APP_ID         GitHub App ID (numeric; not the OAuth client ID)
 #   - secrets.CONTRACT_SYNC_PRIVATE_KEY GitHub App private key
 #   - the App installed on Starisian-Technologies/sparxstar-platform-contracts
 
@@ -46,10 +41,10 @@ jobs:
           path: source
 
       - name: Generate token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
         id: token
         with:
-          app-id: ${{ vars.CONTRACT_SYNC_CLIENT_ID }}
+          app-id: ${{ vars.CONTRACT_SYNC_APP_ID }}
           private-key: ${{ secrets.CONTRACT_SYNC_PRIVATE_KEY }}
           owner: Starisian-Technologies
 
