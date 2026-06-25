@@ -46,7 +46,11 @@ final class Sparxstar3IAtlasDictionaryTts {
     private const CACHE_MAX_AGE = 604800;
 
     /** Pending wav bytes to emit via serve_wav_response(). */
+    /** Pending wav bytes to emit via serve_wav_response(). */
     private ?string $pending_wav = null;
+
+    /** Whether the pending wav was served from cache (for X-TTS-Cache header). */
+    private bool $pending_cached = false;
 
     public function register_hooks(): void {
         add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
