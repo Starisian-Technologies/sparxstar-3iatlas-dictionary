@@ -240,6 +240,11 @@
   var dark = document.getElementById('dark');
   var active = document.getElementById('active');
 
+  if (!ui || !read || !size || !track || !dark || !active) {
+    console.error('Required UI elements not found');
+    return;
+  }
+
   // Bail gracefully if any control is missing rather than throwing on access.
   if (!body || !ui || !read || !size || !track || !dark || !active) {
     console.warn('[font-preview] one or more controls not found; skipping wiring.');
