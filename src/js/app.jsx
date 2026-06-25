@@ -478,19 +478,21 @@ const TwsPronounceButton = ({ word, size = 20 }) => {
             e.stopPropagation();
             if (status === 'loading') return;
             setStatus('loading');
+            let blobUrl = null;
             try {
                 const res = await apiFetch(
                     `${REST_URL}/pronounce?word=${encodeURIComponent(word)}`
                 );
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const blob = await res.blob();
-                const url = URL.createObjectURL(blob);
-                const audio = new Audio(url);
-                audio.onended = () => URL.revokeObjectURL(url);
-                audio.onerror = () => URL.revokeObjectURL(url);
+                blobUrl = URL.createObjectURL(blob);
+                const audio = new Audio(blobUrl);
+                audio.onended = () => URL.revokeObjectURL(blobUrl);
+                audio.onerror = () => URL.revokeObjectURL(blobUrl);
                 await audio.play();
                 setStatus('idle');
             } catch {
+                if (blobUrl) URL.revokeObjectURL(blobUrl);
                 setStatus('error');
                 setTimeout(() => setStatus('idle'), 2000);
             }
