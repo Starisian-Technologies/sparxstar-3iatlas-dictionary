@@ -59,8 +59,11 @@ jobs:
       - name: Copy contracts
         run: |
           set -euo pipefail
-          if [ -z "$(ls -A source/schemas 2>/dev/null)" ]; then
-            echo "No contract files in schemas/ — nothing to sync."
+          # Only sync when real schema files exist — a lone schemas/README.md must
+          # not trigger a publish (which would churn the contracts repo with no
+          # actual contract change).
+          if ! find source/schemas -type f \( -name '*.json' -o -name '*.yml' -o -name '*.yaml' \) 2>/dev/null | grep -q .; then
+            echo "No schema files (.json/.yml/.yaml) in schemas/ — nothing to sync."
             exit 0
           fi
           rm -rf target/Contracts/IAMC/Dictionary/
