@@ -385,13 +385,27 @@ function useLocalStorage(key, defaultValue) {
     return [value, set];
 }
 
+/**
+ * Subscribe to a MediaQueryList change in a cross-browser way. Older iOS Safari
+ * (< 14) and legacy Android browsers only expose the deprecated
+ * addListener/removeListener; calling addEventListener there throws a TypeError
+ * and crashes the app on mount. Returns an unsubscribe function.
+ */
+function subscribeMediaQuery(mq, handler) {
+    if (mq.addEventListener) {
+        mq.addEventListener('change', handler);
+        return () => mq.removeEventListener('change', handler);
+    }
+    mq.addListener(handler);
+    return () => mq.removeListener(handler);
+}
+
 function useIsDesktop() {
     const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
     useEffect(() => {
         const mq = window.matchMedia('(min-width: 1024px)');
         const handler = (e) => setIsDesktop(e.matches);
-        mq.addEventListener('change', handler);
-        return () => mq.removeEventListener('change', handler);
+        return subscribeMediaQuery(mq, handler);
     }, []);
     return isDesktop;
 }
@@ -412,8 +426,7 @@ function useSystemDark() {
         if (typeof window === 'undefined' || !window.matchMedia) return undefined;
         const mq = window.matchMedia('(prefers-color-scheme: dark)');
         const handler = (e) => setDark(e.matches);
-        mq.addEventListener('change', handler);
-        return () => mq.removeEventListener('change', handler);
+        return subscribeMediaQuery(mq, handler);
     }, []);
     return dark;
 }
@@ -2064,11 +2077,10 @@ export default function DictionaryApp() {
     if (isDesktop) {
         return (
             <div
-                className={`${isDark ? 'dark' : ''}`}
+                className={`sparxstar-app-viewport ${isDark ? 'dark' : ''}`}
                 style={{
                     display: 'flex',
                     flexDirection: 'column',
-                    height: '100dvh',
                     overflow: 'hidden',
                     fontFamily: '"Noto Sans", system-ui, sans-serif',
                     background: isDark ? '#1A1A1A' : '#F8F8F8',
@@ -2252,11 +2264,10 @@ export default function DictionaryApp() {
 
     return (
         <div
-            className={`${isDark ? 'dark' : ''}`}
+            className={`sparxstar-app-viewport ${isDark ? 'dark' : ''}`}
             style={{
                 display: 'flex',
                 flexDirection: 'column',
-                height: '100vh',
                 overflow: 'hidden',
                 fontFamily: '"Noto Sans", system-ui, sans-serif',
                 background: isDark ? '#1A1A1A' : '#F8F8F8',
