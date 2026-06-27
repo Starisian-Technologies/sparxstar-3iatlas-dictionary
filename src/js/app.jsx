@@ -400,6 +400,11 @@ function subscribeMediaQuery(mq, handler) {
     return () => mq.removeListener(handler);
 }
 
+/** The next mode in the system → light → dark → system theme cycle. */
+function nextTheme(pref) {
+    return pref === 'system' ? 'light' : pref === 'light' ? 'dark' : 'system';
+}
+
 function useIsDesktop() {
     const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
     useEffect(() => {
@@ -1694,7 +1699,7 @@ const DesktopSidebar = ({
             <button
                 onClick={onThemeToggle}
                 className="ml-auto p-1.5 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors"
-                aria-label={`Theme: ${themePref}. Click to switch (system → light → dark).`}
+                aria-label={`Theme: ${themePref}. Activate to switch to ${nextTheme(themePref)}.`}
                 title={`Theme: ${themePref}`}
                 type="button"
             >
@@ -2330,7 +2335,7 @@ export default function DictionaryApp() {
                                 cursor: 'pointer',
                                 color: '#6b7280',
                             }}
-                            aria-label={`Theme: ${themePref}. Switch (system → light → dark).`}
+                            aria-label={`Theme: ${themePref}. Activate to switch to ${nextTheme(themePref)}.`}
                             title={`Theme: ${themePref}`}
                             type="button"
                         >
