@@ -24,6 +24,7 @@ import {
     Home,
     Sun,
     Moon,
+    Monitor,
     Gamepad2,
     Share2,
     LayoutGrid,
@@ -395,12 +396,37 @@ function useIsDesktop() {
     return isDesktop;
 }
 
+/**
+ * Tracks the OS-level colour-scheme preference and stays live: when the user
+ * flips their system theme (e.g. macOS/Android auto day↔night), this updates
+ * without a reload. Used as the source of truth for the 'system' theme mode.
+ */
+function useSystemDark() {
+    const [dark, setDark] = useState(
+        () =>
+            typeof window !== 'undefined' &&
+            !!window.matchMedia &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches
+    );
+    useEffect(() => {
+        if (typeof window === 'undefined' || !window.matchMedia) return undefined;
+        const mq = window.matchMedia('(prefers-color-scheme: dark)');
+        const handler = (e) => setDark(e.matches);
+        mq.addEventListener('change', handler);
+        return () => mq.removeEventListener('change', handler);
+    }, []);
+    return dark;
+}
+
 // ---------------------------------------------------------------------------
 // Helper utilities
 // ---------------------------------------------------------------------------
 
 function avatarColor(title) {
-    const char = (title || 'A').trim().toUpperCase().charCodeAt(0);
+    // Guard against empty/whitespace-only titles (CSV import artifacts): an
+    // empty first character would make charCodeAt(0) return NaN.
+    const first = (title || '').trim()[0] || 'A';
+    const char = first.toUpperCase().charCodeAt(0);
     const idx = Math.max(0, char - 65) % AVATAR_COLORS.length;
     return AVATAR_COLORS[idx];
 }
@@ -425,7 +451,9 @@ function wordOfDayIndex(total) {
 
 const AvatarCircle = ({ title }) => {
     const bg = avatarColor(title);
-    const letter = (title || '?').trim()[0].toUpperCase();
+    // `''.trim()[0]` is undefined for whitespace-only titles — fall back to '?'
+    // so the row never throws mid-render (which silently breaks the list).
+    const letter = ((title || '').trim()[0] || '?').toUpperCase();
     return (
         <div
             className="flex items-center justify-center rounded-full text-white font-bold text-base shrink-0"
@@ -1079,29 +1107,40 @@ const DetailView = ({
                                                 </p>
                                             </div>
                                         )}
-                                        {exampleCount > 0 && isValidText(d.aiwaExampleSentences[0].sentenceExample) && (
-                                            <div>
-                                                <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2">
-                                                    How people use it
-                                                </h3>
-                                                <div
-                                                    className="pl-4 border-l-4"
-                                                    style={{ borderColor: '#E91E8C' }}
-                                                >
-                                                    <p className="text-base text-gray-900 dark:text-gray-100">
-                                                        {d.aiwaExampleSentences[0].sentenceExample}
-                                                    </p>
-                                                    {(() => {
-                                                        const t = language === 'fr'
-                                                            ? d.aiwaExampleSentences[0].sentenceFrenchTranslation
-                                                            : d.aiwaExampleSentences[0].sentenceEnglishTranslation;
-                                                        return isValidText(t) ? (
-                                                            <p className="text-sm text-gray-500 dark:text-gray-400 italic mt-1">{t}</p>
-                                                        ) : null;
-                                                    })()}
+                                        {exampleCount > 0 &&
+                                            isValidText(
+                                                d.aiwaExampleSentences[0].sentenceExample
+                                            ) && (
+                                                <div>
+                                                    <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2">
+                                                        How people use it
+                                                    </h3>
+                                                    <div
+                                                        className="pl-4 border-l-4"
+                                                        style={{ borderColor: '#E91E8C' }}
+                                                    >
+                                                        <p className="text-base text-gray-900 dark:text-gray-100">
+                                                            {
+                                                                d.aiwaExampleSentences[0]
+                                                                    .sentenceExample
+                                                            }
+                                                        </p>
+                                                        {(() => {
+                                                            const t =
+                                                                language === 'fr'
+                                                                    ? d.aiwaExampleSentences[0]
+                                                                          .sentenceFrenchTranslation
+                                                                    : d.aiwaExampleSentences[0]
+                                                                          .sentenceEnglishTranslation;
+                                                            return isValidText(t) ? (
+                                                                <p className="text-sm text-gray-500 dark:text-gray-400 italic mt-1">
+                                                                    {t}
+                                                                </p>
+                                                            ) : null;
+                                                        })()}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        )}
+                                            )}
                                     </>
                                 )}
 
@@ -1117,9 +1156,10 @@ const DetailView = ({
                                                 d.aiwaExampleSentences
                                                     .filter((ex) => isValidText(ex.sentenceExample))
                                                     .map((ex, idx) => {
-                                                        const translation = language === 'fr'
-                                                            ? ex.sentenceFrenchTranslation
-                                                            : ex.sentenceEnglishTranslation;
+                                                        const translation =
+                                                            language === 'fr'
+                                                                ? ex.sentenceFrenchTranslation
+                                                                : ex.sentenceEnglishTranslation;
                                                         return (
                                                             <div
                                                                 key={idx}
@@ -1128,14 +1168,26 @@ const DetailView = ({
                                                                 <p className="text-base text-gray-900 dark:text-gray-100">
                                                                     {ex.sentenceExample}
                                                                 </p>
-                                                                {isValidText(ex.sentenceIpaPronounciation) && (
+                                                                {isValidText(
+                                                                    ex.sentenceIpaPronounciation
+                                                                ) && (
                                                                     <p className="text-xs text-gray-400 font-mono mt-0.5">
-                                                                        /{ex.sentenceIpaPronounciation}/
+                                                                        /
+                                                                        {
+                                                                            ex.sentenceIpaPronounciation
+                                                                        }
+                                                                        /
                                                                     </p>
                                                                 )}
-                                                                {isValidText(ex.sentencePhoneticPronunciation) && (
+                                                                {isValidText(
+                                                                    ex.sentencePhoneticPronunciation
+                                                                ) && (
                                                                     <p className="text-xs text-gray-400 mt-0.5">
-                                                                        [{ex.sentencePhoneticPronunciation}]
+                                                                        [
+                                                                        {
+                                                                            ex.sentencePhoneticPronunciation
+                                                                        }
+                                                                        ]
                                                                     </p>
                                                                 )}
                                                                 {isValidText(translation) && (
@@ -1232,29 +1284,35 @@ const DetailView = ({
                                     </section>
                                 )}
 
-                                {exampleCount > 0 && isValidText(d.aiwaExampleSentences[0].sentenceExample) && (
-                                    <section>
-                                        <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2">
-                                            How people use it
-                                        </h3>
-                                        <div
-                                            className="pl-4 border-l-4"
-                                            style={{ borderColor: '#E91E8C' }}
-                                        >
-                                            <p className="text-base text-gray-900 dark:text-gray-100">
-                                                {d.aiwaExampleSentences[0].sentenceExample}
-                                            </p>
-                                            {(() => {
-                                                const t = language === 'fr'
-                                                    ? d.aiwaExampleSentences[0].sentenceFrenchTranslation
-                                                    : d.aiwaExampleSentences[0].sentenceEnglishTranslation;
-                                                return isValidText(t) ? (
-                                                    <p className="text-sm text-gray-500 dark:text-gray-400 italic mt-1">{t}</p>
-                                                ) : null;
-                                            })()}
-                                        </div>
-                                    </section>
-                                )}
+                                {exampleCount > 0 &&
+                                    isValidText(d.aiwaExampleSentences[0].sentenceExample) && (
+                                        <section>
+                                            <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2">
+                                                How people use it
+                                            </h3>
+                                            <div
+                                                className="pl-4 border-l-4"
+                                                style={{ borderColor: '#E91E8C' }}
+                                            >
+                                                <p className="text-base text-gray-900 dark:text-gray-100">
+                                                    {d.aiwaExampleSentences[0].sentenceExample}
+                                                </p>
+                                                {(() => {
+                                                    const t =
+                                                        language === 'fr'
+                                                            ? d.aiwaExampleSentences[0]
+                                                                  .sentenceFrenchTranslation
+                                                            : d.aiwaExampleSentences[0]
+                                                                  .sentenceEnglishTranslation;
+                                                    return isValidText(t) ? (
+                                                        <p className="text-sm text-gray-500 dark:text-gray-400 italic mt-1">
+                                                            {t}
+                                                        </p>
+                                                    ) : null;
+                                                })()}
+                                            </div>
+                                        </section>
+                                    )}
 
                                 <section id="detail-pronunciation">
                                     <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2">
@@ -1595,7 +1653,7 @@ const BottomNav = ({ active, onChange }) => (
 const DesktopSidebar = ({
     language,
     onLanguageToggle,
-    isDark,
+    themePref,
     onThemeToggle,
     languages,
     sourceLanguage,
@@ -1623,13 +1681,16 @@ const DesktopSidebar = ({
             <button
                 onClick={onThemeToggle}
                 className="ml-auto p-1.5 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors"
-                aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                aria-label={`Theme: ${themePref}. Click to switch (system → light → dark).`}
+                title={`Theme: ${themePref}`}
                 type="button"
             >
-                {isDark ? (
-                    <Sun size={16} aria-hidden="true" />
-                ) : (
+                {themePref === 'system' ? (
+                    <Monitor size={16} aria-hidden="true" />
+                ) : themePref === 'dark' ? (
                     <Moon size={16} aria-hidden="true" />
+                ) : (
+                    <Sun size={16} aria-hidden="true" />
                 )}
             </button>
         </div>
@@ -1726,7 +1787,16 @@ const DesktopEmptyPanel = ({ wordOfDay, language, onSelect }) => (
 export default function DictionaryApp() {
     const [language, setLanguage] = useLocalStorage('aiwa-dict-lang', 'en');
     const [sourceLanguage, setSourceLanguage] = useLocalStorage('aiwa-dict-source-lang', null);
-    const [isDark, setIsDark] = useLocalStorage('aiwa-dict-theme', false);
+    // Tri-state theme: 'system' (default) follows the OS via prefers-color-scheme
+    // and flips live; 'light'/'dark' are persisted user overrides. The toggle
+    // cycles system → light → dark → system, so there is always a path back to
+    // "follow the system". New key so legacy boolean values don't leak in.
+    const [themePref, setThemePref] = useLocalStorage('aiwa-dict-theme-mode', 'system');
+    const systemDark = useSystemDark();
+    const isDark = themePref === 'system' ? systemDark : themePref === 'dark';
+    const cycleTheme = useCallback(() => {
+        setThemePref((p) => (p === 'system' ? 'light' : p === 'light' ? 'dark' : 'system'));
+    }, [setThemePref]);
     const [favorites, setFavorites] = useLocalStorage('aiwa-dict-favorites', []);
     const [history, setHistory] = useLocalStorage('aiwa-dict-history', []);
 
@@ -1998,7 +2068,7 @@ export default function DictionaryApp() {
                 style={{
                     display: 'flex',
                     flexDirection: 'column',
-                    height: '100vh',
+                    height: '100dvh',
                     overflow: 'hidden',
                     fontFamily: '"Noto Sans", system-ui, sans-serif',
                     background: isDark ? '#1A1A1A' : '#F8F8F8',
@@ -2069,8 +2139,8 @@ export default function DictionaryApp() {
                                 onLanguageToggle={() =>
                                     setLanguage((l) => (l === 'en' ? 'fr' : 'en'))
                                 }
-                                isDark={isDark}
-                                onThemeToggle={() => setIsDark((d) => !d)}
+                                themePref={themePref}
+                                onThemeToggle={cycleTheme}
                                 languages={languages}
                                 sourceLanguage={sourceLanguage}
                                 onSourceLanguage={setSourceLanguage}
@@ -2240,7 +2310,7 @@ export default function DictionaryApp() {
                             {language === 'fr' ? 'FR' : 'EN'}
                         </button>
                         <button
-                            onClick={() => setIsDark((d) => !d)}
+                            onClick={cycleTheme}
                             style={{
                                 background: '#f3f4f6',
                                 border: 'none',
@@ -2249,13 +2319,16 @@ export default function DictionaryApp() {
                                 cursor: 'pointer',
                                 color: '#6b7280',
                             }}
-                            aria-label={isDark ? 'Light mode' : 'Dark mode'}
+                            aria-label={`Theme: ${themePref}. Switch (system → light → dark).`}
+                            title={`Theme: ${themePref}`}
                             type="button"
                         >
-                            {isDark ? (
-                                <Sun size={14} aria-hidden="true" />
-                            ) : (
+                            {themePref === 'system' ? (
+                                <Monitor size={14} aria-hidden="true" />
+                            ) : themePref === 'dark' ? (
                                 <Moon size={14} aria-hidden="true" />
+                            ) : (
+                                <Sun size={14} aria-hidden="true" />
                             )}
                         </button>
                     </div>

@@ -21,7 +21,9 @@
 
 #sparxstar-dictionary-root {
     width: 100%;
-    min-height: 100vh;
+    /* dvh tracks the dynamic viewport (mobile address-bar show/hide) so the app
+       neither overshoots nor leaves a gap on iOS/Android. */
+    min-height: 100dvh;
 
     /* Opt out of any inherited margin/padding that could create horizontal scroll */
     margin: 0;

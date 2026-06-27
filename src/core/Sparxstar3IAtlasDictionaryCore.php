@@ -139,9 +139,13 @@ final class Sparxstar3IAtlasDictionaryCore {
      * @return int The new limit.
      */
     public function sparxIAtlas_increase_query_limit( int $amount, $source, array $args, $context, $info ): int {
-        // Allow dictionary queries to fetch up to 2000 items (covering our 1000 item chunks)
+        // Allow the dictionary index query to fetch the full corpus in one pass.
+        // The client loads every entry into memory for instant client-side search
+        // and alphabet jumps; a cap below the corpus size silently truncates the
+        // index (breaking the A–Z bar and search for later letters). Keep this at
+        // or above the live entry count (~4,175) with headroom for growth.
         if ( isset( $info->fieldName ) && 'dictionaries' === $info->fieldName ) {
-            return 2000;
+            return 5000;
         }
 
         return $amount;
