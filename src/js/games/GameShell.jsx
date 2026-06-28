@@ -474,7 +474,12 @@ export default function GameShell({
                         Quit
                     </button>
                     {totalWords > 0 && (
-                        <span className="text-xs font-medium text-gray-400" aria-hidden="true">
+                        <span
+                            className="text-xs font-medium text-gray-400"
+                            role="status"
+                            aria-live="polite"
+                            aria-label={`Word ${currentWord} of ${totalWords}`}
+                        >
                             {currentWord} / {totalWords}
                         </span>
                     )}

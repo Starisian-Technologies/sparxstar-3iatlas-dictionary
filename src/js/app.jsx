@@ -655,7 +655,7 @@ const WordListRow = ({
         <div
             role="button"
             tabIndex={0}
-            aria-pressed={isSelected || undefined}
+            aria-current={isSelected ? 'true' : undefined}
             onClick={() => onSelect(word.slug, word.title)}
             onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
