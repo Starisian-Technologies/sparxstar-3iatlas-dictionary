@@ -636,7 +636,15 @@ const RelatedWordList = ({ title, items, onSelectWord }) => {
 // Components — Word list row
 // ---------------------------------------------------------------------------
 
-const WordListRow = ({ word, language, onSelect, onPrefetch, isFavorite, onFavoriteToggle }) => {
+const WordListRow = ({
+    word,
+    language,
+    onSelect,
+    onPrefetch,
+    isFavorite,
+    onFavoriteToggle,
+    isSelected = false,
+}) => {
     const d = word.dictionaryEntryDetails;
     const translation = language === 'fr' ? d.aiwaTranslationFrench : d.aiwaTranslationEnglish;
     const hasAudio = !!d.aiwaAudioFile?.node?.mediaItemUrl;
@@ -647,6 +655,7 @@ const WordListRow = ({ word, language, onSelect, onPrefetch, isFavorite, onFavor
         <div
             role="button"
             tabIndex={0}
+            aria-pressed={isSelected || undefined}
             onClick={() => onSelect(word.slug, word.title)}
             onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -656,7 +665,11 @@ const WordListRow = ({ word, language, onSelect, onPrefetch, isFavorite, onFavor
             }}
             onMouseEnter={() => onPrefetch(word.slug)}
             onTouchStart={() => onPrefetch(word.slug)}
-            className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-pink-50 dark:hover:bg-gray-800 cursor-pointer active:bg-pink-100 transition-colors"
+            className={`flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-800 cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#E91E8C] ${
+                isSelected
+                    ? 'bg-pink-50 dark:bg-gray-800 shadow-[inset_4px_0_0_0_#E91E8C]'
+                    : 'bg-white dark:bg-gray-900 hover:bg-pink-50 dark:hover:bg-gray-800 active:bg-pink-100'
+            }`}
             aria-label={`View details for ${word.title}`}
         >
             <AvatarCircle title={word.title} />
@@ -1513,7 +1526,15 @@ const DetailBottomSheet = (props) => (
 // Components — Favorites & History views
 // ---------------------------------------------------------------------------
 
-const FavoritesView = ({ words, favorites, language, onSelect, onFavoriteToggle, onPrefetch }) => {
+const FavoritesView = ({
+    words,
+    favorites,
+    language,
+    onSelect,
+    onFavoriteToggle,
+    onPrefetch,
+    selectedSlug,
+}) => {
     const favWords = useMemo(
         () => words.filter((w) => favorites.includes(w.slug)),
         [words, favorites]
@@ -1540,6 +1561,7 @@ const FavoritesView = ({ words, favorites, language, onSelect, onFavoriteToggle,
                     onPrefetch={onPrefetch}
                     isFavorite
                     onFavoriteToggle={onFavoriteToggle}
+                    isSelected={word.slug === selectedSlug}
                 />
             ))}
         </div>
@@ -1554,6 +1576,7 @@ const HistoryView = ({
     favorites,
     onFavoriteToggle,
     onPrefetch,
+    selectedSlug,
 }) => {
     const histWords = useMemo(
         () => history.map((slug) => words.find((w) => w.slug === slug)).filter(Boolean),
@@ -1579,6 +1602,7 @@ const HistoryView = ({
                     onPrefetch={onPrefetch}
                     isFavorite={favorites.includes(word.slug)}
                     onFavoriteToggle={onFavoriteToggle}
+                    isSelected={word.slug === selectedSlug}
                 />
             ))}
         </div>
@@ -2060,6 +2084,7 @@ export default function DictionaryApp() {
                                 onPrefetch={prefetchWord}
                                 isFavorite={favorites.includes(word.slug)}
                                 onFavoriteToggle={handleFavoriteToggle}
+                                isSelected={word.slug === selectedSlug}
                             />
                         )}
                     />
@@ -2199,6 +2224,7 @@ export default function DictionaryApp() {
                                     onSelect={handleSelectWord}
                                     onFavoriteToggle={handleFavoriteToggle}
                                     onPrefetch={prefetchWord}
+                                    selectedSlug={selectedSlug}
                                 />
                             )}
                             {activeNav === 'history' && (
@@ -2210,6 +2236,7 @@ export default function DictionaryApp() {
                                     favorites={favorites}
                                     onFavoriteToggle={handleFavoriteToggle}
                                     onPrefetch={prefetchWord}
+                                    selectedSlug={selectedSlug}
                                 />
                             )}
                             {activeNav === 'play' && (
@@ -2390,6 +2417,7 @@ export default function DictionaryApp() {
                         onSelect={handleSelectWord}
                         onFavoriteToggle={handleFavoriteToggle}
                         onPrefetch={prefetchWord}
+                        selectedSlug={selectedSlug}
                     />
                 )}
                 {activeNav === 'history' && (
@@ -2401,6 +2429,7 @@ export default function DictionaryApp() {
                         favorites={favorites}
                         onFavoriteToggle={handleFavoriteToggle}
                         onPrefetch={prefetchWord}
+                        selectedSlug={selectedSlug}
                     />
                 )}
                 {activeNav === 'play' && (
