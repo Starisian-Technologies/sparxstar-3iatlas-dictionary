@@ -145,9 +145,12 @@ final class Sparxstar3IAtlasDictionaryCore {
         // index (breaking the A–Z bar and search for later letters). Keep this at
         // or above the live entry count (~4,175) with headroom for growth.
         if ( isset( $info->fieldName ) && 'dictionaries' === $info->fieldName ) {
-            // max() so we only ever raise the ceiling — never lower a higher
-            // limit set by another filter or a future WPGraphQL default.
-            return max( (int) $amount, 5000 );
+            // Filterable ceiling so operators can tune the payload-vs-completeness
+            // tradeoff as the corpus grows, without a code change. max() so we
+            // only ever raise the limit — never lower a higher one set by another
+            // filter or a future WPGraphQL default.
+            $ceiling = (int) apply_filters( 'sparxstar_dictionary_max_query_amount', 5000 );
+            return max( (int) $amount, $ceiling );
         }
 
         return $amount;

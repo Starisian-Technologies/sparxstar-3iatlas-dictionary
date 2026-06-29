@@ -69,6 +69,9 @@ final class Sparxstar3IAtlasDictionary {
     private function sparxIAtlas_register_hooks(): void {
         add_action( 'init', array( $this, 'sparxIAtlas_register_shortcodes' ) );
         add_action( 'init', array( $this, 'sparxIAtlas_register_app_route' ) );
+        // Late priority so the one-shot flush runs after every rewrite rule
+        // (CPTs + the app route) has registered on init.
+        add_action( 'init', array( $this, 'sparxIAtlas_maybe_flush_routes' ), 99 );
         add_filter( 'query_vars', array( $this, 'sparxIAtlas_register_query_var' ) );
         add_action( 'template_redirect', array( $this, 'sparxIAtlas_maybe_render_app_page' ) );
         add_action( 'wp_enqueue_scripts', array( $this, 'sparxIAtlas_register_assets' ) );
@@ -102,8 +105,8 @@ final class Sparxstar3IAtlasDictionary {
      * @return array<string,mixed>|null Null when the GraphQL endpoint is invalid.
      */
     private function sparxIAtlas_app_settings(): ?array {
-        $graphql_url = \site_url( SPARX_3IATLAS_GRAPHQL_SLUG );
-        if ( empty( $graphql_url ) || filter_var( $graphql_url, FILTER_VALIDATE_URL ) === false ) {
+        $graphql_url = (string) \site_url( SPARX_3IATLAS_GRAPHQL_SLUG );
+        if ( '' === $graphql_url || filter_var( $graphql_url, FILTER_VALIDATE_URL ) === false ) {
             return null;
         }
         return array(
@@ -128,7 +131,16 @@ final class Sparxstar3IAtlasDictionary {
             'index.php?' . self::APP_QUERY_VAR . '=1',
             'top'
         );
+    }
 
+    /**
+     * Performs the one-shot rewrite flush scheduled at activation, once all
+     * rules are registered. Runs at init priority 99 so it never flushes
+     * before the CPT or app-route rules exist.
+     *
+     * @return void
+     */
+    public function sparxIAtlas_maybe_flush_routes(): void {
         if ( get_option( 'sparxstar_dict_flush_routes' ) ) {
             flush_rewrite_rules();
             delete_option( 'sparxstar_dict_flush_routes' );
@@ -174,14 +186,54 @@ final class Sparxstar3IAtlasDictionary {
             return;
         }
         $ancestors = apply_filters( 'sparxstar_dictionary_frame_ancestors', array() );
-        if ( is_array( $ancestors ) && array() !== $ancestors ) {
-            $list = implode( ' ', array_map( 'esc_url_raw', $ancestors ) );
-            header( "Content-Security-Policy: frame-ancestors 'self' " . $list );
-            header_remove( 'X-Frame-Options' );
-        } else {
-            // Remove any inherited restrictive policy so the embed is not blocked.
-            header_remove( 'X-Frame-Options' );
+        $origins   = array();
+        if ( is_array( $ancestors ) ) {
+            foreach ( $ancestors as $ancestor ) {
+                $origin = $this->sparxIAtlas_to_csp_origin( (string) $ancestor );
+                if ( '' !== $origin ) {
+                    $origins[ $origin ] = $origin; // Keyed for de-duplication.
+                }
+            }
         }
+
+        // Remove any inherited restrictive policy so the embed is not blocked.
+        header_remove( 'X-Frame-Options' );
+        if ( array() !== $origins ) {
+            header( "Content-Security-Policy: frame-ancestors 'self' " . implode( ' ', array_values( $origins ) ) );
+        }
+    }
+
+    /**
+     * Reduces a URL or origin to a CSP frame-ancestors source expression
+     * (scheme://host[:port] — no path or query). CSP source expressions must be
+     * origins, so anything with a path would make the header invalid. Returns
+     * '' for values that can't be parsed into an http(s) origin.
+     *
+     * @param string $value Candidate origin or URL from the filter.
+     * @return string Normalized origin, or '' when invalid.
+     */
+    private function sparxIAtlas_to_csp_origin( string $value ): string {
+        $value = trim( $value );
+        if ( '' === $value ) {
+            return '';
+        }
+        // Prepend a scheme so a bare host (example.com) parses as a host, not a path.
+        if ( ! preg_match( '#^https?://#i', $value ) ) {
+            $value = 'https://' . $value;
+        }
+        $parts = wp_parse_url( $value );
+        if ( ! is_array( $parts ) || ! isset( $parts['host'] ) || '' === (string) $parts['host'] ) {
+            return '';
+        }
+        $scheme = isset( $parts['scheme'] ) ? strtolower( (string) $parts['scheme'] ) : 'https';
+        if ( ! in_array( $scheme, array( 'http', 'https' ), true ) ) {
+            return '';
+        }
+        $origin = $scheme . '://' . strtolower( (string) $parts['host'] );
+        if ( isset( $parts['port'] ) ) {
+            $origin .= ':' . (int) $parts['port'];
+        }
+        return $origin;
     }
 
     /**

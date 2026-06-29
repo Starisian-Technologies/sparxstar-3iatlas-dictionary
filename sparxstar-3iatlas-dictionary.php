@@ -103,8 +103,9 @@ function sparxIAtlas_activate_plugin() {
     }
     // Flag a one-shot flush so the standalone app route (registered on init) is
     // picked up on the next request without requiring a manual permalink save.
+    // The actual flush runs on the next init (after all rewrite rules exist),
+    // so flushing here would be premature and miss the app route.
     update_option( 'sparxstar_dict_flush_routes', 1 );
-    flush_rewrite_rules();
 }
 
 /**
