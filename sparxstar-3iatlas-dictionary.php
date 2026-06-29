@@ -101,6 +101,9 @@ function sparxIAtlas_activate_plugin() {
     if ( class_exists( Sparxstar3IAtlasPostTypes::class ) ) {
         $pt = new Sparxstar3IAtlasPostTypes();
     }
+    // Flag a one-shot flush so the standalone app route (registered on init) is
+    // picked up on the next request without requiring a manual permalink save.
+    update_option( 'sparxstar_dict_flush_routes', 1 );
     flush_rewrite_rules();
 }
 
@@ -120,6 +123,7 @@ function sparxIAtlas_deactivate_plugin() {
  */
 function sparxIAtlas_uninstall_plugin() {
     // Clean up options or data if needed
+    delete_option( 'sparxstar_dict_flush_routes' );
 }
 
 // 5. Run the Plugin (Orchestration)

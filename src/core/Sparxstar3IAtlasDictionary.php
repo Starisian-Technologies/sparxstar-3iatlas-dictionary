@@ -68,9 +68,178 @@ final class Sparxstar3IAtlasDictionary {
      */
     private function sparxIAtlas_register_hooks(): void {
         add_action( 'init', array( $this, 'sparxIAtlas_register_shortcodes' ) );
+        add_action( 'init', array( $this, 'sparxIAtlas_register_app_route' ) );
+        add_filter( 'query_vars', array( $this, 'sparxIAtlas_register_query_var' ) );
+        add_action( 'template_redirect', array( $this, 'sparxIAtlas_maybe_render_app_page' ) );
         add_action( 'wp_enqueue_scripts', array( $this, 'sparxIAtlas_register_assets' ) );
         if ( is_admin() ) {
             add_action( 'admin_notices', array( $this, 'sparxIAtlas_configuration_notices' ) );
+        }
+    }
+
+    /**
+     * Query var that flags a request for the standalone full-page app.
+     *
+     * @var string
+     */
+    private const APP_QUERY_VAR = 'sparxstar_dictionary_app';
+
+    /**
+     * The URL slug for the standalone full-page app (filterable).
+     * Default: site.com/dictionary/. Returns a sanitized, non-empty slug.
+     *
+     * @return string
+     */
+    private function sparxIAtlas_app_slug(): string {
+        $slug = sanitize_title( (string) apply_filters( 'sparxstar_dictionary_app_slug', 'dictionary' ) );
+        return '' !== $slug ? $slug : 'dictionary';
+    }
+
+    /**
+     * Builds the settings object localized to the frontend. Shared by the
+     * shortcode and the standalone full-page route so both stay in lockstep.
+     *
+     * @return array<string,mixed>|null Null when the GraphQL endpoint is invalid.
+     */
+    private function sparxIAtlas_app_settings(): ?array {
+        $graphql_url = \site_url( SPARX_3IATLAS_GRAPHQL_SLUG );
+        if ( empty( $graphql_url ) || filter_var( $graphql_url, FILTER_VALIDATE_URL ) === false ) {
+            return null;
+        }
+        return array(
+            'root_id'    => 'sparxstar-dictionary-root',
+            'graphqlUrl' => $graphql_url,
+            'restUrl'    => \untrailingslashit( \rest_url( 'sparxstar/v1/dictionary' ) ),
+            'pageToken'  => \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryRestApi::mint_initial_page_token(),
+        );
+    }
+
+    /**
+     * Registers the pretty rewrite rule for the standalone app page
+     * (e.g. site.com/dictionary/). The non-pretty ?sparxstar_dictionary_app=1
+     * form works without a permalink flush; this adds the clean URL on top.
+     * Flushes once after activation via a one-shot option flag.
+     *
+     * @return void
+     */
+    public function sparxIAtlas_register_app_route(): void {
+        add_rewrite_rule(
+            '^' . $this->sparxIAtlas_app_slug() . '/?$',
+            'index.php?' . self::APP_QUERY_VAR . '=1',
+            'top'
+        );
+
+        if ( get_option( 'sparxstar_dict_flush_routes' ) ) {
+            flush_rewrite_rules();
+            delete_option( 'sparxstar_dict_flush_routes' );
+        }
+    }
+
+    /**
+     * Whitelists the app query var so WordPress preserves it through routing.
+     *
+     * @param array<int,string> $vars Registered public query vars.
+     * @return array<int,string>
+     */
+    public function sparxIAtlas_register_query_var( array $vars ): array {
+        $vars[] = self::APP_QUERY_VAR;
+        return $vars;
+    }
+
+    /**
+     * Renders the standalone full-page app and exits when the current request
+     * targets the app route (pretty URL or ?sparxstar_dictionary_app=1).
+     *
+     * @return void
+     */
+    public function sparxIAtlas_maybe_render_app_page(): void {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only public view, no state change.
+        $is_app = ( '' !== (string) get_query_var( self::APP_QUERY_VAR ) ) || isset( $_GET[ self::APP_QUERY_VAR ] );
+        if ( ! $is_app ) {
+            return;
+        }
+        $this->sparxIAtlas_render_app_page();
+    }
+
+    /**
+     * Emits frame headers so the app page can be embedded as an iframe. Public,
+     * read-only content is framable from anywhere by default; return a non-empty
+     * array of origins from the 'sparxstar_dictionary_frame_ancestors' filter to
+     * restrict embedding to an allowlist via CSP frame-ancestors.
+     *
+     * @return void
+     */
+    private function sparxIAtlas_send_frame_headers(): void {
+        if ( headers_sent() ) {
+            return;
+        }
+        $ancestors = apply_filters( 'sparxstar_dictionary_frame_ancestors', array() );
+        if ( is_array( $ancestors ) && array() !== $ancestors ) {
+            $list = implode( ' ', array_map( 'esc_url_raw', $ancestors ) );
+            header( "Content-Security-Policy: frame-ancestors 'self' " . $list );
+            header_remove( 'X-Frame-Options' );
+        } else {
+            // Remove any inherited restrictive policy so the embed is not blocked.
+            header_remove( 'X-Frame-Options' );
+        }
+    }
+
+    /**
+     * Outputs the standalone, theme-free HTML document hosting the app and exits.
+     * Only the dictionary's own assets are printed, so no theme CSS can leak in.
+     * The page is never cached (the page token has a 1-hour TTL).
+     *
+     * @return void
+     */
+    private function sparxIAtlas_render_app_page(): void {
+        try {
+            $settings = $this->sparxIAtlas_app_settings();
+            if ( null === $settings ) {
+                nocache_headers();
+                status_header( 503 );
+                echo '<!DOCTYPE html><meta charset="utf-8"><p>' .
+                    esc_html__( 'Dictionary endpoint is not available.', 'sparxstar-3iatlas-dictionary' ) .
+                    '</p>';
+                exit;
+            }
+
+            // template_redirect fires before wp_enqueue_scripts (which lives in
+            // wp_head), and we short-circuit the theme — so register assets now.
+            $this->sparxIAtlas_register_assets();
+
+            nocache_headers();
+            status_header( 200 );
+            $this->sparxIAtlas_send_frame_headers();
+
+            wp_enqueue_style( 'sparxstar-google-fonts' );
+            wp_enqueue_style( 'sparxstar-dictionary-style' );
+            wp_enqueue_script( 'sparxstar-dictionary-app' );
+            wp_localize_script( 'sparxstar-dictionary-app', 'sparxstarDictionarySettings', $settings );
+
+            $title = (string) apply_filters( 'sparxstar_dictionary_app_title', __( 'Dictionary', 'sparxstar-3iatlas-dictionary' ) );
+            ?>
+<!DOCTYPE html>
+<html <?php language_attributes(); ?>>
+<head>
+<meta charset="<?php echo esc_attr( get_bloginfo( 'charset' ) ); ?>">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title><?php echo esc_html( $title ); ?></title>
+<style>html,body{margin:0;padding:0;background:#F8F8F8}#sparxstar-dictionary-root{width:100%;min-height:100vh;min-height:100dvh}</style>
+<?php wp_print_styles( array( 'sparxstar-google-fonts', 'sparxstar-dictionary-style' ) ); ?>
+</head>
+<body>
+<div id="sparxstar-dictionary-root" style="width:100%;min-height:100vh;min-height:100dvh;"></div>
+<?php wp_print_scripts( array( 'sparxstar-dictionary-app' ) ); ?>
+</body>
+</html>
+            <?php
+            exit;
+        } catch ( \Throwable $throwable ) {
+            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                error_log( '[Starisian 3IAtlas Dictionary]: Error rendering app page - ' . $throwable->getMessage() );
+            }
+            status_header( 500 );
+            exit;
         }
     }
 
@@ -145,9 +314,8 @@ final class Sparxstar3IAtlasDictionary {
      */
     public function sparxIAtlas_render_app( $atts = array() ): string {
         try {
-            $graphql_url = \site_url( SPARX_3IATLAS_GRAPHQL_SLUG );
-
-            if ( empty( $graphql_url ) || filter_var( $graphql_url, FILTER_VALIDATE_URL ) === false ) {
+            $settings = $this->sparxIAtlas_app_settings();
+            if ( null === $settings ) {
                 return '<p>' . esc_html__( 'Dictionary endpoint is not available.', 'sparxstar-3iatlas-dictionary' ) . '</p>';
             }
 
@@ -159,18 +327,8 @@ final class Sparxstar3IAtlasDictionary {
                 'sparxstar_dictionary'
             );
 
-            // Pass attributes to the frontend
-            // FIX: Variable name changed to sparxstarDictionarySettings (Capital S) to match React App.js
-            wp_localize_script(
-                'sparxstar-dictionary-app',
-                'sparxstarDictionarySettings',
-                array(
-                    'root_id'    => 'sparxstar-dictionary-root',
-                    'graphqlUrl' => $graphql_url,
-                    'restUrl'    => \untrailingslashit( \rest_url( 'sparxstar/v1/dictionary' ) ),
-                    'pageToken'  => \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryRestApi::mint_initial_page_token(),
-                )
-            );
+            // Pass settings to the frontend (variable name uses capital S to match the React app).
+            wp_localize_script( 'sparxstar-dictionary-app', 'sparxstarDictionarySettings', $settings );
             // Ensure assets are enqueued (in case they weren't caught by the global check, e.g., in a widget)
             wp_enqueue_script( 'sparxstar-dictionary-app' );
             wp_enqueue_style( 'sparxstar-dictionary-style' );

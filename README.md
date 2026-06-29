@@ -65,6 +65,32 @@ view, just like in a printed dictionary.
 [sparxstar_dictionary]
 ```
 
+### Standalone full-page app
+
+The same dictionary is also served as its own full-screen page (no theme
+header/footer), which is useful for kiosks, deep links, and embedding:
+
+- **Pretty URL:** `https://your-site.com/dictionary/`
+- **Always-available fallback** (works before permalinks are flushed):
+  `https://your-site.com/?sparxstar_dictionary_app=1`
+
+The slug defaults to `dictionary`; change it with the
+`sparxstar_dictionary_app_slug` filter. After changing the slug (or first
+activation) visit **Settings → Permalinks** once to flush rewrite rules.
+
+**Embed as an iframe**
+
+```html
+<iframe src="https://your-site.com/dictionary/"
+        style="width:100%;height:100dvh;border:0"
+        title="Dictionary" loading="lazy"></iframe>
+```
+
+The standalone page is framable from any origin by default (it is public,
+read-only content). To restrict which sites may embed it, return an array of
+allowed origins from the `sparxstar_dictionary_frame_ancestors` filter — this
+emits a `Content-Security-Policy: frame-ancestors` allowlist.
+
 **Frontend Submission Form**
 Enable logged-in users (Contributors/Editors) to add or edit dictionary entries
 directly from the frontend.
