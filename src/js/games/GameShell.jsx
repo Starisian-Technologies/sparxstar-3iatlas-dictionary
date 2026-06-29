@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Loader2, ChevronDown } from 'lucide-react';
+import { Loader2, ChevronDown, X } from 'lucide-react';
 import * as GameSetHookModule from '../hooks/useGameSet.js';
 import * as useGameSessionModule from '../hooks/useGameSession.js';
 import * as useProgressSyncModule from '../hooks/useProgressSync.js';
@@ -171,6 +171,9 @@ export default function GameShell({
      */
     const pendingResultRef = useRef(Promise.resolve());
 
+    /* Set by handleQuit to stop the auto-resume effect re-entering 'playing'. */
+    const justQuitRef = useRef(false);
+
     /* ── Fetch domains when source language changes ── */
     useEffect(() => {
         let cancelled = false;
@@ -186,7 +189,10 @@ export default function GameShell({
 
         async function fetchDomains() {
             const url = `${restUrl}/domains?lang_source=${encodeURIComponent(sourceLanguage)}`;
-            const token = typeof window !== 'undefined' ? (window.sparxstarDictionarySettings?.pageToken ?? '') : '';
+            const token =
+                typeof window !== 'undefined'
+                    ? (window.sparxstarDictionarySettings?.pageToken ?? '')
+                    : '';
             let res = await fetch(url, {
                 signal: controller.signal,
                 headers: { 'X-Page-Token': token },
@@ -227,6 +233,11 @@ export default function GameShell({
 
     /* ── Resume an in-progress session when the Play tab is opened ── */
     useEffect(() => {
+        if (justQuitRef.current) {
+            /* User just quit — consume the flag and skip the auto-resume. */
+            justQuitRef.current = false;
+            return;
+        }
         if (session && session.completedAt === null && phase === 'setup') {
             /* Session is in progress — offer to resume. */
             /* For simplicity, we auto-resume: rebuild gameWords from session. */
@@ -415,6 +426,25 @@ export default function GameShell({
         setPhase('loading');
     }, [clearSession]);
 
+    /* ── Quit an in-progress round and return to game selection ── */
+    const handleQuit = useCallback(async () => {
+        const inProgress = !!session && session.completedAt === null;
+        if (
+            inProgress &&
+            typeof window !== 'undefined' &&
+            !window.confirm('Quit this game? Your progress in this round will be lost.')
+        ) {
+            return;
+        }
+        // Suppress the auto-resume effect, which would otherwise immediately pull
+        // an in-progress session back into 'playing' before clearSession settles.
+        justQuitRef.current = true;
+        await clearSession();
+        setGameWords([]);
+        setSetupError(null);
+        setPhase('setup');
+    }, [session, clearSession]);
+
     /* ── Render ── */
 
     if (phase === 'loading') {
@@ -428,9 +458,41 @@ export default function GameShell({
     }
 
     if (phase === 'playing') {
+        const totalWords = session?.words?.length ?? 0;
+        const currentWord =
+            totalWords > 0 ? Math.min((session?.currentIndex ?? 0) + 1, totalWords) : 0;
         return (
             <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-gray-900">
-                {renderGame(selectedGame, gameWords, language, handleWordResult, handleComplete)}
+                <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 dark:border-gray-800 shrink-0">
+                    <button
+                        type="button"
+                        onClick={handleQuit}
+                        className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-pink-600 dark:text-gray-400 dark:hover:text-pink-400 transition-colors"
+                        aria-label="Quit game and return to game selection"
+                    >
+                        <X size={18} aria-hidden="true" />
+                        Quit
+                    </button>
+                    {totalWords > 0 && (
+                        <span
+                            className="text-xs font-medium text-gray-400"
+                            role="status"
+                            aria-live="polite"
+                            aria-label={`Word ${currentWord} of ${totalWords}`}
+                        >
+                            {currentWord} / {totalWords}
+                        </span>
+                    )}
+                </div>
+                <div className="flex-1 overflow-hidden">
+                    {renderGame(
+                        selectedGame,
+                        gameWords,
+                        language,
+                        handleWordResult,
+                        handleComplete
+                    )}
+                </div>
             </div>
         );
     }

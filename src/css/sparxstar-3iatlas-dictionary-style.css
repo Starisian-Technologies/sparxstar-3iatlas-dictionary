@@ -21,12 +21,24 @@
 
 #sparxstar-dictionary-root {
     width: 100%;
+    /* dvh tracks the dynamic viewport (mobile address-bar show/hide) so the app
+       neither overshoots nor leaves a gap on iOS/Android. The vh line is the
+       fallback for browsers without dvh support (iOS Safari < 15.4), which would
+       otherwise ignore the property entirely. */
     min-height: 100vh;
+    min-height: 100dvh;
 
     /* Opt out of any inherited margin/padding that could create horizontal scroll */
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+}
+
+/* App shell viewport height. Applied via className to the React root containers
+   (inline JS styles can't express the vh→dvh cascade, so the height lives here). */
+.sparxstar-app-viewport {
+    height: 100vh; /* fallback for browsers without dvh */
+    height: 100dvh;
 }
 
 /* --- Base Styles --- */

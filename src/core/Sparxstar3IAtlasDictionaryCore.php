@@ -139,9 +139,18 @@ final class Sparxstar3IAtlasDictionaryCore {
      * @return int The new limit.
      */
     public function sparxIAtlas_increase_query_limit( int $amount, $source, array $args, $context, $info ): int {
-        // Allow dictionary queries to fetch up to 2000 items (covering our 1000 item chunks)
+        // Allow the dictionary index query to fetch the full corpus in one pass.
+        // The client loads every entry into memory for instant client-side search
+        // and alphabet jumps; a cap below the corpus size silently truncates the
+        // index (breaking the A–Z bar and search for later letters). Keep this at
+        // or above the live entry count (~4,175) with headroom for growth.
         if ( isset( $info->fieldName ) && 'dictionaries' === $info->fieldName ) {
-            return 2000;
+            // Filterable ceiling so operators can tune the payload-vs-completeness
+            // tradeoff as the corpus grows, without a code change. max() so we
+            // only ever raise the limit — never lower a higher one set by another
+            // filter or a future WPGraphQL default.
+            $ceiling = (int) apply_filters( 'sparxstar_dictionary_max_query_amount', 5000 );
+            return max( (int) $amount, $ceiling );
         }
 
         return $amount;
