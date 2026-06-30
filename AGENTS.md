@@ -210,7 +210,7 @@ Do not add this field to the SCF JSON. Do not remove it from PostTypes.php.
 | Endpoint | Ephemeral page token | API key | No credential |
 |---|---|---|---|
 | GET `/lookup`, `/search`, `/languages`, `/domains`, `/word-of-day` | ✅ | ✅ | ❌ 401 |
-| POST `/spell` | ✅ | ✅ | ❌ 401 |
+| POST `/spell` | Public (rate-limited, no credentials required) | | |
 | GET `/game-set` | ✅ | ✅ | ❌ 401 |
 | GET `/wordlist` | ❌ 403 | ✅ only | ❌ 401 |
 | GET `/page-token` | Public (referer check + rate limit) | | |

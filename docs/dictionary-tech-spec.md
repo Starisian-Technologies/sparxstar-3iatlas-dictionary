@@ -137,6 +137,7 @@ in sync.
 - `OQ-005` — Letter Reveal animation placeholder (🏺) needs an AIWA-approved cultural visual (carried over as OQ-G3).
 - `OQ-006` — Account-claim flow for merging guest device progress into a suite account, blocked on Game Service intake spec (carried over as OQ-I3).
 - `OQ-007` — Teacher-account tier verification for Lower Basic sessions, blocked on Identity Service spec (carried over as OQ-I4).
+- `OQ-008` — DomainFlash "I knew it" fires `aiwa_game_word_correct`; confirm whether a separate hook is needed for the myCred hook map (carried over as OQ-G4).
 
 ## Changelog
 

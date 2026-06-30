@@ -37,7 +37,7 @@ jobs:
   # the spec registry with the update. The registry reviews and approves —
   # this repo proposes, the registry owns.
   propose-spec:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (vars.CONTRACT_SYNC_APP_ID != '' || vars.CONTRACT_SYNC_CLIENT_ID != '') && secrets.CONTRACT_SYNC_PRIVATE_KEY != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
