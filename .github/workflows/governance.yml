@@ -42,14 +42,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
           path: source
 
       - name: Check if spec changed
         id: check
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
         run: |
           cd source
-          CHANGED=$(git diff HEAD~1 --name-only -- docs/dictionary-tech-spec.md || echo "")
+          # Use the push event's before SHA so a multi-commit push range is
+          # fully covered, not just the diff against the immediate parent.
+          if [ -z "$BEFORE_SHA" ] || ! git cat-file -e "$BEFORE_SHA" 2>/dev/null; then
+            CHANGED=$(git diff HEAD~1 --name-only -- docs/dictionary-tech-spec.md || echo "")
+          else
+            CHANGED=$(git diff "$BEFORE_SHA" HEAD --name-only -- docs/dictionary-tech-spec.md || echo "")
+          fi
           if [ -n "$CHANGED" ]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
