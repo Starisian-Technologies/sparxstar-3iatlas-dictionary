@@ -1,5 +1,30 @@
 # Copilot Instructions — sparxstar-3iatlas-dictionary
 
+## Reference repositories (read via MCP)
+
+Before reviewing any PR, read these repos:
+- ADR Registry: Starisian-Technologies/sparxstar-architecture-governance-registry
+- Product Specs: Starisian-Technologies/sparxstar-product-specification-registry
+- Coding Standards: Starisian-Technologies/starisian-technologies-coding-standards
+- Enforcement Workflows: Starisian-Technologies/sparxstar-code-conformance
+- Contracts: Starisian-Technologies/sparxstar-platform-contracts
+- Claude PR Review: Starisian-Technologies/sparxstar-claude-pr-review
+
+## Review checklist
+
+Flag any PR that:
+- Contradicts an ADR or invariant
+- Assumes an answer to an open question (OQ in OPEN state)
+- Violates a coding standard
+- Changes a contract interface (`schemas/`) without updating `schemas/README.md`
+- Changes behavior that contradicts the product spec (`docs/dictionary-tech-spec.md`)
+- Adds code with no spec backing it
+- Violates any rule in the "Absolute Rules" or "What Copilot Must Not Do" sections below
+
+You are a reviewer, not the authority. Flag and explain. The owner decides.
+
+---
+
 ## What This Repo Is
 
 A standalone WordPress plugin that is the **authoritative lexical data store and REST API** for the 3iAtlas platform. It is part of the SPARXSTAR family but is **not a DVE component** — it does not use Sirus, Helios, Mḗh₁n̥s, or Dheghom at runtime. It operates in standalone mode by design.

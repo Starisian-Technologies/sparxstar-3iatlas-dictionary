@@ -1,5 +1,30 @@
 # AGENTS.md — sparxstar-3iatlas-dictionary
 
+## Platform Governance
+
+Read `.github/instructions/governance/` for compiled ADRs, invariants, and
+open questions before building anything. Those files are synced from the
+ADR registry and are read-only — never edit them, never commit local
+changes to them. If the folder is empty or missing, the org governance-sync
+workflow has not run against this repo yet; ask the repo owner to trigger
+it from the ADR registry's Actions tab rather than inventing rules.
+
+See `ROLE.md` for this repo's boundary (what it owns / does not own).
+
+Platform repos (read these for full context when accessible):
+- Decisions: https://github.com/Starisian-Technologies/sparxstar-architecture-governance-registry
+- Specs: https://github.com/Starisian-Technologies/sparxstar-product-specification-registry
+- Standards: https://github.com/Starisian-Technologies/starisian-technologies-coding-standards
+- Enforcement: https://github.com/Starisian-Technologies/sparxstar-code-conformance
+- Contracts: https://github.com/Starisian-Technologies/sparxstar-platform-contracts
+- PR Review: https://github.com/Starisian-Technologies/sparxstar-claude-pr-review
+
+If no spec exists for what you're asked to build, stop implementation and
+draft or request the missing spec first — do not invent product behavior
+in code. This repo's tech spec lives at `docs/dictionary-tech-spec.md`.
+
+---
+
 ## What This Repo Is
 
 This is the authoritative lexical data store and REST API service for the entire 3iAtlas platform. It is a WordPress plugin with a React frontend. Every other 3iAtlas tool (WordPad, RLC, Sound to Symbol, Games) is a consumer of this plugin's REST API. This repo does not consume from them.
