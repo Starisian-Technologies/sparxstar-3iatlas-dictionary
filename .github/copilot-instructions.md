@@ -2,7 +2,10 @@
 
 ## Reference repositories (read via MCP)
 
-Before reviewing any PR, read these repos:
+When accessible and relevant to the PR under review, read these repos for
+governance context. Don't block a review on an unreachable repo or fetch
+one that has no bearing on the change (e.g. a docs-only typo fix doesn't
+need an ADR registry read):
 - ADR Registry: Starisian-Technologies/sparxstar-architecture-governance-registry
 - Product Specs: Starisian-Technologies/sparxstar-product-specification-registry
 - Coding Standards: Starisian-Technologies/starisian-technologies-coding-standards

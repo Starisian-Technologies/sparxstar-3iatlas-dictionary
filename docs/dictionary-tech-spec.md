@@ -102,6 +102,10 @@ consumer API key (`X-Api-Key`, long-lived, SHA-256 hashed at rest,
 
 Response envelope: `{ "success": true, "data": {}, "meta": {...} }`. Errors
 follow the WordPress REST standard `{ "code", "message", "data": { "status" } }`.
+`POST /spell` additionally returns a top-level legacy `results` key
+(duplicated into `data.results`) for backward compatibility with older
+clients — see `Sparxstar3IAtlasDictionarySpellChecker.php`. New endpoints
+must not add similar legacy top-level keys; use the standard envelope only.
 
 ## Seams
 
