@@ -25,7 +25,7 @@ jobs:
     uses: Starisian-Technologies/starisian-technologies-coding-standards/.github/workflows/pnpm-enforcement.yml@main
     secrets: inherit
     with:
-      enforcement_mode: gate
+      mode: development
 
   php:
     uses: Starisian-Technologies/starisian-technologies-coding-standards/.github/workflows/php-standards.yml@main
