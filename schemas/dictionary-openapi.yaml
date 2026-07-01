@@ -631,7 +631,12 @@ components:
         audio_url:
           type: string
           nullable: true
-          description: Only present when include_audio=true was requested.
+          description: >
+            Present when audio was requested. On /lookup this follows the
+            include_audio query param (default false, so audio_url is
+            omitted unless explicitly requested). /word-of-day has no
+            include_audio param and always includes it (builds the entry
+            with the default include_audio=true).
 
     SearchResultItem:
       type: object
