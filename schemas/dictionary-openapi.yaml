@@ -78,7 +78,10 @@ paths:
       tags: [browse]
       operationId: lookupEntry
       summary: Fetch a single dictionary entry
-      description: Exactly one of `slug` or `uuid` must be provided.
+      description: >
+        At least one of `slug` or `uuid` must be provided (400 if both are
+        omitted). If both are given, `slug` takes precedence and `uuid` is
+        ignored.
       parameters:
         - name: slug
           in: query
