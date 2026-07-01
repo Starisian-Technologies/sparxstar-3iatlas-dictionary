@@ -419,7 +419,27 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
-          description: TTS misconfigured or synthesis failed.
+          description: >
+            Cache directory could not be created, or the synthesized wav
+            file could not be read back after a successful Piper run
+            (`tts_read_error`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '502':
+          description: >
+            Piper ran but failed: non-zero exit code
+            (`piper_synthesis_failed`) or produced no audio output
+            (`piper_empty_output`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '503':
+          description: >
+            TTS is not configured or unavailable: required wp-config.php
+            constants missing, the Piper binary is missing/not executable,
+            the model (or its .onnx.json config) is missing, or the Piper
+            process could not be started.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
