@@ -46,20 +46,12 @@ jobs:
         with:
           fetch-depth: 0
           path: source
-  propose-spec:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.CONTRACT_SYNC_APP_ID != '' && secrets.CONTRACT_SYNC_PRIVATE_KEY != ''
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-          path: source
 
       - name: Check if spec changed
         id: check
         run: |
           cd source
-          CHANGED=$(git diff HEAD~1 --name-only -- docs/dictionary-tech-spec.md || echo "")
+          CHANGED=$(git diff ${{ github.event.before }} ${{ github.sha }} --name-only -- docs/dictionary-tech-spec.md || echo "")
           if [ -n "$CHANGED" ]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
