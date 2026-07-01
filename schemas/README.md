@@ -12,10 +12,12 @@ every push to `main` that touches this directory.
 - `dictionary-openapi.yaml` — OpenAPI 3.0 spec for the public REST API at
   `sparxstar/v1/dictionary`. Covers every consumer-facing endpoint (lookup,
   search, wordlist, languages, domains, game-set, word-of-day, pronounce,
-  page-token, spell) with both auth schemes (`X-Page-Token`, `X-Api-Key`),
-  request/response shapes, and error format. Validate with
-  `npx @redocly/cli lint schemas/dictionary-openapi.yaml` before committing
-  changes.
+  page-token, spell) with request/response shapes and error format. Models
+  both pre-shared credential schemes (`X-Page-Token`, `X-Api-Key`) where
+  they apply — `page-token` and `spell` are documented as unauthenticated
+  (`security: []`), matching their actual public/rate-limited handlers.
+  Validate with `npx @redocly/cli lint schemas/dictionary-openapi.yaml`
+  before committing changes.
 
 `POST /progress/sync` is intentionally excluded — it's deprecated, frozen,
 and its own docblock says not to document it publicly (see

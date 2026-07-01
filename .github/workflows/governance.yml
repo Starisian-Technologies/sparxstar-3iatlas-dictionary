@@ -66,6 +66,9 @@ jobs:
         uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
         id: token
         with:
+          # CONTRACT_SYNC_APP_ID must be the numeric GitHub App ID, not the OAuth
+          # client ID. CONTRACT_SYNC_CLIENT_ID is a legacy fallback name some repos
+          # still use for that same numeric App ID — see sync-contracts.yml.
           app-id: ${{ vars.CONTRACT_SYNC_APP_ID || vars.CONTRACT_SYNC_CLIENT_ID }}
           private-key: ${{ secrets.CONTRACT_SYNC_PRIVATE_KEY }}
           owner: Starisian-Technologies
