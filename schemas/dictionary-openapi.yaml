@@ -267,8 +267,10 @@ paths:
           in: query
           schema: { type: string }
           description: >
-            When provided, counts are scoped to that language and each domain
-            includes a `code` derived from its slug's trailing numeric suffix.
+            When provided, counts are scoped to that language. Every domain
+            always includes a `code` derived from its slug's trailing
+            numeric suffix (empty string if none), regardless of whether
+            this param is set.
       responses:
         '200':
           description: Domain list.
