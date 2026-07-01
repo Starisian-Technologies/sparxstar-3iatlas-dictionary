@@ -23,13 +23,14 @@ permissions:
 jobs:
   pnpm:
     uses: Starisian-Technologies/starisian-technologies-coding-standards/.github/workflows/pnpm-enforcement.yml@main
+    secrets: inherit
     with:
       mode: development
 
   php:
     uses: Starisian-Technologies/starisian-technologies-coding-standards/.github/workflows/php-standards.yml@main
     with:
-      phpstan_level: "5"
+      phpstan-level: "5"
 
   js:
     uses: Starisian-Technologies/starisian-technologies-coding-standards/.github/workflows/js-standards.yml@main
