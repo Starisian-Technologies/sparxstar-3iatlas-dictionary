@@ -25,7 +25,7 @@ body {
     -webkit-tap-highlight-color: transparent;
 
     /* Inter (loaded via Google Fonts in PHP); system fonts are the swap fallback */
-    font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', Arial, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', Arial, sans-serif;
 }
 
 /* Ensure React root takes full height for virtual scrolling */
