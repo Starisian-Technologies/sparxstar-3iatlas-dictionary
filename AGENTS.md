@@ -247,7 +247,7 @@ Error responses use the same envelope with `success: false`. 429 includes `Retry
 | GET | `/game-set` | Browse or consumer | Curated word set for game use (richer than wordlist) |
 | GET | `/word-of-day` | Browse or consumer | Single deterministic daily entry |
 | GET | `/page-token` | Public (referer + rate limit) | Mint fresh ephemeral token for the React app |
-| POST | `/spell` | Browse or consumer | Spell-checking service for dictionary entries |
+| POST | `/spell` | Public (rate-limited) | Spell-checking service for dictionary entries |
 | POST | `/progress/sync` | **DEPRECATED** — frozen | Do not build clients against this endpoint |
 
 **`/game-set` parameters:** `lang_source` (required), `domain` (optional), `limit` (default 20, max 50), `include_audio` (bool)
