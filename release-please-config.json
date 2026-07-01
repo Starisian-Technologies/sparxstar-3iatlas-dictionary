@@ -10,7 +10,15 @@
       "extra-files": [
         {
           "type": "generic",
-          "path": "sparxstar-3iatlas-dictionary.php"
+          "path": "sparxstar-3iatlas-dictionary.php",
+          "search": "^\\s*\\*\\s*Version:\\s*\\d+\\.\\d+\\.\\d+\\s*$",
+          "replace": " * Version:           ${version}"
+        },
+        {
+          "type": "generic",
+          "path": "sparxstar-3iatlas-dictionary.php",
+          "search": "define\\( 'SPARX_3IATLAS_VERSION', '\\d+\\.\\d+\\.\\d+' \\);",
+          "replace": "define( 'SPARX_3IATLAS_VERSION', '${version}' );"
         }
       ]
     }
