@@ -96,6 +96,7 @@ consumer API key (`X-Api-Key`, long-lived, SHA-256 hashed at rest,
 | GET | `/domains` | page token or API key |
 | GET | `/game-set` | page token or API key |
 | GET | `/word-of-day` | page token or API key |
+| GET | `/pronounce` | page token or API key (browse scope; returns synthesized audio/wav — see `Sparxstar3IAtlasDictionaryTts`) |
 | GET | `/page-token` | public (referer check + rate limit) |
 | POST | `/spell` | public (rate-limited) |
 | POST | `/progress/sync` | deprecated — frozen, do not build against |
@@ -127,7 +128,7 @@ must not add similar legacy top-level keys; use the standard envelope only.
 
 - WordPress Coding Standards + VIPWPCS enforced via PHPCS/PHPStan
 - All user input sanitized, all output escaped per WP conventions
-- No custom database tables, no raw SQL
+- No custom database tables. Direct SQL against WordPress core tables does occur (e.g. `Sparxstar3IAtlasDictionarySpellChecker`'s exact-match lookup) — it must always go through `$wpdb->prepare()`, and no `SELECT *`
 - Rate limiting via WordPress transients only — no external infra
 - `aiwa-cpt-dictionary` linguistic fields locked post-import; WordPress admins cannot edit them directly
 - No `wp_nonce` / `is_user_logged_in()` on new user-facing endpoints — suite identity is the long-term auth path

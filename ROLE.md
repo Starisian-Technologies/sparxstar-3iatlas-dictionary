@@ -3,7 +3,7 @@
 ## Owns
 
 - Authoritative storage of approved dictionary entries (WordPress CPT `aiwa-cpt-dictionary` + ACF/SCF fields)
-- The public REST API at `sparxstar/v1/dictionary` (lookup, search, wordlist, languages, domains, game-set, word-of-day, page-token, spell)
+- The public REST API at `sparxstar/v1/dictionary` (lookup, search, wordlist, languages, domains, game-set, word-of-day, pronounce, page-token, spell, and the deprecated progress/sync)
 - Ephemeral page-token issuance and consumer API key validation for that API (Webster Model auth)
 - The public-facing Browse experience (dictionary lookup UI) and Play experience (six language games) as a React PWA
 - Game session state, learned-word tracking, and progress-event capture. Today this lives entirely client-side in IndexedDB (`aiwa-games-db`, stores `game-sets`/`game-sessions`/`progress-outbox`/`learned-words` — see `src/js/hooks/idbUtils.js`), with no prefix convention applied since it isn't WordPress user meta. If/when this data is persisted server-side as WP user meta, it must use the `game_` (persistent) / `_spx_` (session-scoped) prefix rule from `.github/copilot-instructions.md`, never `aiwa_`/`sparxstar_`.
