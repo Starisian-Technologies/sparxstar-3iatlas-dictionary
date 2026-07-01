@@ -1,11 +1,11 @@
 # Platform Standards — calls the org's reusable workflows from
-# starisian-technologies-coding-standards so enforcement stays consistent
-# across every repo and a standards update fixes all repos at once.
+# Starisian-Technologies/sparxstar-code-conformance@v1 so enforcement stays
+# consistent across every repo and a standards update fixes all repos at once.
 #
 # One file per repo. Jobs included match this repo's composition:
 # PHP WordPress plugin + React games app + CSS + package.json.
-# Pinned to @main per platform policy. Do not fork these checks locally —
-# request changes in the coding-standards repo instead.
+# Pinned to @v1 per platform policy. Do not fork these checks locally —
+# request changes in the code-conformance repo instead.
 
 name: Platform Standards
 
@@ -19,6 +19,8 @@ permissions:
 
 jobs:
   pnpm:
+    # pnpm-enforcement.yml currently accepts enforcement_mode/mode only; the
+    # repo_type + enforcement_mode contract applies to the PHP and CSS callers.
     uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1
     with:
       enforcement_mode: advisory

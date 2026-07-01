@@ -5,7 +5,7 @@
 #
 # Adapted from the Helios template for the Dictionary:
 #   - source dir  : schemas/**            (Helios used packages/sparxstar-helios-contracts/src)
-#   - target path : Contracts/IAMC/Dictionary/  (Helios used Contracts/IAMC/Helios/)
+#   - target path : Contracts/dictionary/ (Helios used Contracts/IAMC/Helios/)
 #
 # Requires (configure in repo settings before first run):
 #   - vars.CONTRACT_SYNC_CLIENT_ID      GitHub App ID (numeric; not the OAuth client ID).
