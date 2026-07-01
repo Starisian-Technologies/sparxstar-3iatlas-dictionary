@@ -402,7 +402,6 @@ paths:
         '200':
           description: Synthesized (or cached) audio.
           headers:
-            Cache-Control: { schema: { type: string } }
             X-TTS-Cache:
               schema: { type: string, enum: ['HIT', 'MISS'] }
               description: Whether this response was served from the wav file cache.
