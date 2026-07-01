@@ -19,8 +19,9 @@ permissions:
 
 jobs:
   pnpm:
-    # pnpm-enforcement.yml currently accepts enforcement_mode/mode only; the
-    # repo_type + enforcement_mode contract applies to the PHP and CSS callers.
+    # pnpm-enforcement.yml exposes enforcement_mode plus a legacy mode input;
+    # this caller uses enforcement_mode only. The repo_type + enforcement_mode
+    # contract applies to the PHP and CSS callers.
     uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1
     with:
       enforcement_mode: advisory
