@@ -11,14 +11,10 @@
         {
           "type": "generic",
           "path": "sparxstar-3iatlas-dictionary.php",
-          "search": "^\\s*\\*\\s*Version:\\s*\\d+\\.\\d+\\.\\d+\\s*$",
-          "replace": " * Version:           ${version}"
-        },
-        {
-          "type": "generic",
-          "path": "sparxstar-3iatlas-dictionary.php",
-          "search": "define\\( 'SPARX_3IATLAS_VERSION', '\\d+\\.\\d+\\.\\d+' \\);",
-          "replace": "define( 'SPARX_3IATLAS_VERSION', '${version}' );"
+          "expressions": [
+            "Version:\\s*([0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?)",
+            "define\\(\\s*'SPARX_3IATLAS_VERSION',\\s*'([0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?)'\\s*\\);"
+          ]
         }
       ]
     }
