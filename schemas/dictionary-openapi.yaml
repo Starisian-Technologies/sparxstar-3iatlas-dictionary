@@ -214,6 +214,8 @@ paths:
                       meta: { $ref: '#/components/schemas/PageMeta' }
         '304':
           description: Not modified (If-None-Match matched current ETag).
+          headers:
+            ETag: { schema: { type: string } }
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -343,6 +345,8 @@ paths:
                           include_audio: { type: boolean }
         '304':
           description: Not modified (If-None-Match matched current ETag).
+          headers:
+            ETag: { schema: { type: string } }
         '400':
           description: lang_source missing.
           content:
@@ -689,8 +693,9 @@ components:
             code:
               type: string
               description: >
-                Trailing numeric suffix of the slug (e.g. "food-3.2" -> "3.2"),
-                only populated when lang_source was provided to /domains.
+                Trailing numeric suffix of the slug (e.g. "food-3.2" -> "3.2").
+                Always present (empty string if the slug has no numeric
+                suffix), regardless of whether lang_source was provided.
 
     SpellCheckResult:
       type: object
