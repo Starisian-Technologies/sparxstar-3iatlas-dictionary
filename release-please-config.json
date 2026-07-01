@@ -1,0 +1,26 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "release-type": "node",
+  "packages": {
+    ".": {
+      "release-type": "node",
+      "package-name": "sparxstar-3iatlas-dictionary",
+      "changelog-path": "CHANGELOG.md",
+      "include-component-in-tag": false,
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "sparxstar-3iatlas-dictionary.php",
+          "search": "^\\s*\\*\\s*Version:\\s*\\d+\\.\\d+\\.\\d+\\s*$",
+          "replace": " * Version:           ${version}"
+        },
+        {
+          "type": "generic",
+          "path": "sparxstar-3iatlas-dictionary.php",
+          "search": "define\\( 'SPARX_3IATLAS_VERSION', '\\d+\\.\\d+\\.\\d+' \\);",
+          "replace": "define( 'SPARX_3IATLAS_VERSION', '${version}' );"
+        }
+      ]
+    }
+  }
+}
