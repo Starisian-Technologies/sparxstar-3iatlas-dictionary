@@ -210,10 +210,10 @@ Do not add this field to the SCF JSON. Do not remove it from PostTypes.php.
 | Endpoint | Ephemeral page token | API key | No credential |
 |---|---|---|---|
 | GET `/lookup`, `/search`, `/languages`, `/domains`, `/word-of-day` | ✅ | ✅ | ❌ 401 |
-| POST `/spell` | Public (rate-limited, no credentials required) | | |
+| POST `/spell` | Not required (public) | Not required (public) | ✅ (rate-limited) |
 | GET `/game-set` | ✅ | ✅ | ❌ 401 |
 | GET `/wordlist` | ❌ 403 | ✅ only | ❌ 401 |
-| GET `/page-token` | Public (referer check + rate limit) | | |
+| GET `/page-token` | Not required (public) | Not required (public) | ✅ (referer check + rate limit) |
 | POST `/progress/sync` | **DEPRECATED** — do not touch | | |
 
 Existing per-IP rate limiting (100/15 min) remains as an outer layer on all endpoints.

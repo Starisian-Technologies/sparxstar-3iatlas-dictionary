@@ -404,7 +404,7 @@ paths:
           headers:
             Cache-Control: { schema: { type: string } }
             X-TTS-Cache:
-              schema: { type: string, enum: ['hit', 'miss'] }
+              schema: { type: string, enum: ['HIT', 'MISS'] }
               description: Whether this response was served from the wav file cache.
           content:
             audio/wav:
@@ -513,11 +513,18 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
     RateLimited:
-      description: Per-IP rate limit (100 requests / 15 min) exceeded.
+      description: >
+        Either the per-IP rate limit (100 requests / 15 min, all credential
+        types) or, when authenticated with an API key, the per-key daily
+        quota (default 10,000/day) was exceeded. Distinguish by the error
+        `code`: `rate_limited` (per-IP) vs `quota_exceeded` (per-key daily).
       headers:
         Retry-After:
           schema: { type: string }
-          description: Seconds until the rate-limit window resets (900).
+          description: >
+            Seconds until the limit resets: "900" for the per-IP window,
+            "86400" for the per-key daily quota. Do not hardcode 900 —
+            check which error code was returned.
       content:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
