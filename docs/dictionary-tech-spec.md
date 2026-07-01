@@ -89,7 +89,11 @@ Entry lifecycle states: `active`, `deprecated`, `merged`, `hidden`,
 Base namespace: `sparxstar/v1/dictionary`. Auth model (Webster Model):
 ephemeral page token (`X-Page-Token`, 60 min TTL, `browse` scope) or
 consumer API key (`X-Api-Key`, long-lived, SHA-256 hashed at rest,
-10k req/day). Per-IP rate limit of 100/15min applies to all endpoints.
+10k req/day). Per-IP rate limit of 100/15min applies to every JSON
+endpoint (all of `Sparxstar3IAtlasDictionaryRestApi` and
+`Sparxstar3IAtlasDictionarySpellChecker`, via `Sparxstar3IAtlasRateLimitTrait`).
+`GET /pronounce` (`Sparxstar3IAtlasDictionaryTts`) is the one exception —
+it does not use this trait and has no rate limit of its own today.
 
 | Method | Path | Auth |
 |---|---|---|
@@ -134,7 +138,7 @@ must not add similar legacy top-level keys; use the standard envelope only.
 - All user input sanitized, all output escaped per WP conventions
 - No custom database tables. Direct SQL against WordPress core tables does occur (e.g. `Sparxstar3IAtlasDictionarySpellChecker`'s exact-match lookup) — it must always go through `$wpdb->prepare()`, and no `SELECT *`
 - Rate limiting via WordPress transients only — no external infra
-- `aiwa-cpt-dictionary` linguistic fields locked post-import; WordPress admins cannot edit them directly
+- `aiwa-cpt-dictionary` linguistic fields are intended to be locked post-import so WordPress admins don't edit them directly — this is a process/policy boundary today, not a technical one; no ACF/admin-UI restriction currently enforces it (see `OQ-011`)
 - No `wp_nonce` / `is_user_logged_in()` on new user-facing endpoints — suite identity is the long-term auth path
 
 ## Current state
@@ -157,6 +161,8 @@ in sync.
 - `OQ-007` — Teacher-account tier verification for Lower Basic sessions, blocked on Identity Service spec (carried over as OQ-I4).
 - `OQ-008` — DomainFlash "I knew it" fires `aiwa_game_word_correct`; confirm whether a separate hook is needed for the myCred hook map (carried over as OQ-G4).
 - `OQ-009` — `Sparxstar3IAtlasDictionaryForm` is a WP-authenticated frontend form (instantiated for logged-in users in `Sparxstar3IAtlasDictionary.php`) that adds/edits `aiwa-cpt-dictionary` entries directly. This is unreconciled with the read-only/DVE-only intake boundary in `ROLE.md` and predates the "no `is_user_logged_in()` on user-facing features" rule. Needs a platform decision: deprecate, or document as a scoped exception.
+- `OQ-010` — `GET /pronounce` (`Sparxstar3IAtlasDictionaryTts`) has no per-IP rate limit, unlike every other endpoint. It spawns a Piper synthesis subprocess per cache miss, making this a real resource-exhaustion gap, not just a documentation inconsistency. Needs `Sparxstar3IAtlasRateLimitTrait` (or equivalent) applied before this is load-tested or exposed broadly.
+- `OQ-011` — "Linguistic fields locked post-import" is a policy stance, not an enforced one: no ACF `acf/prepare_field` readonly filter or equivalent admin-UI restriction was found preventing WordPress admins from editing locked fields directly. Needs either an enforcement mechanism or a documented decision that this stays process-only.
 
 ## Changelog
 

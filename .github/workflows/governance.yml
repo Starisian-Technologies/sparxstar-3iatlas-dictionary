@@ -54,7 +54,13 @@ jobs:
           AFTER_SHA: ${{ github.sha }}
         run: |
           cd source
-          CHANGED=$(git diff "$BEFORE_SHA" "$AFTER_SHA" --name-only -- docs/dictionary-tech-spec.md || echo "")
+          # On branch creation, GitHub sends the all-zero SHA as "before" — there is
+          # no real parent to diff against, so treat it as "everything changed".
+          if [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            CHANGED="docs/dictionary-tech-spec.md"
+          else
+            CHANGED=$(git diff "$BEFORE_SHA" "$AFTER_SHA" --name-only -- docs/dictionary-tech-spec.md || echo "")
+          fi
           if [ -n "$CHANGED" ]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
