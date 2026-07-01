@@ -8,11 +8,9 @@
 #   - target path : Contracts/IAMC/Dictionary/  (Helios used Contracts/IAMC/Helios/)
 #
 # Requires (configure in repo settings before first run):
-#   - vars.CONTRACT_SYNC_APP_ID         GitHub App ID (numeric; not the OAuth client ID).
-#                                       Falls back to vars.CONTRACT_SYNC_CLIENT_ID for repos
-#                                       still configured with the legacy Helios variable name.
+#   - vars.CONTRACT_SYNC_CLIENT_ID      GitHub App ID (numeric; not the OAuth client ID).
 #   - secrets.CONTRACT_SYNC_PRIVATE_KEY GitHub App private key
-#   - the App installed on Starisian-Technologies/sparxstar-platform-contracts
+#   - the App installed on Starisian-Technologies/sparxstar-contracts-registry
 
 name: Sync Contracts to Public Repo
 
@@ -46,14 +44,14 @@ jobs:
         uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
         id: token
         with:
-          app-id: ${{ vars.CONTRACT_SYNC_APP_ID || vars.CONTRACT_SYNC_CLIENT_ID }}
+          app-id: ${{ vars.CONTRACT_SYNC_CLIENT_ID }}
           private-key: ${{ secrets.CONTRACT_SYNC_PRIVATE_KEY }}
           owner: Starisian-Technologies
 
       - name: Checkout contracts repo
         uses: actions/checkout@v4
         with:
-          repository: Starisian-Technologies/sparxstar-platform-contracts
+          repository: Starisian-Technologies/sparxstar-contracts-registry
           ref: main
           token: ${{ steps.token.outputs.token }}
           # Full history so the rebase-before-push step below is reliable;
@@ -71,11 +69,11 @@ jobs:
             echo "No schema files (.json/.yml/.yaml) in schemas/ — nothing to sync."
             exit 0
           fi
-          rm -rf target/Contracts/IAMC/Dictionary/
-          mkdir -p target/Contracts/IAMC/Dictionary/
+          rm -rf target/Contracts/dictionary/
+          mkdir -p target/Contracts/dictionary/
           # Trailing /. copies directory contents (incl. dotfiles) without
           # relying on glob expansion, which would error on an empty dir.
-          cp -r source/schemas/. target/Contracts/IAMC/Dictionary/
+          cp -r source/schemas/. target/Contracts/dictionary/
 
       - name: Push if changed
         working-directory: target

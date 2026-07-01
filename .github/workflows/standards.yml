@@ -14,34 +14,27 @@ on:
   push:
     branches: [main]
 
-# Least-privilege default, consistent with the other workflows in this repo.
-# These reusable checks only read the tree; called workflows that need more
-# declare it on their own jobs (capped by this token).
 permissions:
   contents: read
 
 jobs:
   pnpm:
-    uses: Starisian-Technologies/starisian-technologies-coding-standards/.github/workflows/pnpm-enforcement.yml@main
-    secrets: inherit
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1
     with:
-      mode: development
+      enforcement_mode: advisory
+    secrets: inherit
 
   php:
-    uses: Starisian-Technologies/starisian-technologies-coding-standards/.github/workflows/php-standards.yml@main
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/php-enforcement.yml@v1
     with:
-      phpstan-level: "5"
-
-  js:
-    uses: Starisian-Technologies/starisian-technologies-coding-standards/.github/workflows/js-standards.yml@main
+      repo_type: wp-plugin
+      enforcement_mode: advisory
+    secrets:
+      COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
 
   css:
-    uses: Starisian-Technologies/starisian-technologies-coding-standards/.github/workflows/css-standards.yml@main
-
-  formatting:
-    uses: Starisian-Technologies/starisian-technologies-coding-standards/.github/workflows/formatting.yml@main
-
-  wp-plugin-check:
-    uses: Starisian-Technologies/starisian-technologies-coding-standards/.github/workflows/wp-plugin-check.yml@main
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/css-enforcement.yml@v1
     with:
-      categories: "performance,accessibility,security"
+      repo_type: wp-plugin
+      enforcement_mode: advisory
+    secrets: inherit

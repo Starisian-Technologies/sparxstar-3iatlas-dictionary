@@ -21,7 +21,7 @@
 ## Contracts produced
 
 - `schemas/dictionary-openapi.yaml` — OpenAPI 3.0 contract for the full public REST API at `sparxstar/v1/dictionary`, including both auth schemes (`X-Page-Token`, `X-Api-Key`). This is the canonical machine-readable contract for every downstream 3iAtlas tool.
-- Synced to the platform contracts repo (`Starisian-Technologies/sparxstar-platform-contracts`, path `Contracts/IAMC/Dictionary/`) via `.github/workflows/sync-contracts.yml` on every push to `main` that touches `schemas/`.
+- Synced to the platform contracts repo (`Starisian-Technologies/sparxstar-contracts-registry`, path `Contracts/dictionary/`) via `.github/workflows/sync-contracts.yml` on every push to `main` that touches `schemas/`.
 
 ## Consumed by
 
