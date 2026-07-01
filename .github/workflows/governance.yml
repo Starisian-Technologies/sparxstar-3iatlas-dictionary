@@ -49,9 +49,12 @@ jobs:
 
       - name: Check if spec changed
         id: check
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
         run: |
           cd source
-          CHANGED=$(git diff ${{ github.event.before }} ${{ github.sha }} --name-only -- docs/dictionary-tech-spec.md || echo "")
+          CHANGED=$(git diff "$BEFORE_SHA" "$AFTER_SHA" --name-only -- docs/dictionary-tech-spec.md || echo "")
           if [ -n "$CHANGED" ]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
