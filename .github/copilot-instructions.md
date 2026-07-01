@@ -10,7 +10,7 @@ need an ADR registry read):
 - Product Specs: Starisian-Technologies/sparxstar-product-specification-registry
 - Coding Standards: Starisian-Technologies/starisian-technologies-coding-standards
 - Enforcement Workflows: Starisian-Technologies/sparxstar-code-conformance
-- Contracts: Starisian-Technologies/sparxstar-platform-contracts
+- Contracts: Starisian-Technologies/sparxstar-contracts-registry
 - Claude PR Review: Starisian-Technologies/sparxstar-claude-pr-review
 
 ## Review checklist

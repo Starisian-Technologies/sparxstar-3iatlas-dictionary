@@ -16,7 +16,7 @@ Platform repos (read these for full context when accessible):
 - Specs: https://github.com/Starisian-Technologies/sparxstar-product-specification-registry
 - Standards: https://github.com/Starisian-Technologies/starisian-technologies-coding-standards
 - Enforcement: https://github.com/Starisian-Technologies/sparxstar-code-conformance
-- Contracts: https://github.com/Starisian-Technologies/sparxstar-platform-contracts
+- Contracts: https://github.com/Starisian-Technologies/sparxstar-contracts-registry
 - PR Review: https://github.com/Starisian-Technologies/sparxstar-claude-pr-review
 
 If no spec exists for what you're asked to build, stop implementation and
