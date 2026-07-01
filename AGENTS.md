@@ -1,5 +1,30 @@
 # AGENTS.md — sparxstar-3iatlas-dictionary
 
+## Platform Governance
+
+Read `.github/instructions/governance/` for compiled ADRs, invariants, and
+open questions before building anything. Those files are synced from the
+ADR registry and are read-only — never edit them, never commit local
+changes to them. If the folder is empty or missing, the org governance-sync
+workflow has not run against this repo yet; ask the repo owner to trigger
+it from the ADR registry's Actions tab rather than inventing rules.
+
+See `ROLE.md` for this repo's boundary (what it owns / does not own).
+
+Platform repos (read these for full context when accessible):
+- Decisions: https://github.com/Starisian-Technologies/sparxstar-architecture-governance-registry
+- Specs: https://github.com/Starisian-Technologies/sparxstar-product-specification-registry
+- Standards: https://github.com/Starisian-Technologies/starisian-technologies-coding-standards
+- Enforcement: https://github.com/Starisian-Technologies/sparxstar-code-conformance
+- Contracts: https://github.com/Starisian-Technologies/sparxstar-platform-contracts
+- PR Review: https://github.com/Starisian-Technologies/sparxstar-claude-pr-review
+
+If no spec exists for what you're asked to build, stop implementation and
+draft or request the missing spec first — do not invent product behavior
+in code. This repo's tech spec lives at `docs/dictionary-tech-spec.md`.
+
+---
+
 ## What This Repo Is
 
 This is the authoritative lexical data store and REST API service for the entire 3iAtlas platform. It is a WordPress plugin with a React frontend. Every other 3iAtlas tool (WordPad, RLC, Sound to Symbol, Games) is a consumer of this plugin's REST API. This repo does not consume from them.
@@ -185,10 +210,10 @@ Do not add this field to the SCF JSON. Do not remove it from PostTypes.php.
 | Endpoint | Ephemeral page token | API key | No credential |
 |---|---|---|---|
 | GET `/lookup`, `/search`, `/languages`, `/domains`, `/word-of-day` | ✅ | ✅ | ❌ 401 |
-| POST `/spell` | ✅ | ✅ | ❌ 401 |
+| POST `/spell` | Not required (public) | Not required (public) | ✅ (rate-limited) |
 | GET `/game-set` | ✅ | ✅ | ❌ 401 |
 | GET `/wordlist` | ❌ 403 | ✅ only | ❌ 401 |
-| GET `/page-token` | Public (referer check + rate limit) | | |
+| GET `/page-token` | Not required (public) | Not required (public) | ✅ (referer check + rate limit) |
 | POST `/progress/sync` | **DEPRECATED** — do not touch | | |
 
 Existing per-IP rate limiting (100/15 min) remains as an outer layer on all endpoints.
@@ -222,7 +247,7 @@ Error responses use the same envelope with `success: false`. 429 includes `Retry
 | GET | `/game-set` | Browse or consumer | Curated word set for game use (richer than wordlist) |
 | GET | `/word-of-day` | Browse or consumer | Single deterministic daily entry |
 | GET | `/page-token` | Public (referer + rate limit) | Mint fresh ephemeral token for the React app |
-| POST | `/spell` | Browse or consumer | Spell-checking service for dictionary entries |
+| POST | `/spell` | Public (rate-limited) | Spell-checking service for dictionary entries |
 | POST | `/progress/sync` | **DEPRECATED** — frozen | Do not build clients against this endpoint |
 
 **`/game-set` parameters:** `lang_source` (required), `domain` (optional), `limit` (default 20, max 50), `include_audio` (bool)

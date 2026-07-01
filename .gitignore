@@ -107,3 +107,6 @@ docs/api/
 
 build_test/
 .claude/worktrees/
+
+# Governance: specs pulled from the spec registry at CI time, never committed
+.sparxstar/specs/

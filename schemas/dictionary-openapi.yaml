@@ -1,0 +1,715 @@
+openapi: 3.0.3
+info:
+  title: 3iAtlas Dictionary API
+  description: >
+    Public REST contract for the 3iAtlas Dictionary. This is the authoritative
+    lexical data store and REST API for the 3iAtlas platform — every consumer
+    tool (WordPad, RLC, Sound to Symbol, Games) reads from this API and none
+    write back. See docs/dictionary-tech-spec.md in the source repo for the
+    full role boundary and data model.
+
+    Auth model ("Webster Model"): the website is free to browse; the API
+    requires credentials. Two pre-shared, header-based credential types are
+    supported — there is no OAuth/session flow. `POST /spell` and
+    `GET /page-token` are the only unauthenticated routes; every other
+    endpoint requires one of the two schemes below.
+  version: "1.0.0"
+  contact:
+    name: Starisian Technologies
+    url: https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary
+  license:
+    name: Proprietary
+    url: https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/blob/main/LICENSE.md
+servers:
+  - url: https://{host}/wp-json/sparxstar/v1/dictionary
+    variables:
+      host:
+        default: example.com
+        description: The WordPress site hostname this plugin is installed on.
+
+security:
+  - pageTokenAuth: []
+  - apiKeyAuth: []
+
+tags:
+  - name: browse
+    description: Read endpoints usable with either credential type.
+  - name: consumer
+    description: Endpoints restricted to long-lived consumer API keys.
+  - name: public
+    description: Unauthenticated endpoints (still rate-limited per-IP).
+
+paths:
+  /page-token:
+    get:
+      tags: [public]
+      operationId: mintPageToken
+      summary: Mint an ephemeral page token
+      description: >
+        Public endpoint. Same-origin Referer check (empty Referer is allowed;
+        cross-origin Referer is rejected with 403). Backed by a per-IP rate
+        limit (100 requests / 15 min).
+      security: []
+      responses:
+        '200':
+          description: Token minted.
+          headers:
+            Cache-Control:
+              schema: { type: string, enum: ['no-store'] }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageTokenResponse'
+        '403':
+          description: Cross-origin Referer.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          description: Server misconfigured (SPARXSTAR_DICT_PAGE_SECRET not defined).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /lookup:
+    get:
+      tags: [browse]
+      operationId: lookupEntry
+      summary: Fetch a single dictionary entry
+      description: >
+        At least one of `slug` or `uuid` must be provided (400 if both are
+        omitted). If both are given, `slug` takes precedence and `uuid` is
+        ignored.
+      parameters:
+        - name: slug
+          in: query
+          schema: { type: string }
+        - name: uuid
+          in: query
+          schema: { type: string }
+        - name: include_audio
+          in: query
+          schema: { type: boolean, default: false }
+      responses:
+        '200':
+          description: Entry found.
+          headers:
+            Cache-Control: { schema: { type: string } }
+            X-RateLimit-Remaining: { schema: { type: string } }
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          word: { $ref: '#/components/schemas/DictionaryEntry' }
+        '400':
+          description: Neither slug nor uuid provided.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Entry not found.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /search:
+    get:
+      tags: [browse]
+      operationId: searchEntries
+      summary: Full-text search across dictionary entries
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string, minLength: 2 }
+          description: Search query, minimum 2 characters.
+        - name: lang_source
+          in: query
+          schema: { type: string }
+          description: Language taxonomy slug to filter by.
+        - name: per_page
+          in: query
+          schema: { type: integer, default: 20, minimum: 1, maximum: 100 }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1, minimum: 1 }
+      responses:
+        '200':
+          description: Search results.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          results:
+                            type: array
+                            items: { $ref: '#/components/schemas/SearchResultItem' }
+                      meta: { $ref: '#/components/schemas/PageMeta' }
+        '400':
+          description: q shorter than 2 characters.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /wordlist:
+    get:
+      tags: [consumer]
+      operationId: getWordlist
+      summary: Lightweight bulk word list for offline caching
+      description: Consumer API key only — ephemeral page tokens are rejected with 403.
+      security:
+        - apiKeyAuth: []
+      parameters:
+        - name: lang_source
+          in: query
+          schema: { type: string }
+        - name: per_page
+          in: query
+          schema: { type: integer, default: 1000, minimum: 1, maximum: 2000 }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1, minimum: 1 }
+        - name: include_audio
+          in: query
+          schema: { type: boolean, default: false }
+      responses:
+        '200':
+          description: Word list page.
+          headers:
+            ETag: { schema: { type: string } }
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          words:
+                            type: array
+                            items: { $ref: '#/components/schemas/WordlistItem' }
+                      meta: { $ref: '#/components/schemas/PageMeta' }
+        '304':
+          description: Not modified (If-None-Match matched current ETag).
+          headers:
+            ETag: { schema: { type: string } }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Ephemeral page token presented instead of an API key.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /languages:
+    get:
+      tags: [browse]
+      operationId: listLanguages
+      summary: Language taxonomy terms with entry counts
+      responses:
+        '200':
+          description: Language list. Cached 7 days (taxonomy terms change rarely).
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          languages:
+                            type: array
+                            items: { $ref: '#/components/schemas/TaxonomyTerm' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          description: Taxonomy lookup failed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /domains:
+    get:
+      tags: [browse]
+      operationId: listDomains
+      summary: Domain taxonomy terms with entry counts
+      parameters:
+        - name: lang_source
+          in: query
+          schema: { type: string }
+          description: >
+            When provided, counts are scoped to that language. Every domain
+            always includes a `code` derived from its slug's trailing
+            numeric suffix (empty string if none), regardless of whether
+            this param is set.
+      responses:
+        '200':
+          description: Domain list.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          domains:
+                            type: array
+                            items: { $ref: '#/components/schemas/DomainTerm' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          description: Taxonomy lookup failed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /game-set:
+    get:
+      tags: [browse]
+      operationId: getGameSet
+      summary: Curated, day-deterministic word set for game use
+      description: >
+        Entries missing headword, translation_en, or IPA are excluded. The
+        set is deterministic per calendar day for a given lang_source/domain
+        pair, so responses are cacheable.
+      parameters:
+        - name: lang_source
+          in: query
+          required: true
+          schema: { type: string }
+        - name: domain
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20, minimum: 1, maximum: 50 }
+        - name: include_audio
+          in: query
+          schema: { type: boolean, default: false }
+      responses:
+        '200':
+          description: Game word set.
+          headers:
+            ETag: { schema: { type: string } }
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          words:
+                            type: array
+                            items: { $ref: '#/components/schemas/GameSetWord' }
+                      meta:
+                        type: object
+                        properties:
+                          total: { type: integer }
+                          lang_source: { type: string }
+                          domain: { type: string }
+                          include_audio: { type: boolean }
+        '304':
+          description: Not modified (If-None-Match matched current ETag).
+          headers:
+            ETag: { schema: { type: string } }
+        '400':
+          description: lang_source missing.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /word-of-day:
+    get:
+      tags: [browse]
+      operationId: getWordOfDay
+      summary: Single deterministic daily entry
+      description: Deterministic per UTC calendar day; cached in a transient for 1 hour.
+      responses:
+        '200':
+          description: Today's word.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          word: { $ref: '#/components/schemas/DictionaryEntry' }
+                          date:
+                            type: string
+                            format: date
+                            description: ISO 8601 UTC date this word applies to.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: No dictionary entries exist yet.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /pronounce:
+    get:
+      tags: [browse]
+      operationId: pronounceWord
+      summary: Synthesized pronunciation audio for a headword
+      description: >
+        Server-side TTS (Kasanoma Piper model). Synthesizes once per unique
+        headword; subsequent requests for the same word are served from a
+        file cache. Returns raw audio/wav bytes, not a JSON envelope.
+      parameters:
+        - name: word
+          in: query
+          required: true
+          schema: { type: string, maxLength: 300 }
+      responses:
+        '200':
+          description: Synthesized (or cached) audio.
+          headers:
+            X-TTS-Cache:
+              schema: { type: string, enum: ['HIT', 'MISS'] }
+              description: Whether this response was served from the wav file cache.
+          content:
+            audio/wav:
+              schema: { type: string, format: binary }
+        '400':
+          description: word missing, empty, or exceeds 300 bytes.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          description: >
+            Cache directory could not be created, or the synthesized wav
+            file could not be read back after a successful Piper run
+            (`tts_read_error`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '502':
+          description: >
+            Piper ran but failed: non-zero exit code
+            (`piper_synthesis_failed`) or produced no audio output
+            (`piper_empty_output`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '503':
+          description: >
+            TTS is not configured or unavailable: required wp-config.php
+            constants missing, the Piper binary is missing/not executable,
+            the model (or its .onnx.json config) is missing, or the Piper
+            process could not be started.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /spell:
+    post:
+      tags: [public]
+      operationId: spellCheck
+      summary: Batch spell-check against dictionary headwords
+      description: >
+        Public, unauthenticated, rate-limited (100 requests / 15 min per IP).
+        Exact match determines validity; near-misses return up to 5 fuzzy
+        suggestions. Response includes a legacy top-level `results` key
+        (duplicated into `data.results`) for backward compatibility — new
+        endpoints must not replicate this pattern.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [words]
+              properties:
+                lang:
+                  type: string
+                  description: Optional language taxonomy slug to scope matches.
+                words:
+                  type: array
+                  maxItems: 100
+                  items: { type: string }
+      responses:
+        '200':
+          description: Spell-check results.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  results:
+                    type: array
+                    items: { $ref: '#/components/schemas/SpellCheckResult' }
+                    description: Legacy top-level convenience key, duplicate of data.results.
+                  data:
+                    type: object
+                    properties:
+                      results:
+                        type: array
+                        items: { $ref: '#/components/schemas/SpellCheckResult' }
+                  meta:
+                    type: object
+                    properties:
+                      total: { type: integer }
+                      page: { type: integer }
+                      per_page: { type: integer }
+        '400':
+          description: Invalid JSON payload or empty/invalid words array.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          description: Database unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+components:
+  securitySchemes:
+    pageTokenAuth:
+      type: apiKey
+      in: header
+      name: X-Page-Token
+      description: >
+        Ephemeral HMAC-SHA256 token minted by GET /page-token. TTL 60 minutes,
+        scope `browse`. Format: base64url(JSON {iat,exp,scope}) . '.' .
+        hex(HMAC-SHA256).
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-Api-Key
+      description: >
+        Long-lived consumer API key, issued via
+        `wp sparxstar-dict key generate --label=<name>`. Stored SHA-256
+        hashed at rest. Default daily quota 10,000 requests/key.
+
+  responses:
+    Unauthorized:
+      description: No credential, or an invalid/expired one, was presented.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    RateLimited:
+      description: >
+        Either the per-IP rate limit (100 requests / 15 min, all credential
+        types) or, when authenticated with an API key, the per-key daily
+        quota (default 10,000/day) was exceeded. Distinguish by the error
+        `code`: `rate_limited` (per-IP) vs `quota_exceeded` (per-key daily).
+      headers:
+        Retry-After:
+          schema: { type: string }
+          description: >
+            Seconds until the limit resets: "900" for the per-IP window,
+            "86400" for the per-key daily quota. Do not hardcode 900 —
+            check which error code was returned.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  schemas:
+    SuccessEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data: { type: object }
+        meta: { type: object }
+
+    PageMeta:
+      type: object
+      properties:
+        total: { type: integer }
+        page: { type: integer }
+        per_page: { type: integer }
+
+    ErrorResponse:
+      type: object
+      description: WordPress REST API standard error shape.
+      properties:
+        code: { type: string, example: 'not_found' }
+        message: { type: string }
+        data:
+          type: object
+          properties:
+            status: { type: integer }
+
+    PageTokenResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                token: { type: string }
+                expires_at:
+                  type: integer
+                  description: Unix timestamp.
+
+    ExampleSentence:
+      type: object
+      properties:
+        sentence: { type: string }
+        ipa: { type: string }
+        phonetic: { type: string }
+        translation_en: { type: string }
+        translation_fr: { type: string }
+
+    DictionaryEntry:
+      type: object
+      description: Full entry as returned by /lookup and /word-of-day.
+      properties:
+        uuid: { type: string, description: Minted by DVE; never regenerated by this repo. }
+        headword: { type: string }
+        slug: { type: string }
+        definition: { type: string }
+        translation_en: { type: string }
+        translation_fr: { type: string }
+        ipa: { type: string }
+        phonetic: { type: string }
+        part_of_speech: { type: string }
+        language: { type: string, description: Language taxonomy slug. }
+        domain: { type: string, description: Domain taxonomy name. }
+        origin: { type: string, description: Etymology notes. }
+        synonyms:
+          type: array
+          items: { type: string }
+        antonyms:
+          type: array
+          items: { type: string }
+        example_sentences:
+          type: array
+          items: { $ref: '#/components/schemas/ExampleSentence' }
+        audio_url:
+          type: string
+          nullable: true
+          description: >
+            Present when audio was requested. On /lookup this follows the
+            include_audio query param (default false, so audio_url is
+            omitted unless explicitly requested). /word-of-day has no
+            include_audio param and always includes it (builds the entry
+            with the default include_audio=true).
+
+    SearchResultItem:
+      type: object
+      description: Reduced entry shape returned by /search (no synonyms/antonyms/examples).
+      properties:
+        uuid: { type: string }
+        headword: { type: string }
+        slug: { type: string }
+        definition: { type: string }
+        translation_en: { type: string }
+        ipa: { type: string }
+        language: { type: string }
+
+    WordlistItem:
+      type: object
+      properties:
+        headword: { type: string }
+        slug: { type: string }
+        uuid: { type: string }
+        language: { type: string }
+        audio_url:
+          type: string
+          nullable: true
+
+    GameSetWord:
+      type: object
+      properties:
+        uuid: { type: string }
+        headword: { type: string }
+        ipa: { type: string }
+        phonetic: { type: string }
+        translation_en: { type: string }
+        translation_fr: { type: string }
+        part_of_speech: { type: string }
+        domain: { type: string }
+        language: { type: string }
+        example:
+          type: object
+          nullable: true
+          properties:
+            sentence: { type: string }
+            translation_en: { type: string }
+        audio_url:
+          type: string
+          nullable: true
+
+    TaxonomyTerm:
+      type: object
+      properties:
+        slug: { type: string }
+        name: { type: string }
+        count: { type: integer }
+
+    DomainTerm:
+      allOf:
+        - $ref: '#/components/schemas/TaxonomyTerm'
+        - type: object
+          properties:
+            code:
+              type: string
+              description: >
+                Trailing numeric suffix of the slug (e.g. "food-3.2" -> "3.2").
+                Always present (empty string if the slug has no numeric
+                suffix), regardless of whether lang_source was provided.
+
+    SpellCheckResult:
+      type: object
+      properties:
+        word: { type: string }
+        valid: { type: boolean }
+        suggestions:
+          type: array
+          items: { type: string }
+          maxItems: 5
