@@ -1,0 +1,24 @@
+# Release Please — maintains a standing "Release PR" on main that bumps
+# package.json / the plugin header / CHANGELOG.md from Conventional Commits.
+# Merging that PR creates the vX.Y.Z tag, which triggers release.yml to
+# build and publish the actual plugin ZIP. This workflow never builds or
+# ships anything itself — it only prepares the version bump and changelog.
+
+name: Release Please
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json

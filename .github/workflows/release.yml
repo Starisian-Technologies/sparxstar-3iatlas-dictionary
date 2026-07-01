@@ -30,25 +30,34 @@ jobs:
               id: get_version
               run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
 
-            # Step 4: Update version numbers in all files.
-            - name: Update version numbers
+            # Step 4: Verify the committed version matches the tag.
+            # release-please.yml is the single source of truth for version bumps —
+            # it commits package.json, the plugin header, and CHANGELOG.md to main
+            # *before* this tag ever gets created, then creates the tag itself on
+            # merge. This step only confirms that happened; it must never rewrite
+            # versions again — a prior version of this step silently sed-rewrote
+            # files on every release without committing the change back, which is
+            # exactly how package.json (1.0.5) and the plugin header (0.6.7) drifted
+            # out of sync with each other before this was ever caught.
+            - name: Verify version consistency
               run: |
-                  # Update package.json version
-                  sed -i -E 's/("version":\s*").*(")/\1'${{ env.VERSION }}'\2/' package.json
-                  # Update plugin header version
-                  sed -i -E "s/^(\s*\* Version:\s*).*/\1${{ env.VERSION }}/" sparxstar-3iatlas-dictionary.php
-                  sed -i "s/define( 'SPARX_3IATLAS_VERSION', '[^']*' );/define( 'SPARX_3IATLAS_VERSION', '${{ env.VERSION }}' );/" sparxstar-3iatlas-dictionary.php
-                  # Update @version tags in source PHP files only
-                  find src/ -type f -name "*.php" -print0 | xargs -0 sed -i "s/@version\s\+[0-9.]\+/@version ${{ env.VERSION }}/g"
+                  PKG_VERSION=$(node -p "require('./package.json').version")
+                  PLUGIN_VERSION=$(grep -m1 -oP '^\s*\*\s*Version:\s*\K[0-9]+\.[0-9]+\.[0-9]+' sparxstar-3iatlas-dictionary.php)
+                  CONST_VERSION=$(grep -m1 -oP "define\( 'SPARX_3IATLAS_VERSION', '\K[0-9]+\.[0-9]+\.[0-9]+" sparxstar-3iatlas-dictionary.php)
 
-            # Step 5: Prepare version changes (no commit to protected branch)
-            - name: Prepare version changes for release build
-              run: |
-                  echo "📝 Version changes prepared for release build:"
-                  git diff --stat || echo "No version changes detected"
-                  echo "⚠️  Version changes are applied only to the build artifacts"
-                  echo "🔒 Protected branch prevents automatic version commits"
-                  echo "💡 Consider updating versions manually before tagging releases"
+                  echo "Tag version:          ${{ env.VERSION }}"
+                  echo "package.json:         $PKG_VERSION"
+                  echo "Plugin header:        $PLUGIN_VERSION"
+                  echo "SPARX_3IATLAS_VERSION: $CONST_VERSION"
+
+                  if [ "$PKG_VERSION" != "${{ env.VERSION }}" ] || \
+                     [ "$PLUGIN_VERSION" != "${{ env.VERSION }}" ] || \
+                     [ "$CONST_VERSION" != "${{ env.VERSION }}" ]; then
+                    echo "::error::Version mismatch. Tag v${{ env.VERSION }} does not match the committed"
+                    echo "::error::version in package.json / the plugin header / SPARX_3IATLAS_VERSION."
+                    echo "::error::Cut releases by merging the release-please PR, not by tagging main directly."
+                    exit 1
+                  fi
 
             # Step 6: Verify plugin entrypoint exists.
             - name: Verify plugin entrypoint

@@ -1,0 +1,21 @@
+# Enforces Conventional Commits on PR titles. This repo squash-merges every
+# PR (see git log — no merge commits), so the PR title becomes the commit
+# message release-please.yml parses on main to decide the next version bump.
+# An unconventional title here means a silently-skipped or wrong version bump.
+
+name: PR Title Lint
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  lint-pr-title:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

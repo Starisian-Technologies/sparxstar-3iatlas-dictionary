@@ -74,3 +74,12 @@ profiles
 schemas
 tests
 
+# sparxstar-3iatlas-dictionary-games is a separate npm package
+# (sparxstar-rlc-games, its own repo) vendored here for reference —
+# not part of this plugin's runtime or its webpack build output.
+sparxstar-3iatlas-dictionary-games
+
+# Release tooling config, not plugin runtime
+release-please-config.json
+.release-please-manifest.json
+
