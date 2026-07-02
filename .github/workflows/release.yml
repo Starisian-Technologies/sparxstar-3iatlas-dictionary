@@ -41,7 +41,7 @@ jobs:
             # out of sync with each other before this was ever caught.
             - name: Verify version consistency
               run: |
-                  PKG_VERSION=$(jq -r .version package.json)
+                  PKG_VERSION=$(jq -r '.version' package.json)
                   PLUGIN_VERSION=$(grep -m1 -oP '^\s*\*\s*Version:\s*\K[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?' sparxstar-3iatlas-dictionary.php)
                   CONST_VERSION=$(grep -m1 -oP "define\( 'SPARX_3IATLAS_VERSION', '\K[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?" sparxstar-3iatlas-dictionary.php)
 
