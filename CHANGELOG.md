@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented here.
 
+## [0.7.1](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/compare/v0.7.0...v0.7.1) (2026-07-02)
+
+
+### Bug Fixes
+
+* **release:** clean plugin header markers, switch to expressions updater, use jq for version extraction ([#91](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/issues/91)) ([594e752](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/commit/594e7528f415a2466ceb298dc7cc5f2df9601555))
+
 ## [0.7.0](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/compare/v0.6.7...v0.7.0) (2026-07-01)
 
 
