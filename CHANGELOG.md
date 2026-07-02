@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented here.
 
+## [0.7.2](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/compare/v0.7.1...v0.7.2) (2026-07-02)
+
+
+### Bug Fixes
+
+* remove stray backslash from GraphQL endpoint slug ([#94](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/issues/94)) ([94392ab](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/commit/94392abe685b7e5b01a1ddeb5ae9a0d7c14b837b))
+
 ## [0.7.1](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/compare/v0.7.0...v0.7.1) (2026-07-02)
 
 
