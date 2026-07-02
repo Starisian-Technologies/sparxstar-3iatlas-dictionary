@@ -45,7 +45,7 @@ if ( ! defined( 'SPARX_3IATLAS_NAMESPACE' ) ) {
     define( 'SPARX_3IATLAS_NAMESPACE', 'Starisian\\Sparxstar\\IAtlas\\' );
 }
 if ( ! defined( 'SPARX_3IATLAS_GRAPHQL_SLUG' ) ) {
-    define( 'SPARX_3IATLAS_GRAPHQL_SLUG', '\graphql' );
+    define( 'SPARX_3IATLAS_GRAPHQL_SLUG', 'graphql' );
 }
 if ( ! defined( 'SPARX_3IATLAS_GOOGLE_FONTS_URL' ) ) {
     // Inter — wide African-language coverage; system fonts are the fallback/swap. Single source of truth.
