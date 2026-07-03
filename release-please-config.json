@@ -10,11 +10,7 @@
       "extra-files": [
         {
           "type": "generic",
-          "path": "sparxstar-3iatlas-dictionary.php",
-          "expressions": [
-            "Version:\\s*([0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?)",
-            "define\\(\\s*'SPARX_3IATLAS_VERSION',\\s*'([0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?)'\\s*\\);"
-          ]
+          "path": "sparxstar-3iatlas-dictionary.php"
         }
       ]
     }
