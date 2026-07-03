@@ -3,12 +3,22 @@ name: Release Code Quality Final Review
 on:
     push:
         tags: ['v*']
+    # Manual escape hatch: release-please tags/releases are created with the
+    # default GITHUB_TOKEN, which GitHub Actions does not allow to trigger
+    # other workflow runs. Dispatch this manually against the affected tag
+    # (e.g. "v2.8.10") when a release-please release publishes without a ZIP.
+    workflow_dispatch:
 
 permissions:
     contents: write
 
 jobs:
     build-and-release:
+        # Guards against an accidental workflow_dispatch on a branch (GitHub's
+        # dispatch UI defaults to the default branch) — without this, VERSION
+        # extraction below would silently produce a non-version string and
+        # fail confusingly deep in the job instead of skipping cleanly here.
+        if: startsWith(github.ref, 'refs/tags/v')
         runs-on: ubuntu-latest
 
         steps:
