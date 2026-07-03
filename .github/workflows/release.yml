@@ -27,18 +27,41 @@ jobs:
         # input (or one that isn't a "v*" tag) — without this, VERSION
         # extraction below would silently produce a non-version string and
         # fail confusingly deep in the job instead of skipping cleanly here.
-        if: github.event_name == 'push' || startsWith(inputs.tag, 'v')
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && startsWith(inputs.tag, 'v'))
         runs-on: ubuntu-latest
 
         steps:
+            # Step 0: Validate the tag input strictly before it touches any
+            # shell command or the checkout ref below. workflow_dispatch input
+            # is attacker-controllable by anyone with dispatch access; passing
+            # it through env: (rather than splicing ${{ inputs.tag }} directly
+            # into a run: body) keeps the shell from ever re-parsing it, and
+            # this allowlist regex additionally rejects anything that isn't a
+            # clean semver tag before it can reach later steps at all.
+            # (CWE-78 command injection / CWE-610 externally-controlled ref.)
+            - name: Validate tag input
+              if: github.event_name == 'workflow_dispatch'
+              env:
+                  TAG_INPUT: ${{ inputs.tag }}
+              run: |
+                  if ! [[ "$TAG_INPUT" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+                    echo "::error::Invalid tag input '$TAG_INPUT' — must be a semver tag like v2.8.10."
+                    exit 1
+                  fi
+
             # Step 1: Check out the repository's code at the release tag —
             # explicit even on the push-tag trigger, and required on
             # workflow_dispatch since that event's own ref is whatever branch
             # it was run from (not the tag), and the tag is what must be built.
+            # Safe to reference inputs.tag directly here: the step above has
+            # already rejected anything that isn't a clean v-prefixed semver.
+            # Fully qualified as refs/tags/<tag> (rather than the bare name)
+            # so checkout can't ambiguously resolve to a same-named branch,
+            # and fails outright if that tag doesn't actually exist.
             - name: Checkout
               uses: actions/checkout@v4
               with:
-                  ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+                  ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag) || github.ref }}
                   fetch-depth: 0
 
             # Step 2: Set up Git for local operations only
@@ -48,13 +71,16 @@ jobs:
                   git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
                   echo "🔧 Git configured for local operations (no push to protected branch)"
 
-            # Step 3: Get the version number from the tag.
+            # Step 3: Get the version number from the tag. TAG_INPUT flows
+            # through env: rather than ${{ }} inside the script body, so the
+            # shell only ever sees it as inert data, not re-parsed syntax.
             - name: Get the version from the tag
               id: get_version
+              env:
+                  TAG_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
               run: |
-                  TAG="${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}"
-                  echo "TAG=$TAG" >> $GITHUB_ENV
-                  echo "VERSION=${TAG#v}" >> $GITHUB_ENV
+                  echo "TAG=$TAG_INPUT" >> $GITHUB_ENV
+                  echo "VERSION=${TAG_INPUT#v}" >> $GITHUB_ENV
 
             # Step 4: Verify the committed version matches the tag.
             # release-please.yml is the single source of truth for version bumps —
