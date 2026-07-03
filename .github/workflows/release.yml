@@ -3,6 +3,11 @@ name: Release Code Quality Final Review
 on:
     push:
         tags: ['v*']
+    # Manual escape hatch: release-please tags/releases are created with the
+    # default GITHUB_TOKEN, which GitHub Actions does not allow to trigger
+    # other workflow runs. Dispatch this manually against the affected tag
+    # (e.g. "v2.8.10") when a release-please release publishes without a ZIP.
+    workflow_dispatch:
 
 permissions:
     contents: write
