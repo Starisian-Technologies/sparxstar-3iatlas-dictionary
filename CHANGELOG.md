@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented here.
 
+## [2.8.10](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/compare/v2.8.9...v2.8.10) (2026-07-03)
+
+
+### Bug Fixes
+
+* **release:** automate version bumps/changelog with release-please; fix ZIP and version-drift bugs ([#89](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/issues/89)) ([7e51a1a](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/commit/7e51a1ad4d403bf74b8da5ad197097e80532c4f6))
+* **release:** clean plugin header markers, switch to expressions updater, use jq for version extraction ([#91](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/issues/91)) ([594e752](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/commit/594e7528f415a2466ceb298dc7cc5f2df9601555))
+* **release:** restore x-release-please-version annotations release-please actually needs ([#98](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/issues/98)) ([2e9a6d6](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/commit/2e9a6d6c1291895c761770374b9c3e4890a8a327))
+* remove stray backslash from GraphQL endpoint slug ([#94](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/issues/94)) ([94392ab](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/commit/94392abe685b7e5b01a1ddeb5ae9a0d7c14b837b))
+
 ## [0.7.1](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/compare/v0.7.0...v0.7.1) (2026-07-02)
 
 
