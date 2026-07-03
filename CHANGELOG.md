@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented here.
 
+## [2.8.11](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/compare/v2.8.10...v2.8.11) (2026-07-03)
+
+
+### Bug Fixes
+
+* **release:** add workflow_dispatch escape hatch to release.yml ([#99](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/issues/99)) ([d16b6ae](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/commit/d16b6aea49e5c6893374d5d2f43e1e964b930687))
+* **release:** let workflow_dispatch rebuild an existing tag by name ([#101](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/issues/101)) ([4518251](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/commit/4518251c8a6d1aaa826ec4f87d3ac2005c724470))
+
 ## [2.8.10](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/compare/v2.8.9...v2.8.10) (2026-07-03)
 
 
