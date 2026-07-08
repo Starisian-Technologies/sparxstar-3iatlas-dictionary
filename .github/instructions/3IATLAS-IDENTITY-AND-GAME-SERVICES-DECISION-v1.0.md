@@ -8,6 +8,11 @@
 **Supersedes:** Scoped amendments only, listed in §6. Everything else in prior documents remains in force.
 **Replaces:** DICTIONARY-DELTA-OQ-G5.md draft (June 2026, never committed) — its content is incorporated here.
 
+> **Record-of-decision document — retained in place; two factual errors corrected in situ
+> below (§3, §5, §6), 2026-07-08.** For the current, verified technical detail (actual
+> `/progress/sync` wire schema, REST API surface) in the dictionary repo, see
+> `docs/dictionary-tech-spec.md` in `sparxstar-3iatlas-dictionary`.
+
 ---
 
 ## 1. Decision — One Login for the Entire 3iAtlas Suite
@@ -45,7 +50,7 @@ Properties carried over unchanged from WordPad v4.0: JWT-based, no WordPress log
 The Node + Express engine built for RLC is promoted from "RLC's backend" to the **3iAtlas Game Service**: sessions, progress, XP, rewards signals, and gameplay-accuracy signal aggregation for every game in the suite.
 
 - RLC is its first client. The Dictionary's six games are its second.
-- The Dictionary games are not rebuilt. Only the client `syncNow()` changes: it POSTs the existing frozen event schema — `word_uuid`, `game_type`, `outcome`, `attempts`, `xp`, `timestamp`, production-vs-recognition flag (per dictionary PR #59 Fix 2) — to the Game Service instead of WordPress. The IndexedDB outbox and idempotency behavior carry over unchanged.
+- The Dictionary games are not rebuilt. Only the client `syncNow()` changes: it will POST to the Game Service instead of WordPress. **Correction (2026-07-08):** this section previously described the payload as an "existing frozen event schema — `word_uuid`, `game_type`, `outcome`, `attempts`, `xp`, `timestamp`, production-vs-recognition flag (per dictionary PR #59 Fix 2)". That citation was checked directly against dictionary PR #59 and found to be fabricated — the PR contains no schema definition or "Fix 2" content; its actual content is the `sessionRef` stale-closure fix in `useGameSession.js`. The verified, currently-shipped wire shape is `{ type, word_uuid?, game?, domain?, ts }` (see `docs/dictionary-tech-spec.md` in the dictionary repo, § "Game integration"). `outcome`/`attempts`/`xp` are local-only fields in a different object and never leave the client today. Whether the Game Service intake needs a richer wire-visible schema is undecided and belongs to `GAME-SERVICE-INTAKE-SPEC-v1.0` (§8). The IndexedDB outbox and idempotency behavior carry over unchanged regardless of that open decision.
 - The Game Service is the single emitter of myCred reward signals (fire-and-forget) and the single aggregator forwarding gameplay-accuracy signal onward to Esu. One rewarder, one quality pipe.
 - Game Service auth: suite JWT from the Identity Service (§2). Classroom sessions use the Lower Basic flow — teacher's account opens the session, students tap their names.
 
@@ -59,14 +64,14 @@ Unauthenticated visitors can play Dictionary games. Guest progress is device-loc
 |---|---|
 | OQ-G5 (sync destination, opened informally June 2026) | Closed — destination is the 3iAtlas Game Service, suite-JWT authenticated |
 | Game-player identity question | Closed — suite tiers + guest mode (§1, §4) |
-| OQ-G1 (recorded closed May 2026: WP nonce auth for /progress/sync) | Decision remains historically valid for the WordPress endpoint; the endpoint itself is retired (§6) |
+| ~~OQ-G1~~ (recorded closed May 2026: WP nonce auth for /progress/sync) | **Correction (2026-07-08):** "OQ-G1" was redefined and reused for two different questions across the dictionary repo's own document history — the original (`dictionary-game-spec-v1.md`, May 2026) asked about **Helios-token-source** for `/progress/sync`; this row instead closes a *different* question ("WP nonce auth for /progress/sync") that was substituted later, on a citation (§6 item 2, below) that is itself fabricated. Disambiguated: (a) the WP nonce/session auth approach for the deprecated `/progress/sync` endpoint is resolved/stable — that endpoint is retired (§6); (b) how an anonymous/guest game client obtains a token to sync to the Game Service with no WordPress session and no Helios identity remains genuinely open and is not closed by this document. See `docs/dictionary-tech-spec.md` in the dictionary repo for the full disambiguation. Do not cite "OQ-G1" for either question going forward. |
 
 ## 6. Scoped Supersessions
 
 Per the suite convention, each supersession is explicit and limited:
 
 1. **WordPad v4.0 §3.1** ("Own JWT auth — signed with WORDPAD_JWT_SECRET, no external issuer"): amended. Standalone-mode issuer is the bundled 3iAtlas Identity Service. All other WordPad v4.0 content, including every non-negotiable in §23, remains in force.
-2. **GH-ISSUE-dictionary-PR59-fixes.md Fix 1** (WP nonce auth for `/progress/sync`): the decision is not reversed; the WordPress `/progress/sync` route is **retired**. Mark deprecated in the Dictionary plugin; remove after the Game Service intake is live. No client may be built against it.
+2. **WP nonce auth for `/progress/sync`** (previously cited here as "GH-ISSUE-dictionary-PR59-fixes.md Fix 1" — **correction, 2026-07-08: that file does not exist anywhere in the dictionary repo; confirmed by a repo-wide search. There is no GitHub Issue backing this decision — it was pure markdown-table bookkeeping, and the citation should never have been treated as an authoritative source.** The substantive decision itself is not reversed by this correction): the WordPress `/progress/sync` route is **retired**. Mark deprecated in the Dictionary plugin; remove after the Game Service intake is live. No client may be built against it.
 3. **3IATLAS-SUITE-ARCHITECTURE-v1.0 auth model** ("Progress endpoints require Helios Bearer token"): amended. Progress goes to the Game Service under suite JWT (standalone) or Helios (platform). The Suite Architecture's read-endpoint model is unchanged.
 
 ## 7. Open Questions and Closed Sub-Decisions
@@ -93,7 +98,7 @@ Still open:
 
 ## 9. AGENTS.md Updates Required
 
-- **Dictionary repo:** OQ-G1 closed (historical), /progress/sync deprecated, sync target = Game Service, OQ-G5 closed per this document.
+- **Dictionary repo:** ~~OQ-G1 closed (historical)~~ — retired as a citation, 2026-07-08 (see §5, §6 corrections above); /progress/sync deprecated, sync target = Game Service, OQ-G5 closed per this document.
 - **WordPad repo:** note §3.1 amendment per this document.
 - **RLC repo:** engine is the suite Game Service; Dictionary games are a client.
 

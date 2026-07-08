@@ -7,6 +7,12 @@
 **Date:** May 2026  
 **Depends on:** `DICTIONARY-DIRECTION-v3.md`, `3IATLAS-SUITE-ARCHITECTURE-v1.0.md`
 
+> **Record-of-decision document — retained for historical/original-intent value.** For the
+> current, verified technical detail (actual `/progress/sync` wire schema, REST API surface,
+> auth model), see `docs/dictionary-tech-spec.md`. That document also disambiguates OQ-G1,
+> which this spec originally defined (§11) before later governance docs redefined it — see the
+> status note on OQ-G1 below.
+
 ---
 
 ## 1. Design Mandate
@@ -370,7 +376,7 @@ The following endpoints must exist in `Sparxstar3IAtlasDictionary.php` before an
 
 | ID | Question | Blocking |
 |---|---|---|
-| OQ-G1 | Helios auth — how does the Dictionary app obtain a Helios Bearer token for `/progress/sync`? Is there a login flow in the Dictionary frontend, or does it piggyback WordPress session? | Progress sync / MyCred |
+| OQ-G1 | Helios auth — how does the Dictionary app obtain a Helios Bearer token for `/progress/sync`? Is there a login flow in the Dictionary frontend, or does it piggyback WordPress session? **Status note (2026-07-08): this is the original definition of "OQ-G1." Later governance docs (`AGENTS.md`, `.github/copilot-instructions.md`) redefined "OQ-G1" to mean a different question (WP nonce auth) and closed it under that redefinition, on a citation that was itself found to be fabricated. This original question — how does an anonymous/guest game client obtain a sync token with no WordPress session and no Helios identity — remains genuinely open and is not resolved by that later closure. See `docs/dictionary-tech-spec.md` § "OQ-G1 — retired as a citation" (tracked there as `OQ-013`) for the full disambiguation. Treat this row, not the later redefinition, as the live open question.** | Progress sync / MyCred |
 | OQ-G2 | Adjacent domain pre-fetch map — which domains are "adjacent" to each other for background caching? Depends on 7-week curriculum document. | Offline pre-fetch |
 | OQ-G3 | Animation asset for Letter Reveal game — what culturally appropriate visual replaces the cat/shark mechanic from the CodePen reference? | Letter Reveal polish |
 | OQ-G4 | Domain Flash self-report — does "I knew it" result sync to server as `aiwa_game_word_correct` or as a separate hook? | MyCred hook map |
