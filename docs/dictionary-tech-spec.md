@@ -116,6 +116,48 @@ follow the WordPress REST standard `{ "code", "message", "data": { "status" } }`
 clients — see `Sparxstar3IAtlasDictionarySpellChecker.php`. New endpoints
 must not add similar legacy top-level keys; use the standard envelope only.
 
+### `POST /spell` — corpus-wide validity, language-preference ranking (spec delta, 2026-07-08)
+
+- **Request:** `{ lang_source: string, words: string[] }` (up to 100 words/request).
+- **Validity is a union across the entire multilingual corpus.** A word is
+  reported valid if it exists in **any** language the dictionary holds — the
+  exact-match lookup (`find_exact_word_post()`) no longer joins against
+  `starmus_tax_language` at all.
+- **`lang_source` is a ranking signal only, never a filter.** It affects
+  suggestion order exclusively: at equal edit distance, a candidate whose
+  `starmus_tax_language` matches `lang_source` sorts ahead of one that
+  doesn't. **State this explicitly here because the field name reads like a
+  scope** — a future change reintroducing it as a query filter reverses a
+  deliberate decision and must be raised as a new one, not treated as a bug
+  fix.
+- **Suggestion candidates are corpus-wide too**, sourced from WordPress's
+  native `s` search (a `FUZZY_CANDIDATE_POOL = 40`-result candidate pool),
+  then re-ranked by real edit distance (`utf8_levenshtein()` — a UTF-8/
+  code-point-safe implementation; PHP's built-in `levenshtein()` is byte-wise
+  and miscounts diacritics such as Yorùbá's). This bounds per-request cost
+  regardless of corpus size, at the cost of recall being limited to whatever
+  WP's `s` search surfaces as a candidate at all — an accepted v1 trade-off
+  for a small, limited-release corpus, not a precomputed index. Consistent
+  with this repo's stated direction of not over-investing in new storage
+  layers ahead of the Eshu MCP/Dheghom migration (see Architecture, above):
+  this uses no new database table.
+- **Response per word:** `{ word, valid, language, suggestions }`, where
+  `language` is the source-language slug of the matched entry (empty string
+  if invalid), and each suggestion is `{ word, language, distance,
+  frequency }`. `frequency` is a **reserved, always-null** field for a future
+  corpus-frequency tie-break — no frequency logic exists yet. Suggestion
+  count remains capped at 5.
+- **Found-and-fixed:** `handle_spell()` previously read the request body's
+  language field as `lang`, while every client and this spec documented
+  `lang_source`. That mismatch meant the `$lang` value was always empty
+  string in production — language scoping had silently never engaged.
+  Fixed to read `lang_source`, now repurposed as the ranking-only signal
+  described above.
+- **Unaffected:** `/spell`'s auth (`public, rate-limited`), the legacy
+  top-level `results` duplication, and every other endpoint's language
+  filtering (`/search`, `/wordlist`, `/game-set`, etc. still filter by
+  `lang_source` as before — this change is scoped to `/spell` only).
+
 ## Seams
 
 - **DVE → Dictionary**: WP-CLI batch import only (`wp aiwa-dictionary import`). No live connection.
@@ -166,4 +208,11 @@ in sync.
 
 ## Changelog
 
+- 2026-07-08 — `POST /spell` changed from language-filtered to corpus-wide
+  union validity; `lang_source` repurposed as a ranking-only signal (see
+  "`POST /spell` — corpus-wide validity..." above). Response gained
+  `language` (per matched word and per suggestion) and a reserved,
+  always-null `frequency` field. Found-and-fixed: the request body's
+  language field was read under the wrong key (`lang` instead of
+  `lang_source`), so scoping had silently never engaged in production.
 - 0.1.0 (2026-06-30) — Initial draft, bootstrapped from `AGENTS.md` and `.github/copilot-instructions.md` for platform governance setup.

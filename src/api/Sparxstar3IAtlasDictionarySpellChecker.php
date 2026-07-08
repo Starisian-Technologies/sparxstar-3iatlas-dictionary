@@ -5,6 +5,24 @@ declare(strict_types=1);
 /**
  * Batch spell checker for the 3iAtlas Dictionary.
  *
+ * Validity is a union across the ENTIRE multilingual corpus — a word is valid
+ * if it exists in ANY language the dictionary holds, not just the caller's
+ * declared/primary language. `lang_source` is a RANKING SIGNAL ONLY: at equal
+ * edit distance, suggestions in the caller's declared language are ranked
+ * ahead of suggestions from other languages. It must never be reintroduced as
+ * a validity filter or a query scope on this endpoint — doing so is a product
+ * decision that needs to be made explicitly again, not silently reverted to.
+ *
+ * Suggestion-only: this endpoint never autocorrects. It returns ranked
+ * candidates, each carrying its source language as metadata; the caller
+ * decides what (if anything) to do with them.
+ *
+ * Found-and-fixed (this pass): the request body field was previously read as
+ * `lang`, while every client and the documented contract used `lang_source` —
+ * meaning language scoping silently never engaged in production (the value
+ * was always empty string). Fixed to read `lang_source`, now repurposed as
+ * described above.
+ *
  * @package Starisian\Sparxstar\IAtlas\api
  * @license Starisian Technologies Proprietary License (STPL)
  */
@@ -25,6 +43,14 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
     private const CPT = 'aiwa-cpt-dictionary';
     /** Hard cap for words validated per request. */
     private const MAX_WORDS = 100;
+    /** Max fuzzy suggestions returned per invalid word. */
+    private const MAX_SUGGESTIONS = 5;
+    /**
+     * Candidate pool size pulled from WordPress's native search before
+     * edit-distance re-ranking. Kept cheap on purpose: candidate recall is
+     * bounded by whatever `s` surfaces as a match at all, not by corpus size.
+     */
+    private const FUZZY_CANDIDATE_POOL = 40;
     /** Public request budget per rate-limit window. */
     private const RATE_LIMIT = 100;
     /** Rate-limit window size in seconds (15 minutes). */
@@ -53,7 +79,8 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
     }
 
     /**
-     * Validate a word list and provide exact-match validity plus suggestions.
+     * Validate a word list and provide corpus-wide validity plus ranked,
+     * language-tagged suggestions.
      */
     public function handle_spell( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
         // TODO: Replace with Helios token introspection when available.
@@ -86,8 +113,11 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
             return new \WP_Error( 'invalid_payload', 'Invalid JSON payload.', array( 'status' => 400 ) );
         }
 
-        $lang  = sanitize_text_field( (string) ( $body['lang'] ?? '' ) );
-        $words = $body['words'] ?? null;
+        // `lang_source` is a ranking signal only — see class docblock. It is
+        // NEVER used to filter/scope which entries are considered valid or
+        // which candidates are eligible as suggestions.
+        $lang_source = sanitize_text_field( (string) ( $body['lang_source'] ?? '' ) );
+        $words       = $body['words'] ?? null;
 
         if ( ! is_array( $words ) || empty( $words ) ) {
             return new \WP_Error( 'invalid_payload', 'words must be a non-empty array.', array( 'status' => 400 ) );
@@ -113,43 +143,16 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
             }
 
             if ( ! isset( $checked_words[ $word ] ) ) {
-                $exact = $this->find_exact_word_post( $word, $lang );
-                $valid = $exact instanceof \WP_Post;
+                // Exact match is corpus-wide — no language filter. See class docblock.
+                $exact    = $this->find_exact_word_post( $word );
+                $valid    = $exact instanceof \WP_Post;
+                $language = $valid ? $this->language_slug_for_post( $exact->ID ) : '';
 
-                if ( $valid && '' !== $lang ) {
-                    $lang_terms = wp_get_object_terms( $exact->ID, 'starmus_tax_language', array( 'fields' => 'slugs' ) );
-                    $valid      = ! is_wp_error( $lang_terms ) && in_array( $lang, $lang_terms, true );
-                }
-
-                $suggestions = array();
-
-                if ( ! $valid ) {
-                    $fuzzy_args = array(
-                        'post_type'      => self::CPT,
-                        'post_status'    => 'publish',
-                        'posts_per_page' => 5,
-                        's'              => $word,
-                    );
-
-                    if ( '' !== $lang ) {
-                        $fuzzy_args['tax_query'] = array(
-                            array(
-                                'taxonomy' => 'starmus_tax_language',
-                                'field'    => 'slug',
-                                'terms'    => $lang,
-                            ),
-                        );
-                    }
-
-                    $fuzzy       = get_posts( $fuzzy_args );
-                    $suggestions = array_map(
-                        static fn( \WP_Post $post ): string => $post->post_title,
-                        $fuzzy
-                    );
-                }
+                $suggestions = $valid ? array() : $this->find_fuzzy_suggestions( $word, $lang_source );
 
                 $checked_words[ $word ] = array(
                     'valid'       => $valid,
+                    'language'    => $language,
                     'suggestions' => $suggestions,
                 );
             }
@@ -157,6 +160,7 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
             $results[] = array(
                 'word'        => $word,
                 'valid'       => $checked_words[ $word ]['valid'],
+                'language'    => $checked_words[ $word ]['language'],
                 'suggestions' => $checked_words[ $word ]['suggestions'],
             );
         }
@@ -179,48 +183,25 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
     }
 
     /**
-     * Find a single published dictionary post that exactly matches a word.
+     * Find a single published dictionary post that exactly matches a word,
+     * regardless of language. Validity is a corpus-wide union — see class
+     * docblock. Do not reintroduce a taxonomy filter here.
      */
-    private function find_exact_word_post( string $word, string $lang ): ?\WP_Post {
+    private function find_exact_word_post( string $word ): ?\WP_Post {
         global $wpdb;
 
-        if ( '' === $lang ) {
-            $query = $wpdb->prepare(
-                "SELECT ID
-                FROM {$wpdb->posts}
-                WHERE post_type = %s
-                    AND post_status = %s
-                    AND post_title = %s
-                ORDER BY ID ASC
-                LIMIT 1",
-                self::CPT,
-                'publish',
-                $word
-            );
-        } else {
-            $query = $wpdb->prepare(
-                "SELECT posts.ID
-                FROM {$wpdb->posts} posts
-                INNER JOIN {$wpdb->term_relationships} term_relationships
-                    ON posts.ID = term_relationships.object_id
-                INNER JOIN {$wpdb->term_taxonomy} term_taxonomy
-                    ON term_relationships.term_taxonomy_id = term_taxonomy.term_taxonomy_id
-                INNER JOIN {$wpdb->terms} terms
-                    ON term_taxonomy.term_id = terms.term_id
-                WHERE posts.post_type = %s
-                    AND posts.post_status = %s
-                    AND posts.post_title = %s
-                    AND term_taxonomy.taxonomy = %s
-                    AND terms.slug = %s
-                ORDER BY posts.ID ASC
-                LIMIT 1",
-                self::CPT,
-                'publish',
-                $word,
-                'starmus_tax_language',
-                $lang
-            );
-        }
+        $query = $wpdb->prepare(
+            "SELECT ID
+            FROM {$wpdb->posts}
+            WHERE post_type = %s
+                AND post_status = %s
+                AND post_title = %s
+            ORDER BY ID ASC
+            LIMIT 1",
+            self::CPT,
+            'publish',
+            $word
+        );
 
         $post_id = (int) $wpdb->get_var( $query );
         if ( $post_id <= 0 ) {
@@ -229,5 +210,147 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
 
         $post = get_post( $post_id );
         return $post instanceof \WP_Post ? $post : null;
+    }
+
+    /**
+     * Resolve the source-language slug for a single dictionary post, for
+     * attaching as metadata on a matched word or a suggestion candidate.
+     */
+    private function language_slug_for_post( int $post_id ): string {
+        $lang_terms = wp_get_object_terms( $post_id, 'starmus_tax_language', array( 'fields' => 'slugs' ) );
+        return ( ! is_wp_error( $lang_terms ) && ! empty( $lang_terms ) ) ? (string) $lang_terms[0] : '';
+    }
+
+    /**
+     * Find and rank fuzzy suggestions for a misspelled word across the full
+     * multilingual corpus.
+     *
+     * Candidate generation stays cheap regardless of corpus size: WordPress's
+     * native `s` search narrows the corpus to self::FUZZY_CANDIDATE_POOL
+     * likely matches (no language filter), and those candidates are then
+     * re-ranked by real edit distance. Recall is bounded by whatever WP's
+     * search surfaces as a candidate at all — this is a deliberate v1
+     * trade-off for a small, limited-release corpus, not a precomputed
+     * full-corpus index.
+     *
+     * Ranking: edit distance ascending, then — at equal distance — candidates
+     * whose language matches `$lang_source` sort first (ranking tie-break
+     * only, never a filter), then post ID ascending for determinism.
+     *
+     * @return array<int, array{word:string,language:string,distance:int,frequency:null}>
+     */
+    private function find_fuzzy_suggestions( string $word, string $lang_source ): array {
+        $fuzzy = get_posts(
+            array(
+                'post_type'      => self::CPT,
+                'post_status'    => 'publish',
+                'posts_per_page' => self::FUZZY_CANDIDATE_POOL,
+                's'              => $word,
+            )
+        );
+
+        if ( empty( $fuzzy ) ) {
+            return array();
+        }
+
+        $post_ids = wp_list_pluck( $fuzzy, 'ID' );
+        $lang_map = array();
+
+        $terms = wp_get_object_terms( $post_ids, 'starmus_tax_language', array( 'fields' => 'all_with_object_id' ) );
+        if ( ! is_wp_error( $terms ) && is_array( $terms ) ) {
+            foreach ( $terms as $term ) {
+                if ( ! isset( $term->object_id, $term->slug ) ) {
+                    continue;
+                }
+                $object_id = (int) $term->object_id;
+                if ( ! isset( $lang_map[ $object_id ] ) ) {
+                    $lang_map[ $object_id ] = (string) $term->slug;
+                }
+            }
+        }
+
+        $needle     = mb_strtolower( $word, 'UTF-8' );
+        $candidates = array();
+
+        foreach ( $fuzzy as $post ) {
+            if ( ! $post instanceof \WP_Post ) {
+                continue;
+            }
+
+            $candidates[] = array(
+                'word'      => $post->post_title,
+                'language'  => $lang_map[ $post->ID ] ?? '',
+                'distance'  => self::utf8_levenshtein( $needle, mb_strtolower( $post->post_title, 'UTF-8' ) ),
+                'frequency' => null,
+                'post_id'   => $post->ID,
+            );
+        }
+
+        usort(
+            $candidates,
+            static function ( array $a, array $b ) use ( $lang_source ): int {
+                if ( $a['distance'] !== $b['distance'] ) {
+                    return $a['distance'] <=> $b['distance'];
+                }
+
+                $a_is_primary = ( '' !== $lang_source && $lang_source === $a['language'] ) ? 0 : 1;
+                $b_is_primary = ( '' !== $lang_source && $lang_source === $b['language'] ) ? 0 : 1;
+                if ( $a_is_primary !== $b_is_primary ) {
+                    return $a_is_primary <=> $b_is_primary;
+                }
+
+                return $a['post_id'] <=> $b['post_id'];
+            }
+        );
+
+        $top = array_slice( $candidates, 0, self::MAX_SUGGESTIONS );
+
+        return array_map(
+            static function ( array $candidate ): array {
+                unset( $candidate['post_id'] );
+                return $candidate;
+            },
+            $top
+        );
+    }
+
+    /**
+     * UTF-8-safe Levenshtein edit distance.
+     *
+     * PHP's built-in levenshtein() operates byte-wise and is explicitly
+     * documented as not binary/multi-byte safe — it would miscount any
+     * multi-byte character (e.g. Yorùbá's diacritics) as multiple edits.
+     * That is unacceptable for a multilingual corpus, so distance is computed
+     * here over an array of Unicode code points instead of raw bytes.
+     */
+    private static function utf8_levenshtein( string $a, string $b ): int {
+        $a_chars = mb_str_split( $a, 1, 'UTF-8' );
+        $b_chars = mb_str_split( $b, 1, 'UTF-8' );
+        $a_len   = count( $a_chars );
+        $b_len   = count( $b_chars );
+
+        if ( 0 === $a_len ) {
+            return $b_len;
+        }
+        if ( 0 === $b_len ) {
+            return $a_len;
+        }
+
+        $previous_row = range( 0, $b_len );
+
+        for ( $i = 0; $i < $a_len; $i++ ) {
+            $current_row = array( $i + 1 );
+
+            for ( $j = 0; $j < $b_len; $j++ ) {
+                $insert_cost   = $current_row[ $j ] + 1;
+                $delete_cost   = $previous_row[ $j + 1 ] + 1;
+                $replace_cost  = $previous_row[ $j ] + ( $a_chars[ $i ] === $b_chars[ $j ] ? 0 : 1 );
+                $current_row[] = min( $insert_cost, $delete_cost, $replace_cost );
+            }
+
+            $previous_row = $current_row;
+        }
+
+        return $previous_row[ $b_len ];
     }
 }
