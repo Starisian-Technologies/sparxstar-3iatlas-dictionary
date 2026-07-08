@@ -100,8 +100,8 @@ Literary/Technical/Specialist (C1–C2).
 `field_696e6b18c17f4`) is registered programmatically in
 `src/includes/Sparxstar3IAtlasPostTypes.php` as a sub-field of the example
 sentences repeater. It is intentionally absent from the SCF JSON import file.
-`PostTypes.php` is authoritative — do not add this field to the SCF JSON, do
-not remove it from `PostTypes.php`.
+`Sparxstar3IAtlasPostTypes.php` is authoritative — do not add this field to the SCF JSON, do
+not remove it from `Sparxstar3IAtlasPostTypes.php`.
 
 Game mechanics data (scores, session state, learned-word records) lives
 entirely client-side today, in IndexedDB (`aiwa-games-db`, stores
@@ -200,17 +200,30 @@ directly against `src/js/games/GameShell.jsx`'s `addEvent()` call sites,
 `src/js/hooks/useProgressSync.js`'s `addEvent()` implementation (which appends
 `ts: Date.now()`), and `handle_progress_sync()` in `Sparxstar3IAtlasDictionaryRestApi.php`
 (which reads `$event['type']`, `$event['word_uuid']`, `$event['game']`, `$event['domain']`,
-`$event['ts']`) — is, per event:
+`$event['ts']`) — varies by event type. **No single emitted event carries both `game` and
+`domain`** — each event type has its own fixed field set:
 
 ```json
-{ "type": "aiwa_game_word_correct", "word_uuid": "...", "game": "listen_write", "domain": "agriculture-6.2", "ts": 1720000000000 }
+{ "type": "aiwa_game_word_correct", "word_uuid": "...", "game": "meaning_match", "ts": 1720000000000 }
+{ "type": "aiwa_game_listen_write_correct", "word_uuid": "...", "game": "listen_write", "ts": 1720000000000 }
+{ "type": "aiwa_game_session_complete", "domain": "agriculture-6.2", "ts": 1720000000000 }
 ```
+
+`aiwa_game_new_word_practiced` (`{ type, word_uuid, ts }`), and `aiwa_game_streak_3` /
+`aiwa_game_return_visit` (both `{ type, ts }` only — no `word_uuid`/`game`/`domain`) round out
+six of the seven hook types actually emitted from `GameShell.jsx` today. The seventh,
+`aiwa_game_domain_mastered`, is handled in `handle_progress_sync()`'s switch statement
+(`do_action( 'aiwa_game_domain_mastered', $user_id, $domain )`, reading `domain` the same way
+`aiwa_game_session_complete` does) but has no current `addEvent()` call site in
+`GameShell.jsx` — see `OQ-008`.
 
 - `type` (required) — one of the seven `aiwa_game_*` hook names (see MyCred hook map
   below). `handle_progress_sync()` rejects unknown types.
-- `word_uuid` (optional — present on word-level events)
-- `game` (optional — present on some word-level events, e.g. `listen_write`)
-- `domain` (optional — present on session-complete events)
+- `word_uuid` (optional — present on `aiwa_game_word_correct`, `aiwa_game_listen_write_correct`,
+  and `aiwa_game_new_word_practiced`)
+- `game` (optional — present only on `aiwa_game_word_correct` and
+  `aiwa_game_listen_write_correct`; never co-occurs with `domain`)
+- `domain` (optional — present only on `aiwa_game_session_complete`; never co-occurs with `game`)
 - `ts` (always present) — appended by `useProgressSync.js`'s `addEvent()` as `Date.now()`,
   never supplied by the caller
 

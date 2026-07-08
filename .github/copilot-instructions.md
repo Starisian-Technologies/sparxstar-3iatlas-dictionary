@@ -134,8 +134,11 @@ between two copies. Rules to remember without opening the other file:
 - **Auth model (Webster Model, June 2026):** the website is free to use; the API requires
   credentials — ephemeral page token (`X-Page-Token`, 60 min TTL, `browse` scope) or consumer
   API key (`X-Api-Key`, long-lived, SHA-256 hashed at rest, 10k req/day). Per-IP rate limit
-  (100/15 min) applies to all endpoints as an outer layer. **Every new endpoint must declare
-  its auth row in the tech spec's auth table before implementation.**
+  (100/15 min) applies to all endpoints as an outer layer, **except `GET /pronounce`
+  (`Sparxstar3IAtlasDictionaryTts`)** — it does not use `Sparxstar3IAtlasRateLimitTrait` and has
+  no rate limit of its own today (see `docs/dictionary-tech-spec.md` OQ-010 — a real
+  resource-exhaustion gap, not just a documentation inconsistency). **Every new endpoint must
+  declare its auth row in the tech spec's auth table before implementation.**
 - `POST /progress/sync` is **DEPRECATED and frozen** — do not build against it.
 - `GET /wordlist` is consumer-API-key only.
 - **Auth doorway:** `src/api/auth/DictionaryAuthInterface.php`. When `sparxstar-identity`
@@ -154,7 +157,7 @@ src/js/hooks/
   idbUtils.js            — shared IndexedDB helper (openDB, getRecord, putRecord, getAllRecords, deleteRecord)
   useGameSet.js          — /game-set fetch + 3-day IndexedDB TTL cache; cache key includes includeAudio flag
   useGameSession.js      — session state, learned-word tracking, sessionRef pattern
-  useProgressSync.js     — IndexedDB outbox for progress events (syncNow is no-op — see OQ-013 (formerly cited as OQ-G1))
+  useProgressSync.js     — IndexedDB outbox for progress events (syncNow is no-op — see OQ-002, blocked on GAME-SERVICE-INTAKE-SPEC-v1.0; related sub-question OQ-013 covers the anonymous/guest token source specifically)
 src/js/games/
   GameShell.jsx          — top-level game orchestrator, phase state machine
   AccessoryBar.jsx       — special character input bar (ŋ ɓ ɗ ñ ɲ ʔ á é í ó ú) — always present for typed input
@@ -197,7 +200,7 @@ when absent, hooks are no-ops. Seven hooks exist: `aiwa_game_word_correct`,
 **Full ACF field/taxonomy reference (canonical): `docs/dictionary-tech-spec.md` § "Data model".**
 
 **SCF discrepancy — do not sync:**
-`aiwa_sentence_ipa` (key: `field_696e6b18c17f4`) is registered programmatically in `PostTypes.php` as a sub-field of the example sentences repeater. It is intentionally absent from the SCF JSON. `PostTypes.php` is authoritative. Do not add it to the SCF JSON. Do not remove it from `PostTypes.php`.
+`aiwa_sentence_ipa` (key: `field_696e6b18c17f4`) is registered programmatically in `src/includes/Sparxstar3IAtlasPostTypes.php` as a sub-field of the example sentences repeater. It is intentionally absent from the SCF JSON. `Sparxstar3IAtlasPostTypes.php` is authoritative. Do not add it to the SCF JSON. Do not remove it from `Sparxstar3IAtlasPostTypes.php`.
 
 **Field prefix rule for game data:**
 Game mechanics data (scores, session state, learned-word records) must never use `aiwa_` or `sparxstar_` prefixes. Use `game_` for persistent game user meta, `_spx_` for session-scoped data.

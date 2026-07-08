@@ -141,17 +141,17 @@ between two copies. What to remember without opening the other file:
 `starmus_tax_alpha`, `aiwa_domain` (hierarchical), `aiwa_speaker_community` (Speaker Community
 Layer — see Language Model section above), `starmus_part_of_speech`.
 
-- `aiwa_sentence_ipa` (key: `field_696e6b18c17f4`) — registered in PostTypes.php but absent from SCF JSON. **PostTypes.php is authoritative. Do not add this field to the SCF JSON.**
+- `aiwa_sentence_ipa` (key: `field_696e6b18c17f4`) — registered in `Sparxstar3IAtlasPostTypes.php` but absent from SCF JSON. **Sparxstar3IAtlasPostTypes.php is authoritative. Do not add this field to the SCF JSON.**
 
 ---
 
 ## SCF DISCREPANCY — DO NOT SYNC
 
 `aiwa_sentence_ipa` (key: `field_696e6b18c17f4`) is registered programmatically
-in `PostTypes.php` as a sub-field of the example sentences repeater.
+in `src/includes/Sparxstar3IAtlasPostTypes.php` as a sub-field of the example sentences repeater.
 It is intentionally absent from the SCF JSON import file.
-PostTypes.php is authoritative for ACF field registration.
-Do not add this field to the SCF JSON. Do not remove it from PostTypes.php.
+Sparxstar3IAtlasPostTypes.php is authoritative for ACF field registration.
+Do not add this field to the SCF JSON. Do not remove it from Sparxstar3IAtlasPostTypes.php.
 
 ---
 
@@ -256,7 +256,7 @@ src/
       idbUtils.js                           ← Phase 4: shared IndexedDB helper
       useGameSet.js                         ← Phase 4: /game-set fetch + IndexedDB TTL cache
       useGameSession.js                     ← Phase 4: session state + sessionRef pattern
-      useProgressSync.js                    ← Phase 4: IndexedDB outbox (syncNow no-op — see OQ-013 (formerly cited as OQ-G1))
+      useProgressSync.js                    ← Phase 4: IndexedDB outbox (syncNow no-op — see OQ-002, blocked on GAME-SERVICE-INTAKE-SPEC-v1.0; related sub-question OQ-013 covers the anonymous/guest token source specifically)
     games/
       GameShell.jsx                         ← Phase 4: game orchestrator + phase state machine
       AccessoryBar.jsx                      ← Phase 4: Mandinka character input bar
@@ -409,7 +409,7 @@ Specification: `.github/instructions/dictionary-game-spec-v1.md`
 src/js/hooks/idbUtils.js           — shared IndexedDB helper (openDB, getRecord, putRecord, getAllRecords, deleteRecord)
 src/js/hooks/useGameSet.js         — /game-set fetch + 3-day IndexedDB TTL cache
 src/js/hooks/useGameSession.js     — session state (currentIndex, results, xpEarned, checkpoint resume) + `sessionRef` mirror pattern to prevent stale-session writes during rapid actions
-src/js/hooks/useProgressSync.js    — event outbox (IndexedDB); network sync intentionally a no-op pending OQ-013 resolution (formerly cited as OQ-G1)
+src/js/hooks/useProgressSync.js    — event outbox (IndexedDB); network sync intentionally a no-op pending OQ-002 resolution (GAME-SERVICE-INTAKE-SPEC-v1.0); related sub-question OQ-013 covers the anonymous/guest token source specifically
 src/js/games/AccessoryBar.jsx      — Mandinka character bar (ŋ ɓ ɗ ñ ɲ ʔ á é í ó ú), visualViewport positioning
 src/js/games/SessionComplete.jsx   — post-session summary (stats, cumulative word count, action buttons)
 src/js/games/GameShell.jsx         — session setup (domain/game/word-count selectors), game router, phase management
@@ -514,7 +514,7 @@ Key files added:
 - `src/js/games/games/*.jsx` — individual game components
 - `src/js/hooks/useGameSet.js` — IndexedDB-backed game set cache
 - `src/js/hooks/useGameSession.js` — session tracking with sessionRef pattern
-- `src/js/hooks/useProgressSync.js` — IndexedDB outbox (syncNow is intentional no-op — see OQ-013 (formerly cited as OQ-G1))
+- `src/js/hooks/useProgressSync.js` — IndexedDB outbox (syncNow is intentional no-op — see OQ-002, blocked on GAME-SERVICE-INTAKE-SPEC-v1.0; related sub-question OQ-013 covers the anonymous/guest token source specifically)
 
 **sessionRef pattern:** `recordResult` and `completeSession` in `useGameSession.js` use `sessionRef.current` to avoid stale React closure bugs. Do not remove this pattern.
 
