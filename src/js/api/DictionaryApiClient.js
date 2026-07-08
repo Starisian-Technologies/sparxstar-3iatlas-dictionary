@@ -250,14 +250,19 @@ export function createDictionaryApiClient(config) {
         /**
          * POST /spell
          *
+         * Validity is corpus-wide (union across every language the dictionary
+         * holds). `lang_source` is a RANKING SIGNAL ONLY — it breaks
+         * suggestion-ranking ties toward this language at equal edit distance,
+         * it does not filter which words/candidates are considered.
+         *
          * QUIRK: results appear at both response.data.results (canonical) and
          * response.results (legacy top-level). Always read from response.data.results.
          *
          * @param {import('./dictionary-api').SpellParams} params
          * @returns {Promise<import('./dictionary-api').SpellResponse>}
          */
-        async spell({ words }) {
-            return /** @type {any} */ (post('/spell', { words }));
+        async spell({ lang_source, words }) {
+            return /** @type {any} */ (post('/spell', { lang_source, words }));
         },
 
         /**
