@@ -85,10 +85,30 @@ export interface DomainTerm {
 /** A word in a game set. Same shape as DictionaryEntry. */
 export type GameWord = DictionaryEntry;
 
+/**
+ * A single ranked spelling suggestion, carrying its source language as
+ * metadata (informational — never a filter; suggestions are drawn from the
+ * whole multilingual corpus). `frequency` is reserved for a future
+ * corpus-frequency tie-break; the server always sends `null` today.
+ */
+export interface SpellSuggestion {
+    word: string;
+    /** `starmus_tax_language` taxonomy slug this suggestion comes from (empty string if unknown). */
+    language: string;
+    /** Edit distance from the checked word. Primary ranking key. */
+    distance: number;
+    /** Reserved for a future frequency-based tie-break. Always null today. */
+    frequency: number | null;
+}
+
 export interface SpellResult {
     word: string;
+    /** True if `word` exists verbatim in ANY language the dictionary holds — corpus-wide union, not scoped to `lang_source`. */
     valid: boolean;
-    suggestions: string[];
+    /** Source language slug of the matched entry when `valid`; empty string otherwise. */
+    language: string;
+    /** Ranked candidates (edit distance ascending, ties broken toward `lang_source`). Suggestion-only — never applied automatically. */
+    suggestions: SpellSuggestion[];
 }
 
 export interface PageTokenData {
@@ -232,6 +252,13 @@ export interface GameSetParams {
 }
 
 export interface SpellParams {
+    /**
+     * `starmus_tax_language` taxonomy slug. RANKING SIGNAL ONLY — never a
+     * filter. Validity is a union across the entire multilingual corpus; this
+     * only breaks suggestion-ranking ties toward this language at equal edit
+     * distance. Do not reintroduce this as a query scope/filter.
+     */
+    lang_source: string;
     words: string[];
 }
 

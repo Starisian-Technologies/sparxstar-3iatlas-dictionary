@@ -217,8 +217,15 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
      * attaching as metadata on a matched word or a suggestion candidate.
      */
     private function language_slug_for_post( int $post_id ): string {
-        $lang_terms = wp_get_object_terms( $post_id, 'starmus_tax_language', array( 'fields' => 'slugs' ) );
-        return ( ! is_wp_error( $lang_terms ) && ! empty( $lang_terms ) ) ? (string) $lang_terms[0] : '';
+        // get_the_terms() (unlike wp_get_object_terms()) is backed by WordPress's
+        // object cache — this is called once per uniquely-valid word in a request
+        // (up to MAX_WORDS), so caching avoids up to 100 uncached direct queries.
+        $lang_terms = get_the_terms( $post_id, 'starmus_tax_language' );
+        if ( is_wp_error( $lang_terms ) || empty( $lang_terms ) ) {
+            return '';
+        }
+        $first_term = reset( $lang_terms );
+        return $first_term instanceof \WP_Term ? $first_term->slug : '';
     }
 
     /**
@@ -240,6 +247,15 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
      * @return array<int, array{word:string,language:string,distance:int,frequency:null}>
      */
     private function find_fuzzy_suggestions( string $word, string $lang_source ): array {
+        // Length guard: a 1-character `s` search degrades to a near-universal
+        // `LIKE '%x%'` match (DB load), and Levenshtein is O(n*m) — an
+        // unbounded-length word is a CPU-exhaustion vector. Neither case
+        // yields a useful suggestion anyway, so skip both cheaply.
+        $length = mb_strlen( $word, 'UTF-8' );
+        if ( $length < 2 || $length > 50 ) {
+            return array();
+        }
+
         $fuzzy = get_posts(
             array(
                 'post_type'      => self::CPT,
@@ -324,6 +340,10 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
      * here over an array of Unicode code points instead of raw bytes.
      */
     private static function utf8_levenshtein( string $a, string $b ): int {
+        if ( $a === $b ) {
+            return 0;
+        }
+
         $a_chars = mb_str_split( $a, 1, 'UTF-8' );
         $b_chars = mb_str_split( $b, 1, 'UTF-8' );
         $a_len   = count( $a_chars );
