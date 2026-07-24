@@ -85,11 +85,11 @@ see `OQ-011` below for enforcement status):
 | `aiwa_phonetic` | Phonetic pronunciation in plain text |
 | `aiwa_phonetic_variants` | ACF relationship — alternate phonetic-variant entries |
 | `aiwa_part_of_speech` | Select: noun/verb/adjective/adverb/pronoun/preposition/conjunction/interjection/article/determiner (distinct from the `starmus_part_of_speech` taxonomy above) |
-| `aiwa_audio_file` | Approved audio asset URL |
-| `aiwa_word_photo` | Image URL |
+| `aiwa_audio_file` | Approved audio asset URL (ACF `file` field, `return_format: url`) |
+| `aiwa_word_photo` | Image **attachment ID**, not a URL (ACF `image` field, `return_format: id` — resolve to a URL if needed) |
 | `aiwa_origin` | Origin and cultural notes |
 | `aiwa_synonyms` / `aiwa_antonyms` | ACF relationship — intra-language synonym/antonym entries |
-| `aiwa_example_sentences` | Repeater: sentence, IPA, phonetic, EN translation, FR translation |
+| `aiwa_example_sentences` | Repeater: sentence, phonetic, EN translation, FR translation. **No IPA sub-field** — `aiwa_sentence_ipa` is registered separately in PHP and is not part of this repeater's exported sub_fields (see the SCF discrepancy note below). |
 | `aiwa_search_string_english` / `aiwa_search_string_french` | Precomputed search-normalized text |
 | `aiwa_qc_status` | Select: pending / verified / needs_fix |
 | `aiwa_qc_notes` | Internal QC notes (textarea) |
