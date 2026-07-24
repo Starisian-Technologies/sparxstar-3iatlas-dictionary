@@ -157,7 +157,7 @@ src/js/hooks/
   idbUtils.js            — shared IndexedDB helper (openDB, getRecord, putRecord, getAllRecords, deleteRecord)
   useGameSet.js          — /game-set fetch + 3-day IndexedDB TTL cache; cache key includes includeAudio flag
   useGameSession.js      — session state, learned-word tracking, sessionRef pattern
-  useProgressSync.js     — IndexedDB outbox for progress events (syncNow is no-op — see OQ-002, blocked on GAME-SERVICE-INTAKE-SPEC-v1.0; related sub-question OQ-013 covers the anonymous/guest token source specifically)
+  useProgressSync.js     — IndexedDB outbox for progress events (syncNow is no-op — see OQ-002 in docs/dictionary-tech-spec.md § Open Questions, blocked on GAME-SERVICE-INTAKE-SPEC-v1.0; related sub-question OQ-013 covers the anonymous/guest token source specifically)
 src/js/games/
   GameShell.jsx          — top-level game orchestrator, phase state machine
   AccessoryBar.jsx       — special character input bar (ŋ ɓ ɗ ñ ɲ ʔ á é í ó ú) — always present for typed input
@@ -260,5 +260,5 @@ The dependency direction is: DVE → export → 3iAtlas dictionary → RLC. The 
 - Create a custom database table
 - Hardcode language names anywhere in the React app
 - Use `aiwa_` or `sparxstar_` prefixes for game session or score data
-- Implement `syncNow()` without a spec decision (see OQ-002, blocked on `GAME-SERVICE-INTAKE-SPEC-v1.0`; OQ-013 is the related guest token-source sub-question)
+- Implement `syncNow()` without a spec decision (see OQ-002 in `docs/dictionary-tech-spec.md` § Open Questions, blocked on `GAME-SERVICE-INTAKE-SPEC-v1.0`; OQ-013 is the related guest token-source sub-question)
 - Remove or replace Helios TODO stubs with a different auth model without a platform decision

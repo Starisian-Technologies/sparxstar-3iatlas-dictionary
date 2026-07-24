@@ -239,7 +239,10 @@ six of the seven hook types actually emitted from `GameShell.jsx` today. The sev
 `GameShell.jsx` — see `OQ-014`.
 
 - `type` (required) — one of the seven `aiwa_game_*` hook names (see MyCred hook map
-  below). `handle_progress_sync()` rejects unknown types.
+  below). An unknown type is not a request-level rejection: `handle_progress_sync()`'s
+  switch `default` case increments a `failed` counter and continues to the next event
+  in the batch (`++$failed; continue 2;`); the response is still `200` with
+  `success: true` and the `failed`/`duplicates` counts in `data`.
 - `word_uuid` (optional — present on `aiwa_game_word_correct`, `aiwa_game_listen_write_correct`,
   and `aiwa_game_new_word_practiced`)
 - `game` (optional — present only on `aiwa_game_word_correct` and
