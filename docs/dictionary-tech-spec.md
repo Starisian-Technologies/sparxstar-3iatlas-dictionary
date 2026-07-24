@@ -236,7 +236,7 @@ six of the seven hook types actually emitted from `GameShell.jsx` today. The sev
 `aiwa_game_domain_mastered`, is handled in `handle_progress_sync()`'s switch statement
 (`do_action( 'aiwa_game_domain_mastered', $user_id, $domain )`, reading `domain` the same way
 `aiwa_game_session_complete` does) but has no current `addEvent()` call site in
-`GameShell.jsx` — see `OQ-008`.
+`GameShell.jsx` — see `OQ-014`.
 
 - `type` (required) — one of the seven `aiwa_game_*` hook names (see MyCred hook map
   below). `handle_progress_sync()` rejects unknown types.
@@ -391,6 +391,11 @@ in sync.
   `outcome`/`attempts`/`xp`/a game-type/production-recognition field need to become
   wire-visible, beyond the `{ type, word_uuid?, game?, domain?, ts }` shape that ships today)
   is undecided — see "Game integration" above. Belongs to `GAME-SERVICE-INTAKE-SPEC-v1.0`.
+- `OQ-014` — `aiwa_game_domain_mastered` is handled in `handle_progress_sync()`'s switch
+  statement (`do_action( 'aiwa_game_domain_mastered', $user_id, $domain )`) but has no
+  current `addEvent()` call site anywhere in `GameShell.jsx` — confirm whether this is
+  planned-but-unwired (needs a call site added) or dead code (needs removal from the
+  switch and the MyCred hook map).
 - `OQ-013` (retires citations to "OQ-G1") — Anonymous/guest game-client token source for
   syncing to the future 3iAtlas Game Service is unresolved (see "OQ-G1 — retired as a
   citation" above). Blocked on `GAME-SERVICE-INTAKE-SPEC-v1.0`. The old WordPress
