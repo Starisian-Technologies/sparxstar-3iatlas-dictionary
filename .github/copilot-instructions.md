@@ -260,5 +260,5 @@ The dependency direction is: DVE → export → 3iAtlas dictionary → RLC. The 
 - Create a custom database table
 - Hardcode language names anywhere in the React app
 - Use `aiwa_` or `sparxstar_` prefixes for game session or score data
-- Implement `syncNow()` without a spec decision (see OQ-013, formerly cited as OQ-G1)
+- Implement `syncNow()` without a spec decision (see OQ-002, blocked on `GAME-SERVICE-INTAKE-SPEC-v1.0`; OQ-013 is the related guest token-source sub-question)
 - Remove or replace Helios TODO stubs with a different auth model without a platform decision
