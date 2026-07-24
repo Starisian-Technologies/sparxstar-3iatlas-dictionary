@@ -80,7 +80,7 @@ Every other 3iAtlas tool (WordPad, RLC, Sound to Symbol) is a consumer of this p
 | ID | Status | Question | Blocking |
 |---|---|---|---|
 | OQ-V1 | ⏸ Open | AIWA logo asset path and tagline copy for the desktop sidebar footer | Sidebar footer final content |
-| OQ-G1 | ✅ Closed | WP nonce auth for `/progress/sync` — endpoint retired per identity decision §6.2 | — |
+| ~~OQ-G1~~ | Retired label — corrected 2026-07-08 | This ID was redefined and reused for two different questions across this repo's own document history (original: Helios-token-source for `/progress/sync`; later: WP nonce auth, closed on a fabricated citation). Do not cite "OQ-G1" going forward — see `docs/dictionary-tech-spec.md` § "OQ-G1 — retired as a citation" for the disambiguated facts, tracked as `OQ-013`. | — |
 | OQ-G3 | ⏸ Open | Letter Reveal animation — pottery vessel emoji (🏺) is a placeholder; replace with AIWA-approved cultural visual | Letter Reveal polish |
 | OQ-G4 | ⏸ Open | DomainFlash "I knew it" — fires `aiwa_game_word_correct`; confirm if a separate hook is needed | myCred hook map |
 | OQ-G5 | ✅ Closed | Sync destination = 3iAtlas Game Service, suite-JWT authenticated | — |
@@ -92,7 +92,7 @@ Every other 3iAtlas tool (WordPad, RLC, Sound to Symbol) is a consumer of this p
 ## Known Intentional Gaps — Do Not Fix These Without a Spec
 
 **`useProgressSync.syncNow()` is a no-op — do not implement until `GAME-SERVICE-INTAKE-SPEC-v1.0` lands**
-OQ-G1 is closed: sync destination is the 3iAtlas Game Service (RLC Node engine), authenticated by suite JWT from `sparxstar-identity`. The IndexedDB outbox and event schema are frozen. `syncNow()` must not POST to the deprecated WordPress `/progress/sync` endpoint. Implement only when `GAME-SERVICE-INTAKE-SPEC-v1.0` is committed to `.github/instructions/`.
+Sync destination is decided: the 3iAtlas Game Service (RLC Node engine), authenticated by suite JWT from `sparxstar-identity`. The IndexedDB outbox behavior is stable and carries over unchanged. **Correction (2026-07-08):** this section previously said "OQ-G1 is closed" and "the event schema [is] frozen" — both were inaccurate. "OQ-G1" is a retired/ambiguous citation (see Open Questions above); the anonymous/guest client token-source question it originally named is still open (`OQ-013`). The event schema is not frozen as a richer contract — the verified, currently-shipped wire shape is `{ type, word_uuid?, game?, domain?, ts }` (see `docs/dictionary-tech-spec.md` § "Game integration"). `syncNow()` must not POST to the deprecated WordPress `/progress/sync` endpoint. Implement only when `GAME-SERVICE-INTAKE-SPEC-v1.0` is committed to `.github/instructions/`.
 
 **`POST /progress/sync` is deprecated**
 The WordPress route is frozen and scheduled for removal after the Game Service intake is live. Its `@deprecated` docblock is in the source. Never extend it. Never build a client against it.
@@ -127,55 +127,25 @@ These appear across `src/api/` (RestApi, SpellChecker, RateLimitTrait). They are
 
 **Base namespace:** `sparxstar/v1/dictionary`
 
-**Auth model — Webster Model (June 2026):**
-The website is free to use; the API requires credentials. Two credential types:
-- **Ephemeral page token** (`X-Page-Token` header) — minted server-side on page render, TTL 60 min, scope `browse`. Frontend auto-refreshes via `GET /page-token` on 401.
-- **Consumer API key** (`X-Api-Key` header) — long-lived, SHA-256 hashed at rest, 10k req/day. Issued via `wp sparxstar-dict key generate --label=<name>`.
+**Full endpoint table, auth-row table, and caching rules (canonical): `docs/dictionary-tech-spec.md` § "API surface".**
+This section previously duplicated that content in full; trimmed 2026-07-08 to avoid drift
+between two copies. Rules to remember without opening the other file:
 
-Per-IP rate limit (100/15 min) applies to all endpoints as an outer layer.
-
-**Rule: every new endpoint must declare its auth row in the table before implementation.**
-
-| Endpoint | Page token | API key | None |
-|---|---|---|---|
-| GET `/lookup`, `/search`, `/languages`, `/domains`, `/word-of-day`, `/game-set` | ✅ | ✅ | ❌ 401 |
-| POST `/spell` | Public (rate-limited, no credentials required) | | |
-| GET `/wordlist` | ❌ 403 | ✅ only | ❌ 401 |
-| GET `/page-token` | Public (referer check + rate limit) | | |
-| POST `/progress/sync` | **DEPRECATED** — do not build against | | |
-
-**Auth doorway:** `src/api/auth/DictionaryAuthInterface.php`. When `sparxstar-identity` ships, its RS256 JWT verifier becomes a third implementation — no endpoint changes.
-
-**Response envelope (all endpoints):**
-```json
-{ "success": true, "data": {}, "meta": { "total": 0, "page": 1, "per_page": 20 } }
-```
-Error responses use the WordPress REST API standard: `{ "code": "...", "message": "...", "data": { "status": 4xx } }`. 429 responses additionally include a `Retry-After: 86400` header.
-
-**Endpoints:**
-
-| Method | Path | Purpose |
-|---|---|---|
-| GET | `/lookup` | Full entry by slug or UUID |
-| GET | `/search` | Search by query string |
-| GET | `/wordlist` | Lightweight list for offline caching — consumer API key only |
-| GET | `/languages` | Language taxonomy terms with counts |
-| GET | `/domains` | Domain taxonomy terms with counts |
-| GET | `/game-set` | Curated word set for game use |
-| GET | `/word-of-day` | Single deterministic daily entry |
-| GET | `/page-token` | Mint fresh ephemeral token for the React app |
-| POST | `/spell` | Spell-check against dictionary entries |
-| POST | `/progress/sync` | **DEPRECATED** — frozen, removal pending Game Service |
-
-**`/game-set` rules:**
-- Parameters: `lang_source` (required), `domain` (optional), `limit` (default 20, max 50), `include_audio` (bool)
-- Exclude entries missing headword, translation_en, or IPA — all three required for games
-- `ORDER BY RAND()` is acceptable temporarily; replace before large production datasets
-
-**Caching headers:**
-- All GET responses: `Cache-Control: public` with a TTL — most endpoints use `max-age=3600`; `/languages` uses `max-age=604800` (taxonomy terms change rarely)
-- `/wordlist` and `/game-set`: ETag support for conditional requests (304 responses)
-- `/word-of-day`: include `date` field (ISO 8601) so clients detect staleness
+- **Auth model (Webster Model, June 2026):** the website is free to use; the API requires
+  credentials — ephemeral page token (`X-Page-Token`, 60 min TTL, `browse` scope) or consumer
+  API key (`X-Api-Key`, long-lived, SHA-256 hashed at rest, 10k req/day). Per-IP rate limit
+  (100/15 min) applies to all endpoints as an outer layer, **except `GET /pronounce`
+  (`Sparxstar3IAtlasDictionaryTts`)** — it does not use `Sparxstar3IAtlasRateLimitTrait` and has
+  no rate limit of its own today (see `docs/dictionary-tech-spec.md` OQ-010 — a real
+  resource-exhaustion gap, not just a documentation inconsistency). **Every new endpoint must
+  declare its auth row in the tech spec's auth table before implementation.**
+- `POST /progress/sync` is **DEPRECATED and frozen** — do not build against it.
+- `GET /wordlist` is consumer-API-key only.
+- **Auth doorway:** `src/api/auth/DictionaryAuthInterface.php`. When `sparxstar-identity`
+  ships, its RS256 JWT verifier becomes a third implementation — no endpoint changes.
+- **`/game-set` rules:** exclude entries missing headword, translation_en, or IPA — all three
+  required for games. `ORDER BY RAND()` is acceptable temporarily; replace before large
+  production datasets.
 
 ---
 
@@ -187,7 +157,7 @@ src/js/hooks/
   idbUtils.js            — shared IndexedDB helper (openDB, getRecord, putRecord, getAllRecords, deleteRecord)
   useGameSet.js          — /game-set fetch + 3-day IndexedDB TTL cache; cache key includes includeAudio flag
   useGameSession.js      — session state, learned-word tracking, sessionRef pattern
-  useProgressSync.js     — IndexedDB outbox for progress events (syncNow is no-op — OQ-G1)
+  useProgressSync.js     — IndexedDB outbox for progress events (syncNow is no-op — see OQ-002 in docs/dictionary-tech-spec.md § Open Questions, blocked on GAME-SERVICE-INTAKE-SPEC-v1.0; related sub-question OQ-013 covers the anonymous/guest token source specifically)
 src/js/games/
   GameShell.jsx          — top-level game orchestrator, phase state machine
   AccessoryBar.jsx       — special character input bar (ŋ ɓ ɗ ñ ɲ ʔ á é í ó ú) — always present for typed input
@@ -215,17 +185,11 @@ src/js/games/
 
 ## MyCred Gamification Hooks
 
-Fire these on `/progress/sync` events. myCred listens; when absent, hooks are no-ops.
-
-```php
-do_action('aiwa_game_word_correct',       $user_id, $word_uuid, $game_type); // +5 XP
-do_action('aiwa_game_listen_write_correct', $user_id, $word_uuid);            // +10 XP
-do_action('aiwa_game_session_complete',   $user_id, $domain_slug);            // +25 XP
-do_action('aiwa_game_domain_mastered',    $user_id, $domain_slug);            // +50 Gold
-do_action('aiwa_game_streak_3',           $user_id);                          // +15 XP
-do_action('aiwa_game_new_word_practiced', $user_id, $word_uuid);              // +8 XP
-do_action('aiwa_game_return_visit',       $user_id);                          // +10 XP
-```
+**Full hook map (canonical): `docs/dictionary-tech-spec.md` § "MyCred hook map".**
+Fired server-side from `handle_progress_sync()` on `/progress/sync` events. myCred listens;
+when absent, hooks are no-ops. Seven hooks exist: `aiwa_game_word_correct`,
+`aiwa_game_listen_write_correct`, `aiwa_game_session_complete`, `aiwa_game_domain_mastered`,
+`aiwa_game_streak_3`, `aiwa_game_new_word_practiced`, `aiwa_game_return_visit`.
 
 ---
 
@@ -233,19 +197,10 @@ do_action('aiwa_game_return_visit',       $user_id);                          //
 
 **CPT:** `aiwa-cpt-dictionary` — never change this slug.
 
-**Key ACF fields:**
-- `aiwa_extract` — definition text
-- `aiwa_translation_english` / `aiwa_translation_french`
-- `aiwa_ipa_pronunciation` — IPA pronunciation
-- `aiwa_phonetic` — phonetic pronunciation
-- `aiwa_audio_file` — audio URL
-- `aiwa_word_photo` — image URL
-- `aiwa_origin` — etymology notes
-- `aiwa_synonyms` / `aiwa_antonyms` — related word relationships
-- `aiwa_example_sentences` — repeater: sentence, IPA, phonetic, EN/FR translation
+**Full ACF field/taxonomy reference (canonical): `docs/dictionary-tech-spec.md` § "Data model".**
 
 **SCF discrepancy — do not sync:**
-`aiwa_sentence_ipa` (key: `field_696e6b18c17f4`) is registered programmatically in `PostTypes.php` as a sub-field of the example sentences repeater. It is intentionally absent from the SCF JSON. `PostTypes.php` is authoritative. Do not add it to the SCF JSON. Do not remove it from `PostTypes.php`.
+`aiwa_sentence_ipa` (key: `field_696e6b18c17f4`) is registered programmatically in `src/includes/Sparxstar3IAtlasPostTypes.php` as a sub-field of the example sentences repeater. It is intentionally absent from the SCF JSON. `Sparxstar3IAtlasPostTypes.php` is authoritative. Do not add it to the SCF JSON. Do not remove it from `Sparxstar3IAtlasPostTypes.php`.
 
 **Field prefix rule for game data:**
 Game mechanics data (scores, session state, learned-word records) must never use `aiwa_` or `sparxstar_` prefixes. Use `game_` for persistent game user meta, `_spx_` for session-scoped data.
@@ -305,5 +260,5 @@ The dependency direction is: DVE → export → 3iAtlas dictionary → RLC. The 
 - Create a custom database table
 - Hardcode language names anywhere in the React app
 - Use `aiwa_` or `sparxstar_` prefixes for game session or score data
-- Implement `syncNow()` without a two-mode spec decision (OQ-G1)
+- Implement `syncNow()` without a spec decision (see OQ-002 in `docs/dictionary-tech-spec.md` § Open Questions, blocked on `GAME-SERVICE-INTAKE-SPEC-v1.0`; OQ-013 is the related guest token-source sub-question)
 - Remove or replace Helios TODO stubs with a different auth model without a platform decision
