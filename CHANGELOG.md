@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented here.
 
+## [2.8.12](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/compare/v2.8.11...v2.8.12) (2026-07-24)
+
+
+### Bug Fixes
+
+* **spell:** corpus-wide validity, ranking-only lang_source, source-language metadata ([#102](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/issues/102)) ([b6e7d77](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/commit/b6e7d77706bd5d86154b09b7245e48e139a1763d))
+
 ## [2.8.11](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/compare/v2.8.10...v2.8.11) (2026-07-03)
 
 
