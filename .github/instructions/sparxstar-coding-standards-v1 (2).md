@@ -6,6 +6,16 @@ Underserved Communities Edition
 
 v1.0  —  Starisian Technologies
 
+> **Status: `supporting`** — platform-wide engineering reference, not this
+> repo's own canonical spec; does not govern dictionary-repo-specific
+> behavior (that's the four "Active" specs in `AGENTS.md`'s architecture
+> table). Added 2026-08-01 (R1 status-header audit). Also note: this
+> filename carries a `(2)` suffix — no other copy of this document was
+> found anywhere else in this repo, so it appears to be an artifact of how
+> the file was originally added rather than an actual duplicate; flagging
+> for a maintainer to rename if that's confirmed, not renaming it here
+> since that's outside this audit's scope.
+
 This is an engineering document. It defines measurable, testable, enforceable standards for code built to serve communities operating under real constraints — low bandwidth, limited hardware, intermittent connectivity, battery-powered devices, and high cost of failure.
 
 **These are not guidelines. They are law. If it cannot fail a build, it is not a standard.**

@@ -1,6 +1,13 @@
 # Dictionary Phase 1 — Marching Orders
 ## sparxstar-3iatlas-dictionary
 
+> **Status: `superseded`** — Phase 1 (REST API) is marked done in `AGENTS.md`
+> ("### Phase 1 — REST API ✅ Done"). This document is the historical build
+> plan for work that has since shipped; kept for history, not a live task
+> list. For current REST API status, read `AGENTS.md` and
+> `src/api/Sparxstar3IAtlasDictionaryRestApi.php` directly. Added 2026-08-01
+> (R1 status-header audit).
+
 Phase 0 is merged. Build Phase 1 as a single PR.
 
 ---
