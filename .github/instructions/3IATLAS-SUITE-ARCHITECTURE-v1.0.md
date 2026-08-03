@@ -4,6 +4,14 @@
 
 ---
 
+> **Status: `supporting`** — suite-wide integration rationale, shared
+> identically across the dictionary and wordpad repos (byte-identical
+> copies). Does not govern any single repo's own behavior; where a repo's
+> own canonical spec conflicts with this document, the repo's own spec
+> wins. Added 2026-08-01 (R1 status-header audit).
+
+---
+
 ## Why This Exists
 
 Mandinka is an oral language. It has been spoken for centuries — by farmers, griots, elders, mothers, traders, children — and almost never written. There is no alphabet song. No primer. No dictionary on a shelf. When a Mandinka speaker goes to school, they go as an ESL student in a system built for a colonial language. If they love writing, they write in English or French — in someone else's house. The intelligence is there. The language is there. What has never been there are tools built for their language, by people who understand their language.
