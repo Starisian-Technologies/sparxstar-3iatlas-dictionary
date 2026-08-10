@@ -28,10 +28,14 @@ jobs:
     secrets: inherit
 
   php:
+    # gate (not advisory): PHPCS/PHPStan are release-gating per the tech spec's
+    # production-readiness plan (OQ-017) — phpcs.xml.dist/phpstan-baseline.neon
+    # already demote pre-existing findings so this should pass clean today;
+    # new violations now fail the build instead of only being reported.
     uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/php-enforcement.yml@v1
     with:
       repo_type: wp-plugin
-      enforcement_mode: advisory
+      enforcement_mode: gate
     secrets:
       COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
 

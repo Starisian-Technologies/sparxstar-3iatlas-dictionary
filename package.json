@@ -15,7 +15,7 @@
         "lint:css": "stylelint \"src/**/*.css\" --fix",
         "docs:js": "jsdoc -c jsdoc.json",
         "format": "prettier --write .",
-        "test": "jest --passWithNoTests",
+        "test": "jest",
         "prepare": "husky"
     },
     "version": "2.8.12",

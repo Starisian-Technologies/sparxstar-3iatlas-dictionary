@@ -117,15 +117,32 @@ jobs:
                   test -f sparxstar-3iatlas-dictionary.php || { echo "Missing sparxstar-3iatlas-dictionary.php"; exit 1; }
                   grep -q "Plugin Name:" sparxstar-3iatlas-dictionary.php || { echo "No plugin header found"; exit 1; }
 
-            # Step 7: Set up PHP and install Composer dependencies.
+            # Step 7: Set up PHP and install Composer dependencies (with dev
+            # tools) for the quality gate below. Re-installed --no-dev
+            # further down, right before packaging, so none of these
+            # dev-only tools ship inside the release ZIP.
             - name: Set up PHP
               uses: shivammathur/setup-php@44454db4f0199b8b9685a5d763dc37cbf79108e1
               with:
                   php-version: '8.2'
                   tools: composer:v2
                   coverage: none
-            - name: Install PHP dependencies (no-dev)
-              run: composer install --no-dev --prefer-dist --no-progress --no-interaction --optimize-autoloader
+            - name: Install PHP dependencies
+              run: composer install --prefer-dist --no-progress --no-interaction
+
+            # Step 7a: Quality gate — this workflow is titled "Release Code
+            # Quality Final Review"; it must actually run the checks that
+            # name promises before a release artifact is built. Mirrors the
+            # tech spec's production-readiness plan (OQ-017): PHPCS,
+            # PHPStan, PHPUnit, and Composer audit must all succeed.
+            - name: PHPCS
+              run: composer run lint:php
+            - name: PHPStan
+              run: composer run analyze:php
+            - name: PHPUnit
+              run: composer run test:php
+            - name: Composer audit
+              run: composer audit
 
             # Step 8: Set up Node.js and build frontend assets.
             - name: Setup pnpm
@@ -142,8 +159,21 @@ jobs:
             - name: Install JS dependencies
               run: pnpm install --frozen-lockfile
 
+            - name: Jest
+              run: pnpm test
+            - name: pnpm audit (production dependencies)
+              run: pnpm audit --prod
+
             - name: Build Assets
               run: pnpm run build
+
+            # Step 8a: Re-install PHP dependencies production-only, now that
+            # the quality gate above has passed. .distignore does not
+            # exclude vendor/, so leaving dev tools (PHPUnit, PHPCS,
+            # PHPStan, ...) installed here would ship them inside the
+            # release ZIP built below.
+            - name: Re-install PHP dependencies (no-dev, for packaging)
+              run: composer install --no-dev --prefer-dist --no-progress --no-interaction --optimize-autoloader
             - name: Verify build output
               run: |
                   test -f assets/js/sparxstar-3iatlas-dictionary-app.min.js || { echo "Missing app JS"; exit 1; }
