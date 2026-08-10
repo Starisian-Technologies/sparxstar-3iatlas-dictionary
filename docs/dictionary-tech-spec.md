@@ -329,8 +329,11 @@ that cites it. Its closure was also attributed to the fabricated
 Disambiguated, in plain language, going forward — do not cite "OQ-G1" for either of these again:
 
 1. **Resolved and stable:** the old WordPress `/progress/sync` endpoint's nonce/session-based
-   auth approach is deprecated. That endpoint is frozen and scheduled for retirement once the
-   Game Service intake spec lands. This part is accurate and uncontested.
+   auth approach is deprecated. The Game Service intake spec it was waiting on
+   (`GAME-SERVICE-INTAKE-SPEC-v1.0`) has landed (approved and implemented,
+   `sparxstar-3iatlas-rlc-node-engine`, Phase 2/3, 2026-08-05) — this endpoint is frozen and
+   scheduled for retirement now that migration is possible. This part is accurate and
+   uncontested.
 2. **CLOSED, corrected 2026-08 — not "still genuinely unresolved."** Earlier versions of this
    document (and the `sparxstar-3iatlas-dictionary-games` package) framed "how does an
    anonymous/guest game client obtain a token to sync progress" as the real open blocker.
@@ -339,8 +342,8 @@ Disambiguated, in plain language, going forward — do not cite "OQ-G1" for eith
    device-local only, permanently, by design — no progress ever syncs without a suite token,
    and guests are never issued one. There is no guest-token mechanism to design. The real open
    item is `OQ-I3` (account-claim: merging guest device progress into a newly-created suite
-   account), which is blocked *on* the Game Service intake spec, not the reverse — and that
-   spec (`GAME-SERVICE-INTAKE-SPEC-v1.0`) is no longer unwritten either: it is approved and
+   account). The Game Service intake spec (`GAME-SERVICE-INTAKE-SPEC-v1.0`) it was once
+   described as blocked on is no longer unwritten: it is approved and
    implemented in `sparxstar-3iatlas-rlc-node-engine` (Phase 2/3, as of 2026-08-05), and the
    client side (`sparxstar-3iatlas-dictionary-games`' `syncNow()`) is built and
    integration-tested against it — gated, dormant in production only because no suite-token
@@ -410,7 +413,7 @@ repo must not invent their behavior.
 | P0       | Complete and enforce the automated test gate.                                                             | PHPUnit boots WordPress and covers auth/CORS/rate limits/import/API/cache/ETag/lifecycle; Jest covers hooks and games; contract tests validate every endpoint against `schemas/dictionary-openapi.yaml`; CI fails on zero tests.                                                 | OQ-016                                 |
 | P1       | Install and run the pinned PHP toolchain in CI and release jobs.                                          | `composer install` followed by PHPCS, PHPStan, PHPUnit, and Composer audit succeeds on PHP 8.2–8.4 and WordPress 6.8/target 6.9.                                                                                                                                                 | OQ-017                                 |
 | P1       | Reconcile implementation, OpenAPI, and documented auth/cache/CORS rows.                                   | Automated contract tests verify status codes, envelopes, scopes, headers, conditional requests, origin onboarding, and no cache leakage for all routes.                                                                                                                          | OQ-018                                 |
-| P1       | Define the Game Service intake/identity contract before enabling sync.                                    | Approved `GAME-SERVICE-INTAKE-SPEC-v1.0`; RS256 verification, guest/account claim behavior, event schema, retry/idempotency, privacy/retention, and endpoint retirement are implemented and tested.                                                                              | OQ-002, OQ-003, OQ-006, OQ-012, OQ-013 |
+| P1       | **Partially done, 2026-08.** The intake half is complete: `GAME-SERVICE-INTAKE-SPEC-v1.0` is approved and implemented (event schema, retry/idempotency — `sparxstar-3iatlas-rlc-node-engine`, Phase 2/3). Remaining: the identity half — RS256 verification against a real `sparxstar-identity` issuer (not yet built), Suite JWT auth for Play mode (`OQ-003`), and this endpoint's actual retirement once that lands. | Same acceptance criteria as before, minus the intake-spec clause (now satisfied).                                                                                                                                                 | OQ-002, OQ-003, OQ-006                 |
 | P1       | Add deployability controls and an operator runbook.                                                       | Documented prerequisites/config/secrets, install/upgrade/rollback, WP-CLI import, cron/cache behavior, health/readiness checks, backups/restore drill, observability/alerts, key rotation/revocation, and incident ownership; staging smoke test passes from a release artifact. | OQ-019                                 |
 | P1       | Produce and verify a release artifact.                                                                    | Clean reproducible build; production Composer dependencies and compiled assets included; development files excluded per `.distignore`; checksum/SBOM generated; artifact installs on a clean supported WordPress environment.                                                    | OQ-020                                 |
 | P2       | Reduce frontend payload and add browser/accessibility validation.                                         | Play code is lazy-loaded; budgets are enforced; supported mobile/desktop browsers, keyboard/screen-reader use, reduced motion, offline/cache failure, and storage-denied paths pass.                                                                                             | OQ-021                                 |
@@ -440,11 +443,17 @@ repo must not invent their behavior.
 ## Open items
 
 - `OQ-001` — Governance sync has not yet run for this repo; `.github/instructions/governance/` is empty. Owner must trigger the ADR registry's governance-sync workflow.
-- `OQ-002` — `useProgressSync.syncNow()` remains a no-op pending `GAME-SERVICE-INTAKE-SPEC-v1.0`.
+- `OQ-002` — **Partially resolved, 2026-08.** `GAME-SERVICE-INTAKE-SPEC-v1.0` is no longer
+  pending — approved and implemented (`sparxstar-3iatlas-rlc-node-engine`, Phase 2/3). In
+  `sparxstar-3iatlas-dictionary-games`, `useProgressSync.syncNow()` is correspondingly no
+  longer a no-op (Phase 3, 2026-08-05): it POSTs to the Game Service, gated on a host supplying
+  `engineUrl`/`getSuiteToken`. What actually remains: `sparxstar-identity` (the suite-token
+  issuer) doesn't exist yet, so no host can supply a real token, and the path stays dormant in
+  production. Not a guest-token question — see `OQ-013`.
 - `OQ-003` — Suite JWT authentication for Play mode is not implemented; page tokens remain the only auth path today.
 - `OQ-004` — AIWA logo asset path and tagline copy for the desktop sidebar footer (carried over from `copilot-instructions.md` OQ-V1).
 - `OQ-005` — Letter Reveal animation placeholder (🏺) needs an AIWA-approved cultural visual (carried over as OQ-G3).
-- `OQ-006` — Account-claim flow for merging guest device progress into a suite account, blocked on Game Service intake spec (carried over as OQ-I3).
+- `OQ-006` — Account-claim flow for merging guest device progress into a suite account, blocked on the Identity Service spec — not the Game Service intake spec, which already exists (carried over as OQ-I3).
 - `OQ-007` — Teacher-account tier verification for Lower Basic sessions, blocked on Identity Service spec (carried over as OQ-I4).
 - `OQ-008` — DomainFlash "I knew it" fires `aiwa_game_word_correct`; confirm whether a separate hook is needed for the myCred hook map (carried over as OQ-G4).
 - `OQ-009` — `Sparxstar3IAtlasDictionaryForm` is a WP-authenticated frontend form (instantiated for logged-in users in `Sparxstar3IAtlasDictionary.php`) that adds/edits `aiwa-cpt-dictionary` entries directly. This is unreconciled with the read-only/DVE-only intake boundary in `ROLE.md` and predates the "no `is_user_logged_in()` on user-facing features" rule. Needs a platform decision: deprecate, or document as a scoped exception.
