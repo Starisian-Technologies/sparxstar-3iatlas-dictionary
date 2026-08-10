@@ -329,19 +329,33 @@ that cites it. Its closure was also attributed to the fabricated
 Disambiguated, in plain language, going forward — do not cite "OQ-G1" for either of these again:
 
 1. **Resolved and stable:** the old WordPress `/progress/sync` endpoint's nonce/session-based
-   auth approach is deprecated. That endpoint is frozen and scheduled for retirement once the
-   Game Service intake spec lands. This part is accurate and uncontested.
-2. **Still genuinely unresolved:** how does an anonymous/guest game client — no WordPress
-   session, no Helios-authenticated identity — obtain any kind of token to sync progress to the
-   future 3iAtlas Game Service? This is the real open blocker, and it is the same question
-   `dictionary-game-spec-v1.md` originally asked and that the `sparxstar-3iatlas-dictionary-games`
-   package still (correctly, per the pre-drift definition) treats as open. It is not closed by
-   anything in this repo.
+   auth approach is deprecated. The Game Service intake spec it was waiting on
+   (`GAME-SERVICE-INTAKE-SPEC-v1.0`) has landed (approved and implemented,
+   `sparxstar-3iatlas-rlc-node-engine`, Phase 2/3, 2026-08-05) — this endpoint is frozen and
+   scheduled for retirement now that migration is possible. This part is accurate and
+   uncontested.
+2. **CLOSED, corrected 2026-08 — not "still genuinely unresolved."** Earlier versions of this
+   document (and the `sparxstar-3iatlas-dictionary-games` package) framed "how does an
+   anonymous/guest game client obtain a token to sync progress" as the real open blocker.
+   Per `3IATLAS-IDENTITY-AND-GAME-SERVICES-DECISION-v1.0.md` §4 (verified directly against
+   that document in `sparxstar-3iatlas-rlc-node-engine`, not relayed): guest progress is
+   device-local only, permanently, by design — no progress ever syncs without a suite token,
+   and guests are never issued one. There is no guest-token mechanism to design. The real open
+   item is `OQ-I3` (account-claim: merging guest device progress into a newly-created suite
+   account). The Game Service intake spec (`GAME-SERVICE-INTAKE-SPEC-v1.0`) it was once
+   described as blocked on is no longer unwritten: it is approved and
+   implemented in `sparxstar-3iatlas-rlc-node-engine` (Phase 2/3, as of 2026-08-05), and the
+   client side (`sparxstar-3iatlas-dictionary-games`' `syncNow()`) is built and
+   integration-tested against it — gated, dormant in production only because no suite-token
+   issuer (`sparxstar-identity`) exists yet for *authenticated* accounts, which is a wholly
+   separate question from guest play.
 
 Recommendation: retire "OQ-G1" as a citation in this repo's docs going forward — the ID was
 redefined and reused for two different questions across this repo's own document history, so
-citing it is ambiguous by construction. Use the plain-language statements above instead. This
-question remains blocked on `GAME-SERVICE-INTAKE-SPEC-v1.0` (not yet written).
+citing it is ambiguous by construction. Use the plain-language statements above instead. The
+account-claim question (`OQ-I3`) remains blocked on the Identity Service spec (item 1 of
+`3IATLAS-IDENTITY-AND-GAME-SERVICES-DECISION-v1.0.md` §8's "next specs to write"), not on the
+intake spec, which already exists.
 
 ## Seams
 
@@ -399,7 +413,7 @@ repo must not invent their behavior.
 | P0       | Complete and enforce the automated test gate.                                                             | PHPUnit boots WordPress and covers auth/CORS/rate limits/import/API/cache/ETag/lifecycle; Jest covers hooks and games; contract tests validate every endpoint against `schemas/dictionary-openapi.yaml`; CI fails on zero tests. **Partially done (2026-08-10)** — Jest's `--passWithNoTests` mask is removed, so CI now fails on zero JS tests; the WordPress-boot PHPUnit coverage, hook/games Jest coverage, and OpenAPI contract tests are still open.  | OQ-016                                 |
 | P1       | Install and run the pinned PHP toolchain in CI and release jobs.                                          | `composer install` followed by PHPCS, PHPStan, PHPUnit, and Composer audit succeeds on PHP 8.2–8.4 and WordPress 6.8/target 6.9. **Done in CI/release workflows (2026-08-10)** — WordPress-integration coverage for PHPUnit remains open, see OQ-016.                          | OQ-017                                 |
 | P1       | Reconcile implementation, OpenAPI, and documented auth/cache/CORS rows.                                   | Automated contract tests verify status codes, envelopes, scopes, headers, conditional requests, origin onboarding, and no cache leakage for all routes.                                                                                                                          | OQ-018                                 |
-| P1       | Define the Game Service intake/identity contract before enabling sync.                                    | Approved `GAME-SERVICE-INTAKE-SPEC-v1.0`; RS256 verification, guest/account claim behavior, event schema, retry/idempotency, privacy/retention, and endpoint retirement are implemented and tested.                                                                              | OQ-002, OQ-003, OQ-006, OQ-012, OQ-013 |
+| P1       | **Partially done, 2026-08.** The intake half is complete: `GAME-SERVICE-INTAKE-SPEC-v1.0` is approved and implemented (event schema, retry/idempotency — `sparxstar-3iatlas-rlc-node-engine`, Phase 2/3). Remaining: the identity half — RS256 verification against a real `sparxstar-identity` issuer (not yet built), Suite JWT auth for Play mode (`OQ-003`), and this endpoint's actual retirement once that lands. | Same acceptance criteria as before, minus the intake-spec clause (now satisfied).                                                                                                                                                 | OQ-002, OQ-003, OQ-006                 |
 | P1       | Add deployability controls and an operator runbook.                                                       | Documented prerequisites/config/secrets, install/upgrade/rollback, WP-CLI import, cron/cache behavior, health/readiness checks, backups/restore drill, observability/alerts, key rotation/revocation, and incident ownership; staging smoke test passes from a release artifact. | OQ-019                                 |
 | P1       | Produce and verify a release artifact.                                                                    | Clean reproducible build; production Composer dependencies and compiled assets included; development files excluded per `.distignore`; checksum/SBOM generated; artifact installs on a clean supported WordPress environment.                                                    | OQ-020                                 |
 | P2       | Reduce frontend payload and add browser/accessibility validation.                                         | Play code is lazy-loaded; budgets are enforced; supported mobile/desktop browsers, keyboard/screen-reader use, reduced motion, offline/cache failure, and storage-denied paths pass.                                                                                             | OQ-021                                 |
@@ -429,30 +443,43 @@ repo must not invent their behavior.
 ## Open items
 
 - `OQ-001` — Governance sync has not yet run for this repo; `.github/instructions/governance/` is empty. Owner must trigger the ADR registry's governance-sync workflow.
-- `OQ-002` — `useProgressSync.syncNow()` remains a no-op pending `GAME-SERVICE-INTAKE-SPEC-v1.0`.
+- `OQ-002` — **Partially resolved, 2026-08.** `GAME-SERVICE-INTAKE-SPEC-v1.0` is no longer
+  pending — approved and implemented (`sparxstar-3iatlas-rlc-node-engine`, Phase 2/3). In
+  `sparxstar-3iatlas-dictionary-games`, `useProgressSync.syncNow()` is correspondingly no
+  longer a no-op (Phase 3, 2026-08-05): it POSTs to the Game Service, gated on a host supplying
+  `engineUrl`/`getSuiteToken`. What actually remains: `sparxstar-identity` (the suite-token
+  issuer) doesn't exist yet, so no host can supply a real token, and the path stays dormant in
+  production. Not a guest-token question — see `OQ-013`.
 - `OQ-003` — Suite JWT authentication for Play mode is not implemented; page tokens remain the only auth path today.
 - `OQ-004` — AIWA logo asset path and tagline copy for the desktop sidebar footer (carried over from `copilot-instructions.md` OQ-V1).
 - `OQ-005` — Letter Reveal animation placeholder (🏺) needs an AIWA-approved cultural visual (carried over as OQ-G3).
-- `OQ-006` — Account-claim flow for merging guest device progress into a suite account, blocked on Game Service intake spec (carried over as OQ-I3).
+- `OQ-006` — Account-claim flow for merging guest device progress into a suite account, blocked on the Identity Service spec — not the Game Service intake spec, which already exists (carried over as OQ-I3).
 - `OQ-007` — Teacher-account tier verification for Lower Basic sessions, blocked on Identity Service spec (carried over as OQ-I4).
 - `OQ-008` — DomainFlash "I knew it" fires `aiwa_game_word_correct`; confirm whether a separate hook is needed for the myCred hook map (carried over as OQ-G4).
 - `OQ-009` — `Sparxstar3IAtlasDictionaryForm` is a WP-authenticated frontend form (instantiated for logged-in users in `Sparxstar3IAtlasDictionary.php`) that adds/edits `aiwa-cpt-dictionary` entries directly. This is unreconciled with the read-only/DVE-only intake boundary in `ROLE.md` and predates the "no `is_user_logged_in()` on user-facing features" rule. Needs a platform decision: deprecate, or document as a scoped exception.
 - `OQ-010` — `GET /pronounce` (`Sparxstar3IAtlasDictionaryTts`) has no per-IP rate limit, unlike every other endpoint. It spawns a Piper synthesis subprocess per cache miss, making this a real resource-exhaustion gap, not just a documentation inconsistency. Needs `Sparxstar3IAtlasRateLimitTrait` (or equivalent) applied before this is load-tested or exposed broadly.
 - `OQ-011` — "Linguistic fields locked post-import" is a policy stance, not an enforced one: no ACF `acf/prepare_field` readonly filter or equivalent admin-UI restriction was found preventing WordPress admins from editing locked fields directly. Needs either an enforcement mechanism or a documented decision that this stays process-only.
-- `OQ-012` — Formalizing a real frozen `/progress/sync`→Game Service wire contract (whether
-  `outcome`/`attempts`/`xp`/a game-type/production-recognition field need to become
-  wire-visible, beyond the `{ type, word_uuid?, game?, domain?, ts }` shape that ships today)
-  is undecided — see "Game integration" above. Belongs to `GAME-SERVICE-INTAKE-SPEC-v1.0`.
+- `OQ-012` — **Resolved, 2026-08.** `GAME-SERVICE-INTAKE-SPEC-v1.0` is written and approved in
+  `sparxstar-3iatlas-rlc-node-engine` (Phase 2/3, implemented). The actual shipped wire shape
+  is a `game.result` batch event (`game_type`, `outcome`, `attempts`, `time_ms`, `word_uuid`
+  sent-but-currently-unused engine-side) — not the six-field
+  `outcome`/`attempts`/`xp`/`timestamp` shape once cited here as "frozen per dictionary PR #59
+  Fix 2." That citation was verified fabricated (see "OQ-G1 — retired as a citation" above);
+  the real spec superseded it rather than ratifying it.
 - `OQ-014` — `aiwa_game_domain_mastered` is handled in `handle_progress_sync()`'s switch
   statement (`do_action( 'aiwa_game_domain_mastered', $user_id, $domain )`) but has no
   current `addEvent()` call site anywhere in `GameShell.jsx` — confirm whether this is
   planned-but-unwired (needs a call site added) or dead code (needs removal from the
   switch and the MyCred hook map).
-- `OQ-013` (retires citations to "OQ-G1") — Anonymous/guest game-client token source for
-  syncing to the future 3iAtlas Game Service is unresolved (see "OQ-G1 — retired as a
-  citation" above). Blocked on `GAME-SERVICE-INTAKE-SPEC-v1.0`. The old WordPress
-  `/progress/sync` nonce-auth question is separately resolved (deprecated/retiring) — see the
-  same section for why these were previously conflated under one label.
+- `OQ-013` — **CLOSED, corrected 2026-08 — was never actually open.** Previously stated here
+  as "anonymous/guest game-client token source... unresolved." Per
+  `3IATLAS-IDENTITY-AND-GAME-SERVICES-DECISION-v1.0.md` §4: guest play is device-local by
+  design, permanently — no token is ever issued to guests, so there was nothing to resolve.
+  The real remaining dependency is `OQ-I3` (account-claim, blocked on the Identity Service
+  spec — item 1 of that document's §8 "next specs to write," not yet written) — not the
+  intake spec, which already exists and is implemented. The old WordPress `/progress/sync`
+  nonce-auth question is separately resolved (deprecated/retiring) — see the same section for
+  why these were previously conflated under one label.
 - `OQ-015` — Importer production qualification is incomplete: add full Approved Entry Package lifecycle, idempotency, failure/rollback, audit, and scale tests before production data import.
 - `OQ-016` — PHP test files exist but could not execute without Composer development dependencies, while Jest has no tests and `--passWithNoTests` masks that absence; complete WordPress integration, frontend unit, end-to-end smoke, and OpenAPI contract coverage. **Partially resolved (2026-08-10):** `--passWithNoTests` removed from `pnpm test` (`package.json`), so CI now fails if the Jest suite ever registers zero tests — currently satisfied only by `tests/js/smoke.test.js`'s always-registered guard test. Still open: PHPUnit boots a real WordPress instance (current `tests/phpunit/bootstrap.php` uses minimal hand-written stubs, not `WP_UnitTestCase`), Jest coverage for hooks/games components, and OpenAPI contract tests against `schemas/dictionary-openapi.yaml`.
 - `OQ-017` — PHP quality/audit tooling is declared but unavailable in the current checkout; make dependency installation and PHPCS/PHPStan/PHPUnit/audit results mandatory release evidence. **Resolved for CI/release workflows (2026-08-10):** `standards.yml`'s `php` job flipped from `enforcement_mode: advisory` to `gate` (PHPCS/PHPStan now block merges, not just report); `ci.yml` and the weekly `security.yml` now install dependencies before running `composer audit` and `pnpm audit --prod` (previously `security.yml` audited an empty `vendor/`/uninstalled `node_modules/` and masked all failures with `|| true`); `release.yml` — previously titled "Release Code Quality Final Review" but running zero quality checks — now runs PHPCS, PHPStan, PHPUnit, Composer audit, Jest, and `pnpm audit` before building the release ZIP, then reinstalls Composer dependencies `--no-dev` before packaging (`.distignore` does not exclude `vendor/`, so dev tools must not be present at zip time). Unverified by this change: the sandboxed environment these edits were authored in could not complete `composer install` (proxy blocks GitHub API/source downloads for several dev packages), so PHPCS/PHPStan/PHPUnit were not run end-to-end locally — first real signal is the CI run on the PR that introduces this change.
