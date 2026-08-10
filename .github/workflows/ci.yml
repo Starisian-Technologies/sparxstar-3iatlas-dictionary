@@ -25,6 +25,8 @@ jobs:
             - name: Setup pnpm
               uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
               # uses: pnpm/action-setup@v6.0.9
+              with:
+                  version: '10.33.0'
 
             - name: Setup PHP
               uses: shivammathur/setup-php@44454db4f0199b8b9685a5d763dc37cbf79108e1

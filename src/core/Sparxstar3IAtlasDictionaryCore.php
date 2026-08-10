@@ -11,6 +11,8 @@
  * @copyright Copyright (c) 2024 Starisian Technologies. All rights reserved.
  */
 
+declare(strict_types=1);
+
 namespace Starisian\Sparxstar\IAtlas\core;
 
 if ( ! defined( 'ABSPATH' ) ) {

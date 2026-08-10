@@ -461,6 +461,7 @@ repo must not invent their behavior.
 - `OQ-020` — Release artifacts need reproducibility, clean-install verification, dependency/asset completeness, SBOM/checksums, and staging promotion evidence.
 - `OQ-021` — The application bundle exceeds webpack's performance budget; add code splitting and enforce browser, accessibility, resilience, and performance budgets.
 - `OQ-022` — Establish a file/symbol documentation policy by language and generated-file exclusions, then enforce it automatically; avoid unreviewable blanket comment churn.
+- `OQ-023` — Flipping `standards.yml`'s PHP job to `enforcement_mode: gate` and turning on `composer audit` in CI (see `OQ-017`) surfaced two pre-existing, previously-silent gaps that had to be resolved to land that change, both fixed 2026-08-10: (1) 14 PHP files repo-wide were missing `declare(strict_types=1)` — all files now comply; (2) `composer audit` reported 8 advisories, all in `require-dev` tooling only (not shipped in the release ZIP or loaded at runtime) — `league/commonmark` (transitive, via `phpdocumentor/phpdocumentor`, needed `>=2.9.0`), `squizlabs/php_codesniffer` (needed `>=3.13.6`), `wp-coding-standards/wpcs` (needed `>=3.4.1`). All three were satisfiable within this repo's existing `composer.json` version constraints (`^3.13`, `^3.1`, `^3.9` respectively), so `composer.lock` was regenerated via `composer update squizlabs/php_codesniffer wp-coding-standards/wpcs phpdocumentor/phpdocumentor --with-all-dependencies`, landing on `league/commonmark` 2.9.1, `squizlabs/php_codesniffer` 3.13.6, and `wp-coding-standards/wpcs` 3.4.1 — all outside the vulnerable ranges. No `composer.json` constraint changes were needed.
 
 ## Changelog
 
@@ -473,7 +474,13 @@ repo must not invent their behavior.
   `composer audit`/`pnpm audit --prod` to `ci.yml`; added a full quality gate
   (PHPCS, PHPStan, PHPUnit, Composer audit, Jest, `pnpm audit`) to
   `release.yml`, which previously ran none of the checks its "Release Code
-  Quality Final Review" name implied. Remaining OQ-016/OQ-017 gaps (WordPress-
+  Quality Final Review" name implied. Landing the `gate` flip surfaced two
+  repo-wide gaps, both fixed — see `OQ-023`: 14 PHP files were missing
+  `declare(strict_types=1)`, and `composer.lock` pinned three `require-dev`
+  tools (`league/commonmark` transitively, `squizlabs/php_codesniffer`,
+  `wp-coding-standards/wpcs`) to versions with known advisories; all three
+  are now bumped within their existing `composer.json` constraints. Remaining
+  OQ-016/OQ-017 gaps (WordPress-
   booted PHPUnit, hook/games Jest coverage, OpenAPI contract tests) are
   unchanged and still open — see those OQ entries.
 - 2026-08-10 — Re-audited repository state; added prioritized production-readiness/deployment gates, audit evidence and limitations, OQ-015–OQ-022, and recorded the `GameShell` named-hook import repair.
