@@ -331,17 +331,28 @@ Disambiguated, in plain language, going forward — do not cite "OQ-G1" for eith
 1. **Resolved and stable:** the old WordPress `/progress/sync` endpoint's nonce/session-based
    auth approach is deprecated. That endpoint is frozen and scheduled for retirement once the
    Game Service intake spec lands. This part is accurate and uncontested.
-2. **Still genuinely unresolved:** how does an anonymous/guest game client — no WordPress
-   session, no Helios-authenticated identity — obtain any kind of token to sync progress to the
-   future 3iAtlas Game Service? This is the real open blocker, and it is the same question
-   `dictionary-game-spec-v1.md` originally asked and that the `sparxstar-3iatlas-dictionary-games`
-   package still (correctly, per the pre-drift definition) treats as open. It is not closed by
-   anything in this repo.
+2. **CLOSED, corrected 2026-08 — not "still genuinely unresolved."** Earlier versions of this
+   document (and the `sparxstar-3iatlas-dictionary-games` package) framed "how does an
+   anonymous/guest game client obtain a token to sync progress" as the real open blocker.
+   Per `3IATLAS-IDENTITY-AND-GAME-SERVICES-DECISION-v1.0.md` §4 (verified directly against
+   that document in `sparxstar-3iatlas-rlc-node-engine`, not relayed): guest progress is
+   device-local only, permanently, by design — no progress ever syncs without a suite token,
+   and guests are never issued one. There is no guest-token mechanism to design. The real open
+   item is `OQ-I3` (account-claim: merging guest device progress into a newly-created suite
+   account), which is blocked *on* the Game Service intake spec, not the reverse — and that
+   spec (`GAME-SERVICE-INTAKE-SPEC-v1.0`) is no longer unwritten either: it is approved and
+   implemented in `sparxstar-3iatlas-rlc-node-engine` (Phase 2/3, as of 2026-08-05), and the
+   client side (`sparxstar-3iatlas-dictionary-games`' `syncNow()`) is built and
+   integration-tested against it — gated, dormant in production only because no suite-token
+   issuer (`sparxstar-identity`) exists yet for *authenticated* accounts, which is a wholly
+   separate question from guest play.
 
 Recommendation: retire "OQ-G1" as a citation in this repo's docs going forward — the ID was
 redefined and reused for two different questions across this repo's own document history, so
-citing it is ambiguous by construction. Use the plain-language statements above instead. This
-question remains blocked on `GAME-SERVICE-INTAKE-SPEC-v1.0` (not yet written).
+citing it is ambiguous by construction. Use the plain-language statements above instead. The
+account-claim question (`OQ-I3`) remains blocked on the Identity Service spec (item 1 of
+`3IATLAS-IDENTITY-AND-GAME-SERVICES-DECISION-v1.0.md` §8's "next specs to write"), not on the
+intake spec, which already exists.
 
 ## Seams
 
@@ -439,20 +450,27 @@ repo must not invent their behavior.
 - `OQ-009` — `Sparxstar3IAtlasDictionaryForm` is a WP-authenticated frontend form (instantiated for logged-in users in `Sparxstar3IAtlasDictionary.php`) that adds/edits `aiwa-cpt-dictionary` entries directly. This is unreconciled with the read-only/DVE-only intake boundary in `ROLE.md` and predates the "no `is_user_logged_in()` on user-facing features" rule. Needs a platform decision: deprecate, or document as a scoped exception.
 - `OQ-010` — `GET /pronounce` (`Sparxstar3IAtlasDictionaryTts`) has no per-IP rate limit, unlike every other endpoint. It spawns a Piper synthesis subprocess per cache miss, making this a real resource-exhaustion gap, not just a documentation inconsistency. Needs `Sparxstar3IAtlasRateLimitTrait` (or equivalent) applied before this is load-tested or exposed broadly.
 - `OQ-011` — "Linguistic fields locked post-import" is a policy stance, not an enforced one: no ACF `acf/prepare_field` readonly filter or equivalent admin-UI restriction was found preventing WordPress admins from editing locked fields directly. Needs either an enforcement mechanism or a documented decision that this stays process-only.
-- `OQ-012` — Formalizing a real frozen `/progress/sync`→Game Service wire contract (whether
-  `outcome`/`attempts`/`xp`/a game-type/production-recognition field need to become
-  wire-visible, beyond the `{ type, word_uuid?, game?, domain?, ts }` shape that ships today)
-  is undecided — see "Game integration" above. Belongs to `GAME-SERVICE-INTAKE-SPEC-v1.0`.
+- `OQ-012` — **Resolved, 2026-08.** `GAME-SERVICE-INTAKE-SPEC-v1.0` is written and approved in
+  `sparxstar-3iatlas-rlc-node-engine` (Phase 2/3, implemented). The actual shipped wire shape
+  is a `game.result` batch event (`game_type`, `outcome`, `attempts`, `time_ms`, `word_uuid`
+  sent-but-currently-unused engine-side) — not the six-field
+  `outcome`/`attempts`/`xp`/`timestamp` shape once cited here as "frozen per dictionary PR #59
+  Fix 2." That citation was verified fabricated (see "OQ-G1 — retired as a citation" above);
+  the real spec superseded it rather than ratifying it.
 - `OQ-014` — `aiwa_game_domain_mastered` is handled in `handle_progress_sync()`'s switch
   statement (`do_action( 'aiwa_game_domain_mastered', $user_id, $domain )`) but has no
   current `addEvent()` call site anywhere in `GameShell.jsx` — confirm whether this is
   planned-but-unwired (needs a call site added) or dead code (needs removal from the
   switch and the MyCred hook map).
-- `OQ-013` (retires citations to "OQ-G1") — Anonymous/guest game-client token source for
-  syncing to the future 3iAtlas Game Service is unresolved (see "OQ-G1 — retired as a
-  citation" above). Blocked on `GAME-SERVICE-INTAKE-SPEC-v1.0`. The old WordPress
-  `/progress/sync` nonce-auth question is separately resolved (deprecated/retiring) — see the
-  same section for why these were previously conflated under one label.
+- `OQ-013` — **CLOSED, corrected 2026-08 — was never actually open.** Previously stated here
+  as "anonymous/guest game-client token source... unresolved." Per
+  `3IATLAS-IDENTITY-AND-GAME-SERVICES-DECISION-v1.0.md` §4: guest play is device-local by
+  design, permanently — no token is ever issued to guests, so there was nothing to resolve.
+  The real remaining dependency is `OQ-I3` (account-claim, blocked on the Identity Service
+  spec — item 1 of that document's §8 "next specs to write," not yet written) — not the
+  intake spec, which already exists and is implemented. The old WordPress `/progress/sync`
+  nonce-auth question is separately resolved (deprecated/retiring) — see the same section for
+  why these were previously conflated under one label.
 - `OQ-015` — Importer production qualification is incomplete: add full Approved Entry Package lifecycle, idempotency, failure/rollback, audit, and scale tests before production data import.
 - `OQ-016` — PHP test files exist but could not execute without Composer development dependencies, while Jest has no tests and `--passWithNoTests` masks that absence; complete WordPress integration, frontend unit, end-to-end smoke, and OpenAPI contract coverage.
 - `OQ-017` — PHP quality/audit tooling is declared but unavailable in the current checkout; make dependency installation and PHPCS/PHPStan/PHPUnit/audit results mandatory release evidence.

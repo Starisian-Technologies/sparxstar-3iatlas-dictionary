@@ -377,11 +377,11 @@ changes applied to the existing `app.jsx` (not a rebuild):
 | ID | Status | Question | Blocking |
 |---|---|---|---|
 | OQ-V1 | ⏸ Open | AIWA logo asset path and tagline copy for the desktop sidebar footer | Sidebar footer final content |
-| ~~OQ-G1~~ | Retired label — corrected 2026-07-08 | This ID was redefined and reused for two different questions across this repo's own document history (original: Helios-token-source for `/progress/sync`; later: WP nonce auth, closed on a fabricated citation). Do not cite "OQ-G1" going forward. See `docs/dictionary-tech-spec.md` § "OQ-G1 — retired as a citation" for the two disambiguated facts: (1) WP nonce auth for the deprecated `/progress/sync` endpoint — resolved/stable; (2) anonymous/guest game-client token source for the future Game Service — still genuinely open, tracked as `OQ-013`. | — |
+| ~~OQ-G1~~ | Retired label — corrected 2026-07-08 | This ID was redefined and reused for two different questions across this repo's own document history (original: Helios-token-source for `/progress/sync`; later: WP nonce auth, closed on a fabricated citation). Do not cite "OQ-G1" going forward. See `docs/dictionary-tech-spec.md` § "OQ-G1 — retired as a citation" for the two disambiguated facts: (1) WP nonce auth for the deprecated `/progress/sync` endpoint — resolved/stable; (2) anonymous/guest game-client token source — **closed 2026-08, was never actually open** (guest play is device-local by design, permanently, per `3IATLAS-IDENTITY-AND-GAME-SERVICES-DECISION-v1.0.md` §4 — no token is ever issued to guests). | — |
 | OQ-G3 | ⏸ Open | Animation asset for Letter Reveal — pottery vessel emoji (🏺) is placeholder; replace with AIWA-approved cultural visual | Letter Reveal polish |
 | OQ-G4 | ⏸ Open | DomainFlash "I knew it" — currently fires `aiwa_game_word_correct`; confirm if a separate hook is needed | myCred hook map |
 | OQ-G5 | ✅ Closed | Sync destination — 3iAtlas Game Service (RLC Node engine), authenticated by suite JWT from `sparxstar-identity` (RS256; apps verify with public key only) | — |
-| OQ-I3 | ⏸ Open | Account-claim flow: merging guest device progress into a new suite account | Game Service intake spec |
+| OQ-I3 | ⏸ Open | Account-claim flow: merging guest device progress into a new suite account | Identity Service spec (not the intake spec — `GAME-SERVICE-INTAKE-SPEC-v1.0` already exists and is implemented, Phase 2/3) |
 | OQ-I4 | ⏸ Open | Tier verification: who approves teacher (Lower Basic session-opening) accounts | Identity Service spec |
 
 ---
