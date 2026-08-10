@@ -256,7 +256,7 @@ src/
       idbUtils.js                           ← Phase 4: shared IndexedDB helper
       useGameSet.js                         ← Phase 4: /game-set fetch + IndexedDB TTL cache
       useGameSession.js                     ← Phase 4: session state + sessionRef pattern
-      useProgressSync.js                    ← Phase 4: IndexedDB outbox (syncNow no-op — see OQ-002 in docs/dictionary-tech-spec.md § Open Questions, blocked on GAME-SERVICE-INTAKE-SPEC-v1.0; related sub-question OQ-013 covers the anonymous/guest token source specifically)
+      useProgressSync.js                    ← Phase 4: IndexedDB outbox (syncNow is a no-op — see OQ-002 in docs/dictionary-tech-spec.md § Open Questions. NOT blocked on GAME-SERVICE-INTAKE-SPEC-v1.0, which now exists — blocked on the `sparxstar-identity` issuer, unbuilt. OQ-013, the guest-token question, is closed — guests never sync, by design, not an open blocker)
     games/
       GameShell.jsx                         ← Phase 4: game orchestrator + phase state machine
       AccessoryBar.jsx                      ← Phase 4: Mandinka character input bar
@@ -377,11 +377,11 @@ changes applied to the existing `app.jsx` (not a rebuild):
 | ID | Status | Question | Blocking |
 |---|---|---|---|
 | OQ-V1 | ⏸ Open | AIWA logo asset path and tagline copy for the desktop sidebar footer | Sidebar footer final content |
-| ~~OQ-G1~~ | Retired label — corrected 2026-07-08 | This ID was redefined and reused for two different questions across this repo's own document history (original: Helios-token-source for `/progress/sync`; later: WP nonce auth, closed on a fabricated citation). Do not cite "OQ-G1" going forward. See `docs/dictionary-tech-spec.md` § "OQ-G1 — retired as a citation" for the two disambiguated facts: (1) WP nonce auth for the deprecated `/progress/sync` endpoint — resolved/stable; (2) anonymous/guest game-client token source for the future Game Service — still genuinely open, tracked as `OQ-013`. | — |
+| ~~OQ-G1~~ | Retired label — corrected 2026-07-08 | This ID was redefined and reused for two different questions across this repo's own document history (original: Helios-token-source for `/progress/sync`; later: WP nonce auth, closed on a fabricated citation). Do not cite "OQ-G1" going forward. See `docs/dictionary-tech-spec.md` § "OQ-G1 — retired as a citation" for the two disambiguated facts: (1) WP nonce auth for the deprecated `/progress/sync` endpoint — resolved/stable; (2) anonymous/guest game-client token source — **closed 2026-08, was never actually open** (guest play is device-local by design, permanently, per `3IATLAS-IDENTITY-AND-GAME-SERVICES-DECISION-v1.0.md` §4 — no token is ever issued to guests). | — |
 | OQ-G3 | ⏸ Open | Animation asset for Letter Reveal — pottery vessel emoji (🏺) is placeholder; replace with AIWA-approved cultural visual | Letter Reveal polish |
 | OQ-G4 | ⏸ Open | DomainFlash "I knew it" — currently fires `aiwa_game_word_correct`; confirm if a separate hook is needed | myCred hook map |
 | OQ-G5 | ✅ Closed | Sync destination — 3iAtlas Game Service (RLC Node engine), authenticated by suite JWT from `sparxstar-identity` (RS256; apps verify with public key only) | — |
-| OQ-I3 | ⏸ Open | Account-claim flow: merging guest device progress into a new suite account | Game Service intake spec |
+| OQ-I3 | ⏸ Open | Account-claim flow: merging guest device progress into a new suite account | Identity Service spec (not the intake spec — `GAME-SERVICE-INTAKE-SPEC-v1.0` already exists and is implemented, Phase 2/3) |
 | OQ-I4 | ⏸ Open | Tier verification: who approves teacher (Lower Basic session-opening) accounts | Identity Service spec |
 
 ---
@@ -409,7 +409,7 @@ Specification: `.github/instructions/dictionary-game-spec-v1.md`
 src/js/hooks/idbUtils.js           — shared IndexedDB helper (openDB, getRecord, putRecord, getAllRecords, deleteRecord)
 src/js/hooks/useGameSet.js         — /game-set fetch + 3-day IndexedDB TTL cache
 src/js/hooks/useGameSession.js     — session state (currentIndex, results, xpEarned, checkpoint resume) + `sessionRef` mirror pattern to prevent stale-session writes during rapid actions
-src/js/hooks/useProgressSync.js    — event outbox (IndexedDB); network sync intentionally a no-op pending OQ-002 resolution (docs/dictionary-tech-spec.md § Open Questions, blocked on GAME-SERVICE-INTAKE-SPEC-v1.0); related sub-question OQ-013 covers the anonymous/guest token source specifically
+src/js/hooks/useProgressSync.js    — event outbox (IndexedDB); network sync intentionally a no-op — see OQ-002 (docs/dictionary-tech-spec.md § Open Questions). NOT blocked on GAME-SERVICE-INTAKE-SPEC-v1.0, which now exists and is implemented — blocked on the `sparxstar-identity` issuer, unbuilt. OQ-013 (guest-token question) is closed, not open — guests never sync, by design
 src/js/games/AccessoryBar.jsx      — Mandinka character bar (ŋ ɓ ɗ ñ ɲ ʔ á é í ó ú), visualViewport positioning
 src/js/games/SessionComplete.jsx   — post-session summary (stats, cumulative word count, action buttons)
 src/js/games/GameShell.jsx         — session setup (domain/game/word-count selectors), game router, phase management
@@ -514,7 +514,7 @@ Key files added:
 - `src/js/games/games/*.jsx` — individual game components
 - `src/js/hooks/useGameSet.js` — IndexedDB-backed game set cache
 - `src/js/hooks/useGameSession.js` — session tracking with sessionRef pattern
-- `src/js/hooks/useProgressSync.js` — IndexedDB outbox (syncNow is intentional no-op — see OQ-002 in docs/dictionary-tech-spec.md § Open Questions, blocked on GAME-SERVICE-INTAKE-SPEC-v1.0; related sub-question OQ-013 covers the anonymous/guest token source specifically)
+- `src/js/hooks/useProgressSync.js` — IndexedDB outbox (syncNow is intentional no-op — see OQ-002 in docs/dictionary-tech-spec.md § Open Questions. NOT blocked on GAME-SERVICE-INTAKE-SPEC-v1.0, which now exists and is implemented — blocked on the `sparxstar-identity` issuer, unbuilt. OQ-013, the guest-token question, is closed, not open — guests never sync, by design)
 
 **sessionRef pattern:** `recordResult` and `completeSession` in `useGameSession.js` use `sessionRef.current` to avoid stale React closure bugs. Do not remove this pattern.
 
