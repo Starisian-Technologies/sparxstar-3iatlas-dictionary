@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Loader2, ChevronDown, X } from 'lucide-react';
-import * as GameSetHookModule from '../hooks/useGameSet.js';
-import * as useGameSessionModule from '../hooks/useGameSession.js';
-import * as useProgressSyncModule from '../hooks/useProgressSync.js';
+import { useGameSet } from '../hooks/useGameSet.js';
+import { useGameSession } from '../hooks/useGameSession.js';
+import { useProgressSync } from '../hooks/useProgressSync.js';
 import SessionComplete from './SessionComplete.jsx';
 import DomainFlash from './games/DomainFlash.jsx';
 import MeaningMatch from './games/MeaningMatch.jsx';
@@ -10,9 +10,6 @@ import ArrangeWord from './games/ArrangeWord.jsx';
 import LetterReveal from './games/LetterReveal.jsx';
 import CompleteSentence from './games/CompleteSentence.jsx';
 import ListenWrite from './games/ListenWrite.jsx';
-
-const useGameSet = GameSetHookModule.useGameSet ?? GameSetHookModule.default;
-const useGameSession = useGameSessionModule.useGameSession ?? useGameSessionModule.default;
 
 /**
  * Refresh the ephemeral page token by calling GET /page-token.
@@ -160,7 +157,6 @@ export default function GameShell({
     const { session, learnedCount, initSession, recordResult, completeSession, clearSession } =
         useGameSession();
 
-    const useProgressSync = useProgressSyncModule.useProgressSync || useProgressSyncModule.default;
     const { addEvent, syncNow } = useProgressSync({ restUrl });
 
     /*

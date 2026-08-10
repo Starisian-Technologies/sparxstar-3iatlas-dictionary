@@ -21,6 +21,7 @@
 
 #sparxstar-dictionary-root {
     width: 100%;
+
     /* dvh tracks the dynamic viewport (mobile address-bar show/hide) so the app
        neither overshoots nor leaves a gap on iOS/Android. The vh line is the
        fallback for browsers without dvh support (iOS Safari < 15.4), which would
@@ -49,7 +50,7 @@ body {
     -webkit-tap-highlight-color: transparent;
 
     /* Inter (loaded via Google Fonts, enqueued in PHP) for wide African-language coverage; system fonts are the swap fallback */
-    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', Arial, sans-serif;
+    font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', Arial, sans-serif;
 }
 
 /* Ensure React root takes full height for virtual scrolling */
@@ -78,7 +79,7 @@ body {
     --color-text: #1f2937;
     --color-text-light: #6b7280;
     --font-serif: ui-serif, georgia, cambria, 'Times New Roman', times, serif;
-    --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', Arial, sans-serif;
+    --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', roboto, 'Noto Sans', arial, sans-serif;
     --shadow-sm: 0 1px 3px rgb(0 0 0 / 5%);
     --shadow-md: 0 4px 12px rgb(0 0 0 / 8%);
     --shadow-lg: 0 8px 24px rgb(0 0 0 / 12%);
