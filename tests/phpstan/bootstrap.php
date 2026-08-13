@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 // Define constants needed for analysis
 if (!defined('SPARX_3IATLAS_PATH')) {
     define('SPARX_3IATLAS_PATH', '/var/www/html/wp-content/plugins/sparxstar-3iatlas-dictionary/');

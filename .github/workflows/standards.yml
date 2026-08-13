@@ -28,6 +28,17 @@ jobs:
     secrets: inherit
 
   php:
+    # advisory (reverted from a brief gate attempt, see OQ-024 in
+    # docs/dictionary-tech-spec.md): php-enforcement.yml@v1 installs its
+    # PHPCS tool via `tools: composer, phpcs, phpstan` with no version pin,
+    # so it now resolves phpcs 4.0.x — a major version WordPress Coding
+    # Standards does not yet support ("Referenced sniff ... does not
+    # exist" for every WordPress-* rule). That's an upstream break in the
+    # shared code-conformance workflow, unrelated to this repo's own
+    # composer.json (whose own vendor/bin/phpcs is correctly pinned to the
+    # patched 3.13.6). Cannot be fixed from this repo — re-enable `gate`
+    # once php-enforcement.yml pins phpcs to a 3.x release (or WPCS ships
+    # PHPCS-4 support).
     uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/php-enforcement.yml@v1
     with:
       repo_type: wp-plugin

@@ -26,3 +26,5 @@
  * "Quiet" refers to absence of noise or disturbance. It is often confused
  * with "quite," which means "rather" or "completely."
  */
+
+declare(strict_types=1);
