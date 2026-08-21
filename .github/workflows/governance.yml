@@ -37,7 +37,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.CONTRACT_SYNC_CLIENT_ID != '' && secrets.CONTRACT_SYNC_PRIVATE_KEY != ''
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           path: source

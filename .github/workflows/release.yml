@@ -59,7 +59,7 @@ jobs:
             # so checkout can't ambiguously resolve to a same-named branch,
             # and fails outright if that tag doesn't actually exist.
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                   ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag) || github.ref }}
                   fetch-depth: 0
@@ -122,7 +122,7 @@ jobs:
             # further down, right before packaging, so none of these
             # dev-only tools ship inside the release ZIP.
             - name: Set up PHP
-              uses: shivammathur/setup-php@44454db4f0199b8b9685a5d763dc37cbf79108e1
+              uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2 (Node 24)
               with:
                   php-version: '8.2'
                   tools: composer:v2
@@ -151,7 +151,7 @@ jobs:
                   version: '10.33.0'
 
             - name: Set up Node.js
-              uses: actions/setup-node@v4
+              uses: actions/setup-node@v5
               with:
                 node-version: '20'
                 cache: 'pnpm'
@@ -234,7 +234,7 @@ jobs:
             # workflow_dispatch the run's own ref is a branch, not the tag —
             # action-gh-release would otherwise infer the wrong tag to attach to.
             - name: Create GitHub Release
-              uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b
+              uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2 (Node 24)
               with:
                   tag_name: ${{ env.TAG }}
                   files: |
