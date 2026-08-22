@@ -1,14 +1,31 @@
 # Release Please — maintains a standing "Release PR" on main that bumps
 # package.json / the plugin header / CHANGELOG.md from Conventional Commits.
-# Merging that PR creates the vX.Y.Z tag, which triggers release.yml to
-# build and publish the actual plugin ZIP. This workflow never builds or
-# ships anything itself — it only prepares the version bump and changelog.
+# Merging that PR creates the vX.Y.Z tag and the GitHub Release. This workflow
+# never builds or ships anything itself — it only prepares the version bump
+# and changelog.
+#
+# The tag it creates does NOT start release.yml. Tags pushed with the default
+# GITHUB_TOKEN cannot trigger other workflow runs, by GitHub's design, so the
+# release lands with no plugin ZIP attached until release.yml is run by hand:
+#
+#     Actions -> "Release Code Quality Final Review" -> Run workflow
+#         tag: vX.Y.Z
+#
+# release.yml documents the same escape hatch at its workflow_dispatch input.
+# v2.8.13 and v2.9.0 were both published assetless for exactly this reason.
 
 name: Release Please
 
 on:
   push:
     branches: [main]
+  # Lets a maintainer re-run the version calculation without pushing a commit
+  # to main. Needed whenever release-please's inputs change out from under it —
+  # most importantly when a release tag is added or removed, since it picks the
+  # most recent vX.Y.Z as the anchor for "what is unreleased" (see
+  # RELEASE_PROCESS.md). Without this the only ways to recompute were another
+  # commit to main or re-running the last run from the Actions UI.
+  workflow_dispatch:
 
 permissions:
   contents: write

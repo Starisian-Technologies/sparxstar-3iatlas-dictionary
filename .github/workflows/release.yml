@@ -135,8 +135,39 @@ jobs:
             # name promises before a release artifact is built. Mirrors the
             # tech spec's production-readiness plan (OQ-017): PHPCS,
             # PHPStan, PHPUnit, and Composer audit must all succeed.
+            # PHPCS blocks the release on errors only; warnings are advisory.
+            # phpcs' exit code cannot express that: run() returns
+            # errors + warnings as a single number, which runPHPCS() maps to 1,
+            # or 2 when any of them are PHPCBF-fixable. A warnings-only run
+            # therefore fails exactly like an error run, and
+            # `--runtime-set ignore_warnings_on_exit 1` does not change it —
+            # v2.9.1 was cut on that assumption and still failed here.
+            #
+            # So read the counts out of the JSON report and decide explicitly.
+            # The full human-readable report is still printed first, so every
+            # warning stays visible in the log; only errors stop the release.
+            # The report goes to RUNNER_TEMP so it cannot land in the ZIP.
             - name: PHPCS
-              run: composer run lint:php
+              run: |
+                  set -uo pipefail
+                  REPORT="${RUNNER_TEMP}/phpcs-report.json"
+
+                  vendor/bin/phpcs -q || true
+                  vendor/bin/phpcs -q --report=json > "$REPORT" || true
+
+                  if ! jq -e . "$REPORT" >/dev/null 2>&1; then
+                    echo "::error::PHPCS produced no parseable JSON report — it likely crashed. Failing."
+                    exit 1
+                  fi
+
+                  ERRORS=$(jq -r '.totals.errors // 0' "$REPORT")
+                  WARNINGS=$(jq -r '.totals.warnings // 0' "$REPORT")
+                  echo "PHPCS: ${ERRORS} error(s), ${WARNINGS} warning(s)."
+
+                  if [ "$ERRORS" -gt 0 ]; then
+                    echo "::error::PHPCS reported ${ERRORS} error(s); see the report above."
+                    exit 1
+                  fi
             - name: PHPStan
               run: composer run analyze:php
             - name: PHPUnit
