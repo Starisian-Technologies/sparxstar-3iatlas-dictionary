@@ -299,7 +299,7 @@ final class Sparxstar3IAtlasDictionaryTts {
         $cached = $this->pending_cached ?? false;
 
         $this->pending_wav    = null;
-        $this->pending_cached = null;
+        $this->pending_cached = false;
 
         remove_filter( 'rest_pre_serve_request', array( $this, 'serve_wav_response' ), 10 );
 
