@@ -15,7 +15,7 @@ updates:
     # JS/Node dependencies for asset builds (optional)
     - package-ecosystem: 'npm'
       directory: '/' # Or /assets/ if you separate frontend
-      schedule: 
+      schedule:
           interval: 'weekly'
       open-pull-requests-limit: 5
 
@@ -27,11 +27,3 @@ updates:
       open-pull-requests-limit: 5
       commit-message:
           prefix: 'chore(deps)'
-
-    # GitHub Actions workflow dependencies
-    - package-ecosystem: 'github-actions'
-      directory: '/'
-      schedule:
-          interval: 'weekly'
-      commit-message:
-          prefix: 'chore(ci)'

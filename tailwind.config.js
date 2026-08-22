@@ -13,7 +13,16 @@ module.exports = {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Inter', 'system-ui', '-apple-system', '"Segoe UI"', 'Roboto', '"Noto Sans"', 'Arial', 'sans-serif'],
+                sans: [
+                    'Inter',
+                    'system-ui',
+                    '-apple-system',
+                    '"Segoe UI"',
+                    'Roboto',
+                    '"Noto Sans"',
+                    'Arial',
+                    'sans-serif',
+                ],
                 mono: ['"Noto Sans Mono"', 'monospace'],
                 serif: ['"Noto Serif"', 'serif'],
             },
@@ -50,12 +59,12 @@ module.exports = {
                     dark: '#1A1A1A',
                 },
                 pos: {
-                    noun:      { bg: '#FCE4F3', text: '#C2185B' },
-                    verb:      { bg: '#E8F5E9', text: '#2E7D32' },
+                    noun: { bg: '#FCE4F3', text: '#C2185B' },
+                    verb: { bg: '#E8F5E9', text: '#2E7D32' },
                     adjective: { bg: '#E3F2FD', text: '#1565C0' },
-                    phrase:    { bg: '#E0F7FA', text: '#00796B' },
-                    adverb:    { bg: '#FFF8E1', text: '#F57F17' },
-                    other:     { bg: '#F3E5F5', text: '#6A1B9A' },
+                    phrase: { bg: '#E0F7FA', text: '#00796B' },
+                    adverb: { bg: '#FFF8E1', text: '#F57F17' },
+                    other: { bg: '#F3E5F5', text: '#6A1B9A' },
                 },
             },
         },

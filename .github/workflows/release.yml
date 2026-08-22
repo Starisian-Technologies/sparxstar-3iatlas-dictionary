@@ -184,19 +184,19 @@ jobs:
             - name: Set up Node.js
               uses: actions/setup-node@v5
               with:
-                # NOTE: this is the Node that *builds* the shipped assets, not
-                # an action runtime — the Node 20 runtime deprecation does not
-                # apply to it, and retiring that runtime (see the pinned action
-                # versions above) deliberately left this value alone.
-                #
-                # It is nonetheless out of step with ci.yml and security.yml,
-                # which test on Node 22, so a green CI run does not prove this
-                # build works. Node 20 is also EOL. Aligning them is a one-line
-                # change, but it alters the environment that produces the
-                # release ZIP, so it belongs in its own change rather than
-                # riding along with an action-runtime bump.
-                node-version: '20'
-                cache: 'pnpm'
+                  # NOTE: this is the Node that *builds* the shipped assets, not
+                  # an action runtime — the Node 20 runtime deprecation does not
+                  # apply to it, and retiring that runtime (see the pinned action
+                  # versions above) deliberately left this value alone.
+                  #
+                  # It is nonetheless out of step with ci.yml and security.yml,
+                  # which test on Node 22, so a green CI run does not prove this
+                  # build works. Node 20 is also EOL. Aligning them is a one-line
+                  # change, but it alters the environment that produces the
+                  # release ZIP, so it belongs in its own change rather than
+                  # riding along with an action-runtime bump.
+                  node-version: '20'
+                  cache: 'pnpm'
 
             - name: Install JS dependencies
               run: pnpm install --frozen-lockfile

@@ -9,47 +9,47 @@
 name: ADR Conformance Check
 
 on:
-  repository_dispatch:
-    types: [adr-registry-changed]
+    repository_dispatch:
+        types: [adr-registry-changed]
 
 permissions:
-  contents: read
+    contents: read
 
 jobs:
-  conformance:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout this repo
-        if: ${{ false }} # Not needed until conformance checks read repo files.
-        uses: actions/checkout@v4
+    conformance:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout this repo
+              if: ${{ false }} # Not needed until conformance checks read repo files.
+              uses: actions/checkout@v4
 
-      - name: Log the registry change
-        env:
-          CHANGE_TYPE: ${{ github.event.client_payload.change_type }}
-          CHANGED_FILES: ${{ github.event.client_payload.changed_files }}
-        run: |
-          echo "=== ADR Registry Change Detected ==="
-          # The dispatch payload is untrusted. Echoing it verbatim is unsafe even
-          # via env, because the Actions runner parses every stdout line for
-          # workflow commands (::error::, ::set-output::, ...). JSON-encode so any
-          # embedded newline becomes a literal \n and the value stays on one line
-          # that cannot begin with "::".
-          echo "Change type: $(jq -n --arg v "$CHANGE_TYPE" '$v')"
-          echo "Changed files: $(jq -n --arg v "$CHANGED_FILES" '$v')"
-          echo "==================================="
+            - name: Log the registry change
+              env:
+                  CHANGE_TYPE: ${{ github.event.client_payload.change_type }}
+                  CHANGED_FILES: ${{ github.event.client_payload.changed_files }}
+              run: |
+                  echo "=== ADR Registry Change Detected ==="
+                  # The dispatch payload is untrusted. Echoing it verbatim is unsafe even
+                  # via env, because the Actions runner parses every stdout line for
+                  # workflow commands (::error::, ::set-output::, ...). JSON-encode so any
+                  # embedded newline becomes a literal \n and the value stays on one line
+                  # that cannot begin with "::".
+                  echo "Change type: $(jq -n --arg v "$CHANGE_TYPE" '$v')"
+                  echo "Changed files: $(jq -n --arg v "$CHANGED_FILES" '$v')"
+                  echo "==================================="
 
-      # Future: pull the registry, diff against this repo's citations,
-      # flag any ADR/INV/OQ that this repo cites but that has been
-      # amended or superseded since the last conformance pass.
-      #
-      # For now, the notification is the value — it tells the next
-      # session that opens this repo "the registry changed, check
-      # your citations."
+            # Future: pull the registry, diff against this repo's citations,
+            # flag any ADR/INV/OQ that this repo cites but that has been
+            # amended or superseded since the last conformance pass.
+            #
+            # For now, the notification is the value — it tells the next
+            # session that opens this repo "the registry changed, check
+            # your citations."
 
-      - name: Post notification
-        run: |
-          # The notice carries no dynamic payload value: the untrusted dispatch
-          # payload (change_type / changed_files) is already logged safely via
-          # env in the previous step, so there is nothing to inject or spoof
-          # here. The notice just tells the next session "something changed."
-          echo "::notice title=ADR Registry Changed::The platform registry was updated. Check your ADR/INV citations on the next PR."
+            - name: Post notification
+              run: |
+                  # The notice carries no dynamic payload value: the untrusted dispatch
+                  # payload (change_type / changed_files) is already logged safely via
+                  # env in the previous step, so there is nothing to inject or spoof
+                  # here. The notice just tells the next session "something changed."
+                  echo "::notice title=ADR Registry Changed::The platform registry was updated. Check your ADR/INV citations on the next PR."

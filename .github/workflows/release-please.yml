@@ -17,25 +17,25 @@
 name: Release Please
 
 on:
-  push:
-    branches: [main]
-  # Lets a maintainer re-run the version calculation without pushing a commit
-  # to main. Needed whenever release-please's inputs change out from under it —
-  # most importantly when a release tag is added or removed, since it picks the
-  # most recent vX.Y.Z as the anchor for "what is unreleased" (see
-  # RELEASE_PROCESS.md). Without this the only ways to recompute were another
-  # commit to main or re-running the last run from the Actions UI.
-  workflow_dispatch:
+    push:
+        branches: [main]
+    # Lets a maintainer re-run the version calculation without pushing a commit
+    # to main. Needed whenever release-please's inputs change out from under it —
+    # most importantly when a release tag is added or removed, since it picks the
+    # most recent vX.Y.Z as the anchor for "what is unreleased" (see
+    # RELEASE_PROCESS.md). Without this the only ways to recompute were another
+    # commit to main or re-running the last run from the Actions UI.
+    workflow_dispatch:
 
 permissions:
-  contents: write
-  pull-requests: write
+    contents: write
+    pull-requests: write
 
 jobs:
-  release-please:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1
-        with:
-          config-file: release-please-config.json
-          manifest-file: .release-please-manifest.json
+    release-please:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1
+              with:
+                  config-file: release-please-config.json
+                  manifest-file: .release-please-manifest.json

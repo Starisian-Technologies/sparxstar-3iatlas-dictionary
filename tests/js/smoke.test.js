@@ -15,16 +15,16 @@
  */
 
 const BASE_URL = (process.env.DICT_BASE_URL || '').replace(/\/$/, '');
-const API_KEY  = process.env.DICT_API_KEY || '';
+const API_KEY = process.env.DICT_API_KEY || '';
 
 if (!BASE_URL) {
     test('smoke tests skipped — DICT_BASE_URL not set', () => {
         console.warn(
             '\nSmoke tests skipped.\n' +
-            'Set DICT_BASE_URL (and optionally DICT_API_KEY) to run against a live instance.\n' +
-            'Example:\n' +
-            '  DICT_BASE_URL=http://localhost:8888/wp-json/sparxstar/v1/dictionary \\\n' +
-            '  DICT_API_KEY=<key> npx jest tests/js/smoke.test.js\n'
+                'Set DICT_BASE_URL (and optionally DICT_API_KEY) to run against a live instance.\n' +
+                'Example:\n' +
+                '  DICT_BASE_URL=http://localhost:8888/wp-json/sparxstar/v1/dictionary \\\n' +
+                '  DICT_API_KEY=<key> npx jest tests/js/smoke.test.js\n'
         );
     });
 }
@@ -88,10 +88,21 @@ function assertEnvelope(json) {
 
 function assertDictionaryEntry(entry) {
     const required = [
-        'uuid', 'headword', 'slug', 'definition',
-        'translation_en', 'translation_fr', 'ipa', 'phonetic',
-        'part_of_speech', 'language', 'domain', 'origin',
-        'synonyms', 'antonyms', 'example_sentences',
+        'uuid',
+        'headword',
+        'slug',
+        'definition',
+        'translation_en',
+        'translation_fr',
+        'ipa',
+        'phonetic',
+        'part_of_speech',
+        'language',
+        'domain',
+        'origin',
+        'synonyms',
+        'antonyms',
+        'example_sentences',
     ];
     for (const field of required) {
         expect(entry).toHaveProperty(field);
@@ -102,7 +113,15 @@ function assertDictionaryEntry(entry) {
 }
 
 function assertSearchItem(item) {
-    for (const field of ['uuid', 'headword', 'slug', 'definition', 'translation_en', 'ipa', 'language']) {
+    for (const field of [
+        'uuid',
+        'headword',
+        'slug',
+        'definition',
+        'translation_en',
+        'ipa',
+        'language',
+    ]) {
         expect(item).toHaveProperty(field);
     }
 }
@@ -324,7 +343,10 @@ describe('Dictionary API smoke tests', () => {
     describe('GET /game-set', () => {
         test('non-standard meta shape (no page/per_page)', async () => {
             if (!firstLangSlug) return;
-            const { status, json } = await get('/game-set', { lang_source: firstLangSlug, limit: '5' });
+            const { status, json } = await get('/game-set', {
+                lang_source: firstLangSlug,
+                limit: '5',
+            });
             expect(status).toBe(200);
             expect(json.success).toBe(true);
             expect(Array.isArray(json.data.words)).toBe(true);
