@@ -275,7 +275,7 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
         $terms = wp_get_object_terms( $post_ids, 'starmus_tax_language', array( 'fields' => 'all_with_object_id' ) );
         if ( ! is_wp_error( $terms ) && is_array( $terms ) ) {
             foreach ( $terms as $term ) {
-                if ( ! isset( $term->object_id, $term->slug ) ) {
+                if ( ! isset( $term->object_id ) ) {
                     continue;
                 }
                 $object_id = (int) $term->object_id;
