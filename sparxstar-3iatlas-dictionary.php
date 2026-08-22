@@ -18,7 +18,7 @@ namespace Starisian\Sparxstar\IAtlas;
  * Plugin URI:        https://starisian.com/sparxstar/sparxstar-3iatlas-dictionary/
  * Description:       A WordPress plugin for 3iAtlas Dictionary management with SCF and WPGraphQL integration.
  * x-release-please-start-version
- * Version:           2.9.2
+ * Version:           2.9.3
  * x-release-please-end
  * Author:            Starisian Technologies
  * Author URI:        https://www.starisian.com/
@@ -44,7 +44,7 @@ if ( ! defined( 'SPARX_3IATLAS_URL' ) ) {
     define( 'SPARX_3IATLAS_URL', plugin_dir_url( __FILE__ ) );
 }
 if ( ! defined( 'SPARX_3IATLAS_VERSION' ) ) {
-    define( 'SPARX_3IATLAS_VERSION', '2.9.2' ); // x-release-please-version
+    define( 'SPARX_3IATLAS_VERSION', '2.9.3' ); // x-release-please-version
 }
 if ( ! defined( 'SPARX_3IATLAS_NAMESPACE' ) ) {
     define( 'SPARX_3IATLAS_NAMESPACE', 'Starisian\\Sparxstar\\IAtlas\\' );
