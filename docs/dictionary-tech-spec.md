@@ -126,8 +126,9 @@ not remove it from `Sparxstar3IAtlasPostTypes.php`.
 
 Game mechanics data (scores, session state, learned-word records) lives
 entirely client-side today, in IndexedDB (`aiwa-games-db`, stores
-`game-sets`/`game-sessions`/`progress-outbox`/`learned-words` — see
-`src/js/hooks/idbUtils.js`). The absolute rule from
+`game-sets`/`game-sessions`/`progress-outbox`/`learned-words` — defined in
+`src/hooks/idbUtils.js` of the games repo, Starisian-Technologies/sparxstar-3iatlas-dictionary-games; this repo no longer carries a
+copy). The absolute rule from
 `.github/copilot-instructions.md` — never use `aiwa_`/`sparxstar_` for
 game mechanics data — applies unconditionally, including to this
 IndexedDB layer, and the current store names comply. The specific
@@ -216,9 +217,14 @@ frequency }`. `frequency` is a **reserved, always-null** field for a future
 
 ## Game integration — progress event wire schema (verified 2026-07-08)
 
+> The two client-side files cited below lived in this repo when that
+> verification was done. They are now in the games repo (`Starisian-Technologies/sparxstar-3iatlas-dictionary-games`); this repo's
+> copy was deleted when the game layer was extracted. The server half
+> (`handle_progress_sync()`) is still ours.
+
 The actual wire shape sent from the client outbox to `POST /progress/sync` — verified
-directly against `src/js/games/GameShell.jsx`'s `addEvent()` call sites,
-`src/js/hooks/useProgressSync.js`'s `addEvent()` implementation (which appends
+directly against `GameShell.jsx`'s `addEvent()` call sites and
+`useProgressSync.js`'s `addEvent()` implementation (which appends
 `ts: Date.now()`), and `handle_progress_sync()` in `Sparxstar3IAtlasDictionaryRestApi.php`
 (which reads `$event['type']`, `$event['word_uuid']`, `$event['game']`, `$event['domain']`,
 `$event['ts']`) — varies by event type. **No single emitted event carries both `game` and
@@ -256,7 +262,7 @@ six of the seven hook types actually emitted from `GameShell.jsx` today. The sev
 (note **camelCase** `wordUuid`, vs. snake_case `word_uuid` in the wire event above) and writes
 it into the IndexedDB session's `results` array. That record is local session-replay/summary
 state — it drives the Session Complete screen and the "learned words" count
-(`PRODUCTION_GAMES` set in `src/js/games/constants.js` gates which game types count) — and is
+(`PRODUCTION_GAMES` set in the games repo's `src/constants.js` gates which game types count) — and is
 **never sent over the wire**. It does not flow into the `/progress/sync` outbox described above.
 
 ### MyCred hook map (hook names verified against `handle_progress_sync()`; Award values are not enforced by this repo)
@@ -531,4 +537,14 @@ repo must not invent their behavior.
   always-null `frequency` field. Found-and-fixed: the request body's
   language field was read under the wrong key (`lang` instead of
   `lang_source`), so scoping had silently never engaged in production.
+- 2026-08-21 — Game layer extracted. `src/js/games/`, `src/js/hooks/` and the
+  dead `src/js/api/` client were deleted from this repo, and the Play tab
+  (`GameShell` import, both render paths, the Browse/Play tablist and its
+  `topTab` state, the mobile nav entry) came out of `src/js/app.jsx`. The
+  canonical game layer is `Starisian-Technologies/sparxstar-3iatlas-dictionary-games`; this repo had been shipping an older parallel
+  copy of it. No REST route, PHP class or myCred hook changed — the server
+  side the games app consumes is untouched. The app bundle dropped 82.3 KiB
+  (-15.4%), which reduces the payload tracked by `OQ-021`. Updated `ROLE.md`,
+  `AGENTS.md`, `.github/copilot-instructions.md` and this document so none of
+  them describe game source as living here.
 - 0.1.0 (2026-06-30) — Initial draft, bootstrapped from `AGENTS.md` and `.github/copilot-instructions.md` for platform governance setup.

@@ -149,27 +149,19 @@ between two copies. Rules to remember without opening the other file:
 
 ---
 
-## Games Architecture (Phase 4 — Merged)
+## Games Architecture (Phase 4 — merged here, then extracted)
 
-**Files added in Phase 4:**
-```
-src/js/hooks/
-  idbUtils.js            — shared IndexedDB helper (openDB, getRecord, putRecord, getAllRecords, deleteRecord)
-  useGameSet.js          — /game-set fetch + 3-day IndexedDB TTL cache; cache key includes includeAudio flag
-  useGameSession.js      — session state, learned-word tracking, sessionRef pattern
-  useProgressSync.js     — IndexedDB outbox for progress events (syncNow is no-op — see OQ-002 in docs/dictionary-tech-spec.md § Open Questions, blocked on GAME-SERVICE-INTAKE-SPEC-v1.0; related sub-question OQ-013 covers the anonymous/guest token source specifically)
-src/js/games/
-  GameShell.jsx          — top-level game orchestrator, phase state machine
-  AccessoryBar.jsx       — special character input bar (ŋ ɓ ɗ ñ ɲ ʔ á é í ó ú) — always present for typed input
-  SessionComplete.jsx    — end-of-session summary
-  games/
-    MeaningMatch.jsx
-    LetterReveal.jsx
-    ArrangeWord.jsx
-    DomainFlash.jsx
-    CompleteSentence.jsx
-    ListenWrite.jsx
-```
+**The game source is not in this repo.** Phase 4 landed it under
+`src/js/games/` and `src/js/hooks/`, but the game layer was extracted to
+`Starisian-Technologies/sparxstar-3iatlas-dictionary-games` (npm `sparxstar-rlc-games`, UMD global `RlcGames`) and the copy here was
+deleted rather than maintained in parallel. The Play tab came out of
+`src/js/app.jsx` with it.
+
+Do not re-add game source, hooks, or the IndexedDB layer here. This repo's
+side of the boundary is the REST API the games app calls — `/game-set`,
+`/domains`, `/page-token`, `/pronounce` — plus the `aiwa_game_*`
+`do_action()` re-emitters. The game design mandate below still governs the
+games; it is now enforced in the games repo.
 
 **Game design mandate (from game spec):**
 - Users are fluent Mandinka speakers learning to write their own language. The gap is orthographic, not vocabulary.

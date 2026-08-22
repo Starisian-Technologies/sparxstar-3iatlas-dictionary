@@ -25,14 +25,12 @@ import {
     Sun,
     Moon,
     Monitor,
-    Gamepad2,
     Share2,
     LayoutGrid,
     Users,
     Leaf,
 } from 'lucide-react';
 import '../css/sparxstar-3iatlas-dictionary-style.css';
-import GameShell from './games/GameShell.jsx';
 
 // ---------------------------------------------------------------------------
 // Settings
@@ -195,12 +193,11 @@ const NAV_ITEMS = [
     { id: 'explore', label: 'Explore', Icon: Compass },
     { id: 'favorites', label: 'Saved', Icon: Heart },
     { id: 'history', label: 'Recent', Icon: Clock },
-    { id: 'play', label: 'Play', Icon: Gamepad2 },
 ];
 
 /**
  * Desktop sidebar nav (v3 §3.1). Categories is a nav alias that renders ExploreView.
- * Mobile bottom nav is separate (NAV_ITEMS) and additionally carries Play.
+ * Mobile bottom nav is separate (NAV_ITEMS).
  */
 const DESKTOP_NAV_ITEMS = [
     { id: 'home', label: 'Home', Icon: Home },
@@ -1849,7 +1846,6 @@ export default function DictionaryApp() {
     const [activeNav, setActiveNav] = useState('home');
     const [scrollState, setScrollState] = useState({ atTop: true, atBottom: false });
     const [languages, setLanguages] = useState([]);
-    const [topTab, setTopTab] = useState('browse');
     const [wordOfDaySlug, setWordOfDaySlug] = useState(null);
 
     const virtuosoRef = useRef(null);
@@ -2116,175 +2112,93 @@ export default function DictionaryApp() {
                     background: isDark ? '#1A1A1A' : '#F8F8F8',
                 }}
             >
-                {/* Top-level Browse / Play tab bar */}
-                <div
-                    role="tablist"
-                    aria-orientation="horizontal"
-                    aria-label="Dictionary modes"
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        height: 48,
-                        flexShrink: 0,
-                        borderBottom: '1px solid #f3f4f6',
-                        background: isDark ? '#111827' : 'white',
-                    }}
-                >
-                    {['browse', 'play'].map((tab) => {
-                        const isActive = topTab === tab;
-                        const Icon = tab === 'play' ? Gamepad2 : BookOpen;
-                        return (
-                            <button
-                                key={tab}
-                                type="button"
-                                role="tab"
-                                id={`desktop-tab-${tab}`}
-                                aria-controls={`desktop-panel-${tab}`}
-                                aria-selected={isActive}
-                                onClick={() => setTopTab(tab)}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 6,
-                                    padding: '0 20px',
-                                    height: '100%',
-                                    fontWeight: isActive ? 700 : 500,
-                                    fontSize: '0.9rem',
-                                    color: isActive ? '#E91E8C' : '#9ca3af',
-                                    borderBottom: isActive
-                                        ? '2px solid #E91E8C'
-                                        : '2px solid transparent',
-                                    background: 'none',
-                                    cursor: 'pointer',
-                                    transition: 'color 0.15s',
-                                }}
-                                tabIndex={isActive ? 0 : -1}
-                            >
-                                <Icon size={16} aria-hidden="true" />
-                                {tab === 'play' ? 'Play' : 'Browse'}
-                            </button>
-                        );
-                    })}
-                </div>
-
                 {/* Content area */}
-                {topTab === 'browse' ? (
-                    <div
-                        role="tabpanel"
-                        id="desktop-panel-browse"
-                        aria-labelledby="desktop-tab-browse"
-                        style={{ flex: 1, display: 'flex', overflow: 'hidden' }}
-                    >
-                        <div style={{ width: 240, flexShrink: 0 }}>
-                            <DesktopSidebar
-                                language={language}
-                                onLanguageToggle={() =>
-                                    setLanguage((l) => (l === 'en' ? 'fr' : 'en'))
-                                }
-                                themePref={themePref}
-                                onThemeToggle={cycleTheme}
-                                languages={languages}
-                                sourceLanguage={sourceLanguage}
-                                onSourceLanguage={setSourceLanguage}
-                                activeNav={activeNav}
-                                onNavChange={setActiveNav}
-                            />
-                        </div>
-
-                        <div
-                            style={{
-                                flex: 1,
-                                display: 'flex',
-                                flexDirection: 'column',
-                                overflow: 'hidden',
-                                borderRight: '1px solid #f3f4f6',
-                            }}
-                        >
-                            {activeNav === 'home' && (
-                                <>
-                                    {wordListArea}
-                                    <AlphaBar onSelect={handleScrollToLetter} />
-                                </>
-                            )}
-                            {(activeNav === 'explore' || activeNav === 'categories') && (
-                                <ExploreView
-                                    languages={languages}
-                                    sourceLanguage={sourceLanguage}
-                                    onSelectLanguage={(slug) => {
-                                        setSourceLanguage(slug);
-                                        setActiveNav('home');
-                                    }}
-                                />
-                            )}
-                            {activeNav === 'favorites' && (
-                                <FavoritesView
-                                    words={allWords}
-                                    favorites={favorites}
-                                    language={language}
-                                    onSelect={handleSelectWord}
-                                    onFavoriteToggle={handleFavoriteToggle}
-                                    onPrefetch={prefetchWord}
-                                    selectedSlug={selectedSlug}
-                                />
-                            )}
-                            {activeNav === 'history' && (
-                                <HistoryView
-                                    words={allWords}
-                                    history={history}
-                                    language={language}
-                                    onSelect={handleSelectWord}
-                                    favorites={favorites}
-                                    onFavoriteToggle={handleFavoriteToggle}
-                                    onPrefetch={prefetchWord}
-                                    selectedSlug={selectedSlug}
-                                />
-                            )}
-                            {activeNav === 'play' && (
-                                <>
-                                    {wordListArea}
-                                    <AlphaBar onSelect={handleScrollToLetter} />
-                                </>
-                            )}
-                        </div>
-
-                        <div style={{ width: 420, flexShrink: 0, overflow: 'hidden' }}>
-                            {selectedSlug ? (
-                                <DetailView
-                                    key={selectedSlug}
-                                    slug={selectedSlug}
-                                    initialTitle={selectedTitle}
-                                    language={language}
-                                    onClose={null}
-                                    onSelectWord={handleSelectWord}
-                                    favorites={favorites}
-                                    onFavoriteToggle={handleFavoriteToggle}
-                                />
-                            ) : (
-                                <DesktopEmptyPanel
-                                    wordOfDay={wordOfDay}
-                                    language={language}
-                                    onSelect={handleSelectWord}
-                                />
-                            )}
-                        </div>
-                    </div>
-                ) : (
-                    <div
-                        role="tabpanel"
-                        id="desktop-panel-play"
-                        aria-labelledby="desktop-tab-play"
-                        style={{ flex: 1, display: 'flex', overflow: 'hidden' }}
-                    >
-                        <GameShell
-                            restUrl={REST_URL}
+                <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+                    <div style={{ width: 240, flexShrink: 0 }}>
+                        <DesktopSidebar
                             language={language}
-                            sourceLanguage={sourceLanguage}
+                            onLanguageToggle={() => setLanguage((l) => (l === 'en' ? 'fr' : 'en'))}
+                            themePref={themePref}
+                            onThemeToggle={cycleTheme}
                             languages={languages}
+                            sourceLanguage={sourceLanguage}
                             onSourceLanguage={setSourceLanguage}
-                            onBrowse={() => setTopTab('browse')}
+                            activeNav={activeNav}
+                            onNavChange={setActiveNav}
                         />
                     </div>
-                )}
+
+                    <div
+                        style={{
+                            flex: 1,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            overflow: 'hidden',
+                            borderRight: '1px solid #f3f4f6',
+                        }}
+                    >
+                        {activeNav === 'home' && (
+                            <>
+                                {wordListArea}
+                                <AlphaBar onSelect={handleScrollToLetter} />
+                            </>
+                        )}
+                        {(activeNav === 'explore' || activeNav === 'categories') && (
+                            <ExploreView
+                                languages={languages}
+                                sourceLanguage={sourceLanguage}
+                                onSelectLanguage={(slug) => {
+                                    setSourceLanguage(slug);
+                                    setActiveNav('home');
+                                }}
+                            />
+                        )}
+                        {activeNav === 'favorites' && (
+                            <FavoritesView
+                                words={allWords}
+                                favorites={favorites}
+                                language={language}
+                                onSelect={handleSelectWord}
+                                onFavoriteToggle={handleFavoriteToggle}
+                                onPrefetch={prefetchWord}
+                                selectedSlug={selectedSlug}
+                            />
+                        )}
+                        {activeNav === 'history' && (
+                            <HistoryView
+                                words={allWords}
+                                history={history}
+                                language={language}
+                                onSelect={handleSelectWord}
+                                favorites={favorites}
+                                onFavoriteToggle={handleFavoriteToggle}
+                                onPrefetch={prefetchWord}
+                                selectedSlug={selectedSlug}
+                            />
+                        )}
+                    </div>
+
+                    <div style={{ width: 420, flexShrink: 0, overflow: 'hidden' }}>
+                        {selectedSlug ? (
+                            <DetailView
+                                key={selectedSlug}
+                                slug={selectedSlug}
+                                initialTitle={selectedTitle}
+                                language={language}
+                                onClose={null}
+                                onSelectWord={handleSelectWord}
+                                favorites={favorites}
+                                onFavoriteToggle={handleFavoriteToggle}
+                            />
+                        ) : (
+                            <DesktopEmptyPanel
+                                wordOfDay={wordOfDay}
+                                language={language}
+                                onSelect={handleSelectWord}
+                            />
+                        )}
+                    </div>
+                </div>
             </div>
         );
     }
@@ -2430,16 +2344,6 @@ export default function DictionaryApp() {
                         onFavoriteToggle={handleFavoriteToggle}
                         onPrefetch={prefetchWord}
                         selectedSlug={selectedSlug}
-                    />
-                )}
-                {activeNav === 'play' && (
-                    <GameShell
-                        restUrl={REST_URL}
-                        language={language}
-                        sourceLanguage={sourceLanguage}
-                        languages={languages}
-                        onSourceLanguage={setSourceLanguage}
-                        onBrowse={() => setActiveNav('home')}
                     />
                 )}
             </main>

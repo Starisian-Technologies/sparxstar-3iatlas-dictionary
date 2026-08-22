@@ -93,7 +93,7 @@ Data migration: `wp_term_taxonomy.taxonomy` for each. Re-register under the new 
 ### Bucket E — Game signals (CROSS-SYSTEM — separate, coordinated PR)
 `aiwa_game_{word_correct,listen_write_correct,session_complete,domain_mastered,streak_3,new_word_practiced,return_visit}` → `sparxstar_dict_game_*` (hook tier).
 - **Repo-rule gate (not just cross-system):** these are WordPress hook/event names, and `AGENTS.md` reserves the `aiwa_*` prefix for exactly that (e.g. `aiwa_game_word_correct`). So renaming them is **doubly blocked** — it needs (a) an explicit ADR override of that repo rule *and* (b) the cross-system coordination below. Absent the ADR, the `aiwa_game_*` names stay.
-- **Wire contract:** the React games send these as `addEvent({ type: 'aiwa_game_*' })` (`src/js/games/GameShell.jsx`, `src/js/hooks/useProgressSync.js`, **and** the parallel package `sparxstar-3iatlas-dictionary-games/`). The REST endpoint switches on the `type` string and re-emits via `do_action()` (`…RestApi.php:1083+`).
+- **Wire contract:** the React games send these as `addEvent({ type: 'aiwa_game_*' })` from `GameShell.jsx` / `useProgressSync.js` in `Starisian-Technologies/sparxstar-3iatlas-dictionary-games`, which is now the only copy — this repo's parallel `src/js/games/` and `src/js/hooks/` were deleted when the game layer was extracted. The REST endpoint switches on the `type` string and re-emits via `do_action()` (`…RestApi.php:1083+`).
 - **Consumers:** whatever `add_action()`s these — the Rewards/MyCred listener (separate system).
 - Renaming requires a coordinated change across: this REST endpoint, both frontend copies, and the Rewards listener. **Do not rename unilaterally.** Owner/Rewards coordination required (Open Question 4).
 

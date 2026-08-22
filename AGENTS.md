@@ -252,22 +252,9 @@ src/
     Sparxstar3IAtlasDictionary.php          ← register new classes here
   js/
     app.jsx                                 ← Phase 2 full rebuild done; Phase 2 UI Fix done (PR #64)
-    hooks/
-      idbUtils.js                           ← Phase 4: shared IndexedDB helper
-      useGameSet.js                         ← Phase 4: /game-set fetch + IndexedDB TTL cache
-      useGameSession.js                     ← Phase 4: session state + sessionRef pattern
-      useProgressSync.js                    ← Phase 4: IndexedDB outbox (syncNow is a no-op — see OQ-002 in docs/dictionary-tech-spec.md § Open Questions. NOT blocked on GAME-SERVICE-INTAKE-SPEC-v1.0, which now exists — blocked on the `sparxstar-identity` issuer, unbuilt. OQ-013, the guest-token question, is closed — guests never sync, by design, not an open blocker)
-    games/
-      GameShell.jsx                         ← Phase 4: game orchestrator + phase state machine
-      AccessoryBar.jsx                      ← Phase 4: Mandinka character input bar
-      SessionComplete.jsx                   ← Phase 4: post-session summary
-      games/
-        MeaningMatch.jsx
-        LetterReveal.jsx
-        ArrangeWord.jsx
-        DomainFlash.jsx
-        CompleteSentence.jsx
-        ListenWrite.jsx
+    (no hooks/ or games/ — the game layer was extracted to
+     Starisian-Technologies/sparxstar-3iatlas-dictionary-games
+     and the copy here deleted. Do not re-add game source.)
 tailwind.config.js                          ← Phase 2: AIWA brand colors
 AGENTS.md                                   ← this file
 ```
@@ -400,29 +387,28 @@ WordPress authentication is prohibited for all user-facing features. WordPress s
 
 ---
 
-### Phase 4 — Games / Play Tab ✅ Done
+### Phase 4 — Games / Play Tab ✅ Done · **source has since moved out of this repo**
 
 Specification: `.github/instructions/dictionary-game-spec-v1.md`
 
-**New files:**
-```
-src/js/hooks/idbUtils.js           — shared IndexedDB helper (openDB, getRecord, putRecord, getAllRecords, deleteRecord)
-src/js/hooks/useGameSet.js         — /game-set fetch + 3-day IndexedDB TTL cache
-src/js/hooks/useGameSession.js     — session state (currentIndex, results, xpEarned, checkpoint resume) + `sessionRef` mirror pattern to prevent stale-session writes during rapid actions
-src/js/hooks/useProgressSync.js    — event outbox (IndexedDB); network sync intentionally a no-op — see OQ-002 (docs/dictionary-tech-spec.md § Open Questions). NOT blocked on GAME-SERVICE-INTAKE-SPEC-v1.0, which now exists and is implemented — blocked on the `sparxstar-identity` issuer, unbuilt. OQ-013 (guest-token question) is closed, not open — guests never sync, by design
-src/js/games/AccessoryBar.jsx      — Mandinka character bar (ŋ ɓ ɗ ñ ɲ ʔ á é í ó ú), visualViewport positioning
-src/js/games/SessionComplete.jsx   — post-session summary (stats, cumulative word count, action buttons)
-src/js/games/GameShell.jsx         — session setup (domain/game/word-count selectors), game router, phase management
-src/js/games/games/DomainFlash.jsx — Game 4.6: flashcard reveal, "I knew it" / "Still learning"
-src/js/games/games/MeaningMatch.jsx — Game 4.3: 3-option meaning selection, same-domain distractors
-src/js/games/games/ArrangeWord.jsx — Game 4.2: scrambled letter tiles, tap-to-place, auto-check
-src/js/games/games/LetterReveal.jsx — Game 4.5: alphabet pool, 5 wrong = word skipped, pottery vessel tilt
-src/js/games/games/CompleteSentence.jsx — Game 4.4: sentence with word blanked, typed input, AccessoryBar
-src/js/games/games/ListenWrite.jsx — Game 4.1: auto-play audio, typed response, AccessoryBar, +10 XP
-```
+Phase 4 shipped the six games and the Play tab here. **That source no longer
+lives in this repo.** The game layer was extracted to
+`Starisian-Technologies/sparxstar-3iatlas-dictionary-games` (npm `sparxstar-rlc-games`, UMD global `RlcGames`), which is now
+canonical, and the older copy here was deleted rather than kept in sync —
+`src/js/games/` and `src/js/hooks/` are gone. Do not go looking for them and
+do not re-add game source here.
+
+What this repo still owns is the server side that app consumes: the
+`/game-set`, `/domains`, `/page-token` and `/pronounce` REST routes and the
+`aiwa_game_*` `do_action()` re-emitters. Game UI, session lifecycle, the
+IndexedDB layer (`aiwa-games-db`) and progress sync belong to the games repo;
+its `docs/dictionary-games-tech-spec.md` is their specification.
 
 **Changes to existing files:**
-- `src/js/app.jsx`: Play tab added to mobile bottom nav (5th item, Gamepad2 icon). Desktop gets Browse/Play tab bar above the content area. GameShell rendered when Play is active.
+- `src/js/app.jsx`: the Play tab was added here in Phase 4 and removed again
+  when the games moved out — no `GameShell` import, no Browse/Play tab bar, no
+  Play entry in the mobile bottom nav. A link or launcher pointing at the
+  standalone games app belongs here once that app has a live URL.
 - `webpack.config.js`: Added `javascript/auto` rule for `src/**/*.js` to allow ESM import/export with `"type":"commonjs"` in package.json.
 
 **Open questions carried forward:**
@@ -503,20 +489,21 @@ Phase 3 covers cross-tool REST integration verification. The authoritative scope
 - S2S → `/wordlist` with `lang_source`
 - RLC → offline `/wordlist` with `lang_source` filter and fallback
 
-### Phase 4 — Games / Play Tab ✅ Done (PR #59, merged May 2026)
+### Phase 4 — Games / Play Tab ✅ Done (PR #59, merged May 2026) · source since moved out
 
 Six game types implemented: MeaningMatch, LetterReveal, ArrangeWord, DomainFlash, CompleteSentence, ListenWrite.
 
-Key files added:
-- `src/js/games/GameShell.jsx` — phase state machine, game orchestrator
-- `src/js/games/AccessoryBar.jsx` — special character bar (ŋ ɓ ɗ ñ ɲ ʔ), always present for typed input
-- `src/js/games/SessionComplete.jsx` — end-of-session summary
-- `src/js/games/games/*.jsx` — individual game components
-- `src/js/hooks/useGameSet.js` — IndexedDB-backed game set cache
-- `src/js/hooks/useGameSession.js` — session tracking with sessionRef pattern
-- `src/js/hooks/useProgressSync.js` — IndexedDB outbox (syncNow is intentional no-op — see OQ-002 in docs/dictionary-tech-spec.md § Open Questions. NOT blocked on GAME-SERVICE-INTAKE-SPEC-v1.0, which now exists and is implemented — blocked on the `sparxstar-identity` issuer, unbuilt. OQ-013, the guest-token question, is closed, not open — guests never sync, by design)
+The files this section used to list — `GameShell.jsx`, `AccessoryBar.jsx`,
+`SessionComplete.jsx`, the six game components, `useGameSet.js`,
+`useGameSession.js`, `useProgressSync.js` — are **no longer in this repo.**
+They were deleted along with the Play tab when the game layer became
+`Starisian-Technologies/sparxstar-3iatlas-dictionary-games`. See the Phase 4 section above. The notes below are retained because
+they still describe how that code behaves; read them against the games repo,
+not this one.
 
-**sessionRef pattern:** `recordResult` and `completeSession` in `useGameSession.js` use `sessionRef.current` to avoid stale React closure bugs. Do not remove this pattern.
+**sessionRef pattern:** `recordResult` and `completeSession` in
+`useGameSession.js` use `sessionRef.current` to avoid stale React closure
+bugs. Do not remove this pattern — it now applies in the games repo.
 
 ---
 

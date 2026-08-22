@@ -5,11 +5,21 @@
 - Authoritative storage of approved dictionary entries (WordPress CPT `aiwa-cpt-dictionary` + ACF/SCF fields)
 - The public REST API at `sparxstar/v1/dictionary` (lookup, search, wordlist, languages, domains, game-set, word-of-day, pronounce, page-token, spell, and the deprecated progress/sync)
 - Ephemeral page-token issuance and consumer API key validation for that API (Webster Model auth)
-- The public-facing Browse experience (dictionary lookup UI) and Play experience (six language games) as a React PWA
-- Game session state, learned-word tracking, and progress-event capture. Today this lives entirely client-side in IndexedDB (`aiwa-games-db`, stores `game-sets`/`game-sessions`/`progress-outbox`/`learned-words` — see `src/js/hooks/idbUtils.js`). The absolute rule from `.github/copilot-instructions.md` — never use `aiwa_`/`sparxstar_` for game mechanics data — applies everywhere, including here, and the current store names comply. The specific `game_` (persistent) / `_spx_` (session-scoped) token format is a WordPress-user-meta naming convention; it governs any future server-side persistence of this data, not the current IndexedDB store/key names, which don't need to literally match those tokens as long as they avoid `aiwa_`/`sparxstar_`.
+- The public-facing Browse experience (dictionary lookup UI) as a React PWA
+- The `aiwa_`/`sparxstar_` naming prohibition for game mechanics data, as it binds anything **this** repo persists. The absolute rule from `.github/copilot-instructions.md` — never use `aiwa_`/`sparxstar_` for game mechanics data — governs any future server-side persistence here; the `game_` (persistent) / `_spx_` (session-scoped) token format is the WordPress-user-meta convention that applies to it. The client-side game state that rule also covers is no longer ours — see Does not own.
 - myCred gamification hook firing (`aiwa_game_*` actions) for downstream XP/Gold processing
 
 ## Does not own
+
+- **The game UI and all client-side game state.** The six games, the game shell,
+  session/progress hooks and the IndexedDB layer (`aiwa-games-db`, stores
+  `game-sets`/`game-sessions`/`progress-outbox`/`learned-words`) live in
+  `Starisian-Technologies/sparxstar-3iatlas-dictionary-games` (npm `sparxstar-rlc-games`, UMD global `RlcGames`), which is canonical.
+  This repo carried a second, older copy under `src/js/games/` and
+  `src/js/hooks/`; it was deleted rather than kept in sync, along with the Play
+  tab in `src/js/app.jsx`. Do not re-add game source here. What this repo does
+  own is the server side that app consumes — the `/game-set`, `/domains`,
+  `/page-token` and `/pronounce` routes, and the `aiwa_game_*` hooks below.
 
 - **New word intake, review, or normalization** — owned by DVE (Dictionary Validation Engine); see `.github/instructions/3IATLAS-DICTIONARY-ROLE-AND-PIPELINE-SPEC-v1.0.md`. By design there is no community submission or correction-proposal pathway here — the one exception is `Sparxstar3IAtlasDictionaryForm`, a legacy WP-authenticated frontend form that can still add/edit `aiwa-cpt-dictionary` entries for logged-in users (see Open items for the pending decision to deprecate or formally scope it). New work must not extend it or build new intake paths against it.
 - **Linguistic editing of locked fields** (headword, language, definitions, pronunciation, siblings, speaker community tags) — intended to be locked post-import so corrections originate upstream in DVE as a new Approved Entry Package, arriving here only via WP-CLI import. This lock is not currently enforced by any ACF/WordPress admin-UI restriction (see Open items) — it's a process/policy boundary today, not a technical one.
