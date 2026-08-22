@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented here.
 
+## [2.9.1](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/compare/v2.9.0...v2.9.1) (2026-08-22)
+
+
+### Bug Fixes
+
+* stop the release gate failing on PHPCS warnings ([#116](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/issues/116)) ([82874ae](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/commit/82874aeb547b7f7699dc011ae09f06f4cde44835))
+
 ## [2.9.0](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/compare/v2.8.12...v2.9.0) (2026-08-21)
 
 
