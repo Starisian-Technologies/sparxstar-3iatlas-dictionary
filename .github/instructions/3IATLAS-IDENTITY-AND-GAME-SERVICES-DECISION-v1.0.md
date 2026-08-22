@@ -21,12 +21,12 @@ All 3iAtlas products share a single identity system. One account works in WordPa
 
 The model is the WordPad v4.0 auth architecture, promoted from product-level to suite-level:
 
-| Tier             | Level          | Login                                      |
-| ---------------- | -------------- | ------------------------------------------ |
-| Lower Basic      | Grades 1–6     | Class code + screen-name tap (no password) |
-| Upper Basic      | Grades 7–9     | Screen name + 4-digit PIN                  |
-| Senior Secondary | Grades 10–12   | Screen name + password                     |
-| Adult            | Post-secondary | Full credentials                           |
+| Tier | Level | Login |
+|---|---|---|
+| Lower Basic | Grades 1–6 | Class code + screen-name tap (no password) |
+| Upper Basic | Grades 7–9 | Screen name + 4-digit PIN |
+| Senior Secondary | Grades 10–12 | Screen name + password |
+| Adult | Post-secondary | Full credentials |
 
 Properties carried over unchanged from WordPad v4.0: JWT-based, no WordPress login anywhere in the suite, no email or personal data collected from minors, teacher visibility rules per tier, Helios as the platform-mode issuer behind `HeliosClientInterface` (boot-detected, no degradation when absent).
 
@@ -38,7 +38,7 @@ Properties carried over unchanged from WordPad v4.0: JWT-based, no WordPress log
 
 **Scope: platform-level, not 3iAtlas-only.** Following the established pattern (RLC engine: "AIWA is the first deployment, not the definition"), the Identity Service is a SPARXSTAR platform service for which the 3iAtlas suite is the first client. Future SPARXSTAR consumer products use the same issuer.
 
-**Boundary rule (permanent):** the Identity Service answers only _who are you_ — login, tier claims, token issuance. It never answers _what are you allowed to do_ — no trust levels, no agreement evaluation, no governance tokens. Authorization remains Helios/Mḗh₁n̥s exclusively. Any PR adding authorization logic to the Identity Service is a spec violation.
+**Boundary rule (permanent):** the Identity Service answers only *who are you* — login, tier claims, token issuance. It never answers *what are you allowed to do* — no trust levels, no agreement evaluation, no governance tokens. Authorization remains Helios/Mḗh₁n̥s exclusively. Any PR adding authorization logic to the Identity Service is a spec violation.
 
 - All apps validate tokens against this issuer. Same token, same tiers, everywhere.
 - Tokens are **Helios-shaped**: claim names and structure match Helios's token format, so future convergence is an issuer-URL change, not a migration.
@@ -60,11 +60,11 @@ Unauthenticated visitors can play Dictionary games. Guest progress is device-loc
 
 ## 5. What This Closes
 
-| Item                                                                   | Resolution                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| OQ-G5 (sync destination, opened informally June 2026)                  | Closed — destination is the 3iAtlas Game Service, suite-JWT authenticated                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| Game-player identity question                                          | Closed — suite tiers + guest mode (§1, §4)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| ~~OQ-G1~~ (recorded closed May 2026: WP nonce auth for /progress/sync) | **Correction (2026-07-08):** "OQ-G1" was redefined and reused for two different questions across the dictionary repo's own document history — the original (`dictionary-game-spec-v1.md`, May 2026) asked about **Helios-token-source** for `/progress/sync`; this row instead closes a _different_ question ("WP nonce auth for /progress/sync") that was substituted later, on a citation (§6 item 2, below) that is itself fabricated. Disambiguated: (a) the WP nonce/session auth approach for the deprecated `/progress/sync` endpoint is resolved/stable — that endpoint is retired (§6); (b) how an anonymous/guest game client obtains a token to sync to the Game Service with no WordPress session and no Helios identity remains genuinely open and is not closed by this document. See `docs/dictionary-tech-spec.md` in the dictionary repo for the full disambiguation. Do not cite "OQ-G1" for either question going forward. |
+| Item | Resolution |
+|---|---|
+| OQ-G5 (sync destination, opened informally June 2026) | Closed — destination is the 3iAtlas Game Service, suite-JWT authenticated |
+| Game-player identity question | Closed — suite tiers + guest mode (§1, §4) |
+| ~~OQ-G1~~ (recorded closed May 2026: WP nonce auth for /progress/sync) | **Correction (2026-07-08):** "OQ-G1" was redefined and reused for two different questions across the dictionary repo's own document history — the original (`dictionary-game-spec-v1.md`, May 2026) asked about **Helios-token-source** for `/progress/sync`; this row instead closes a *different* question ("WP nonce auth for /progress/sync") that was substituted later, on a citation (§6 item 2, below) that is itself fabricated. Disambiguated: (a) the WP nonce/session auth approach for the deprecated `/progress/sync` endpoint is resolved/stable — that endpoint is retired (§6); (b) how an anonymous/guest game client obtains a token to sync to the Game Service with no WordPress session and no Helios identity remains genuinely open and is not closed by this document. See `docs/dictionary-tech-spec.md` in the dictionary repo for the full disambiguation. Do not cite "OQ-G1" for either question going forward. |
 
 ## 6. Scoped Supersessions
 
@@ -78,17 +78,17 @@ Per the suite convention, each supersession is explicit and limited:
 
 Closed (June 2026, options reviewed with Max):
 
-| ID    | Decision                                                                                                                                                                                                                                                                                                                                            |
-| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ID | Decision |
+|---|---|
 | OQ-I1 | **Own repo, platform-scoped.** `sparxstar-identity` (working name) is its own repository — not 3iAtlas-only; 3iAtlas is the first client. Rationale: security isolation — the suite's token-minting code must not share a repo with actively agent-developed feature code. Its AGENTS.md is locked down; PRs are reviewed with heightened scrutiny. |
-| OQ-I2 | **Keypair signing (RS256).** Only the Identity Service holds the private key and can mint tokens. Apps hold the public key and can only verify. No shared secret anywhere in the suite.                                                                                                                                                             |
+| OQ-I2 | **Keypair signing (RS256).** Only the Identity Service holds the private key and can mint tokens. Apps hold the public key and can only verify. No shared secret anywhere in the suite. |
 
 Still open:
 
-| ID    | Question                                                                                                                    | Blocking                 |
-| ----- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| OQ-I3 | Account-claim flow: merging guest device progress into a new suite account                                                  | Game Service intake spec |
-| OQ-I4 | Tier verification: who approves teacher (Lower Basic session-opening) accounts — AIWA approval flow per RLC's existing rule | Identity Service spec    |
+| ID | Question | Blocking |
+|---|---|---|
+| OQ-I3 | Account-claim flow: merging guest device progress into a new suite account | Game Service intake spec |
+| OQ-I4 | Tier verification: who approves teacher (Lower Basic session-opening) accounts — AIWA approval flow per RLC's existing rule | Identity Service spec |
 
 ## 8. Next Specs to Write (in order)
 
@@ -107,7 +107,6 @@ Still open:
 All 3iAtlas products are delivered as Starisian-hosted SaaS. Offline-first clients + hosted backend. Customers never deploy servers. This formalizes what existing specs already imply (WordPad subscription storage tiers, server-only dictionary, Starisian-hosted ESU/R2/key vault) and matches how every buyer segment actually purchases.
 
 Three sales motions, per market analysis (June 2026):
-
 1. **Institutional / government** — donor-co-funded projects, RFP/tender procurement, pilot → evidence → multi-year contract. The Gambia school pilot is the reference deployment. Funder-facing usage/impact reporting is a product requirement in this motion.
 2. **School subscriptions** — per-classroom or per-student annual SaaS; teacher self-serve; class-code login (Lower Basic tier) is the expected pattern.
 3. **Consumer / diaspora** — app-store freemium subscription.

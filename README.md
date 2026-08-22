@@ -81,12 +81,9 @@ activation) visit **Settings → Permalinks** once to flush rewrite rules.
 **Embed as an iframe**
 
 ```html
-<iframe
-    src="https://your-site.com/dictionary/"
-    style="width:100%;height:100dvh;border:0"
-    title="Dictionary"
-    loading="lazy"
-></iframe>
+<iframe src="https://your-site.com/dictionary/"
+        style="width:100%;height:100dvh;border:0"
+        title="Dictionary" loading="lazy"></iframe>
 ```
 
 The standalone page is framable from any origin by default (it is public,

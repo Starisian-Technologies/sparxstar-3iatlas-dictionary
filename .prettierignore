@@ -19,3 +19,13 @@ vendor/
 pnpm-lock.yaml
 CHANGELOG.md
 .release-please-manifest.json
+
+# Markdown is left to authors. Prettier normalises emphasis, and these docs
+# carry bare identifiers with underscores in prose — aiwa_*, sparxstar_*,
+# sparx_dict_*, starmus_* — which it rewrites into emphasis markers, changing
+# documented field names. It reaches inside inline code too: in the debranding
+# migration plan `sparx_dict_*` became `sparx*dict*_`. It also formats embedded
+# ```jsx fences as standalone expressions and appends semicolons, which makes
+# the AIWA-Dictionary-Direction snippets invalid where they are meant to be
+# pasted into a JSX return.
+*.md

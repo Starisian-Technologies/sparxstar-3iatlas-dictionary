@@ -1,5 +1,4 @@
 # 3iAtlas Generative Root Data Model
-
 ## Specification v1.0
 
 **Status:** Approved  
@@ -36,11 +35,11 @@ This model suggests that Mandinka speakers coincidentally reused the same sound 
 
 Not all languages are generative in the same way. This spec applies a language-level configuration:
 
-| Model Type       | Description                                                                     | Examples                                 |
-| ---------------- | ------------------------------------------------------------------------------- | ---------------------------------------- |
-| `word_first`     | Words are the primary unit. Polysemy is handled as multiple senses of one word. | English, French                          |
-| `root_first`     | Roots are the primary unit. Words are contextual applications of roots.         | Mandinka, Bambara, Chinese               |
-| `morpheme_first` | Morphemes are the primary unit, with rich inflectional systems.                 | Fula (20+ noun classes), Swahili, Arabic |
+| Model Type | Description | Examples |
+|---|---|---|
+| `word_first` | Words are the primary unit. Polysemy is handled as multiple senses of one word. | English, French |
+| `root_first` | Roots are the primary unit. Words are contextual applications of roots. | Mandinka, Bambara, Chinese |
+| `morpheme_first` | Morphemes are the primary unit, with rich inflectional systems. | Fula (20+ noun classes), Swahili, Arabic |
 
 The `root_first` model defined in this spec applies to all Mande languages and other identified generative languages. The `word_first` model applies to European languages. The `morpheme_first` model is partially covered here and will be extended in the Grammar Spec.
 
@@ -92,12 +91,12 @@ The loop is intentional. 3iAtlas learner activity generates new language evidenc
 
 The Generative Root Data Model introduces three entities and redesigns one.
 
-| Entity       | Post Type                     | Purpose                                                                  |
-| ------------ | ----------------------------- | ------------------------------------------------------------------------ |
-| Root         | `aiwa-root` (new)             | The generative seed. Primary entry for root-first languages.             |
-| Application  | `aiwa-entry` (redesigned)     | A contextual projection of a root. One application per semantic context. |
-| Compound     | `aiwa-compound` (new)         | A word derived from one or more roots through productive compounding.    |
-| Concept Link | (relationship, not post type) | The bridge from an Application to the Concepticon / CSV scaffold.        |
+| Entity | Post Type | Purpose |
+|---|---|---|
+| Root | `aiwa-root` (new) | The generative seed. Primary entry for root-first languages. |
+| Application | `aiwa-entry` (redesigned) | A contextual projection of a root. One application per semantic context. |
+| Compound | `aiwa-compound` (new) | A word derived from one or more roots through productive compounding. |
+| Concept Link | (relationship, not post type) | The bridge from an Application to the Concepticon / CSV scaffold. |
 
 The existing `aiwa-entry` posts are **not deleted**. They are redesigned as Application records. Posts that currently have no root relationship are treated as `word_first` entries (English entries) and remain unchanged.
 
@@ -115,27 +114,27 @@ The conceptual seed is an empirical claim, not a poetic interpretation. It must 
 
 ### 5.2 SCF Fields
 
-| Field                          | Type                 | Required         | Description                                                                                                               |
-| ------------------------------ | -------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `aiwa_root_form`               | text                 | yes              | The root as it appears in the spoken language, including diacritics and tone marks                                        |
-| `aiwa_root_language`           | taxonomy (Languages) | yes              | Language this root belongs to                                                                                             |
-| `aiwa_root_script`             | select               | no               | Writing system used: `latin`, `arabic`, `tifinagh`, `nko`, `latin_tonal`, `other`                                         |
-| `aiwa_root_pronunciation`      | text                 | no               | IPA transcription of the root form                                                                                        |
-| `aiwa_root_audio`              | file                 | no               | Audio recording of the root form by a native speaker                                                                      |
-| `aiwa_root_tone_class`         | select               | no               | Tonal signature: `high`, `low`, `mid`, `rising`, `falling`, `non_tonal`, `complex`                                        |
-| `aiwa_root_compounding_rules`  | textarea             | no               | Description of tonal and phonetic shifts the root undergoes in compounding. Free text until Grammar Spec formalizes this. |
-| `aiwa_conceptual_seed_native`  | textarea             | yes (root_first) | The seed definition authored in the root's own language, by a native speaker                                              |
-| `aiwa_conceptual_seed_english` | textarea             | yes (root_first) | English translation of the seed definition, for interoperability                                                          |
-| `aiwa_seed_explanation_audio`  | file                 | no               | Audio of a native speaker explaining the seed in their own words                                                          |
-| `aiwa_seed_author_type`        | select               | yes              | Who authored the seed: `native_speaker`, `fluent_speaker`, `linguist`, `community_panel`, `ai_proposed`                   |
-| `aiwa_seed_confidence`         | select               | yes              | See Evidence Status values in § 8                                                                                         |
-| `aiwa_dialect_regions`         | textarea             | no               | Comma-separated list of regions where this root is attested                                                               |
-| `aiwa_applications`            | relationship         | —                | Links to Application (`aiwa-entry`) records that belong to this root                                                      |
-| `aiwa_compounds`               | relationship         | —                | Links to Compound (`aiwa-compound`) records derived from this root                                                        |
-| `aiwa_evidence_status`         | select               | yes              | Overall evidence status of the root record. See § 8.                                                                      |
-| `aiwa_review_status`           | select               | yes              | Pipeline status: `draft`, `pending_speaker_review`, `pending_dvr_review`, `validated`, `rejected`, `deprecated`           |
-| `aiwa_created_by`              | text                 | yes              | Contributor identifier (not stored as plaintext PII — use contributor ID)                                                 |
-| `aiwa_created_at`              | date                 | yes              | Creation date                                                                                                             |
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `aiwa_root_form` | text | yes | The root as it appears in the spoken language, including diacritics and tone marks |
+| `aiwa_root_language` | taxonomy (Languages) | yes | Language this root belongs to |
+| `aiwa_root_script` | select | no | Writing system used: `latin`, `arabic`, `tifinagh`, `nko`, `latin_tonal`, `other` |
+| `aiwa_root_pronunciation` | text | no | IPA transcription of the root form |
+| `aiwa_root_audio` | file | no | Audio recording of the root form by a native speaker |
+| `aiwa_root_tone_class` | select | no | Tonal signature: `high`, `low`, `mid`, `rising`, `falling`, `non_tonal`, `complex` |
+| `aiwa_root_compounding_rules` | textarea | no | Description of tonal and phonetic shifts the root undergoes in compounding. Free text until Grammar Spec formalizes this. |
+| `aiwa_conceptual_seed_native` | textarea | yes (root_first) | The seed definition authored in the root's own language, by a native speaker |
+| `aiwa_conceptual_seed_english` | textarea | yes (root_first) | English translation of the seed definition, for interoperability |
+| `aiwa_seed_explanation_audio` | file | no | Audio of a native speaker explaining the seed in their own words |
+| `aiwa_seed_author_type` | select | yes | Who authored the seed: `native_speaker`, `fluent_speaker`, `linguist`, `community_panel`, `ai_proposed` |
+| `aiwa_seed_confidence` | select | yes | See Evidence Status values in § 8 |
+| `aiwa_dialect_regions` | textarea | no | Comma-separated list of regions where this root is attested |
+| `aiwa_applications` | relationship | — | Links to Application (`aiwa-entry`) records that belong to this root |
+| `aiwa_compounds` | relationship | — | Links to Compound (`aiwa-compound`) records derived from this root |
+| `aiwa_evidence_status` | select | yes | Overall evidence status of the root record. See § 8. |
+| `aiwa_review_status` | select | yes | Pipeline status: `draft`, `pending_speaker_review`, `pending_dvr_review`, `validated`, `rejected`, `deprecated` |
+| `aiwa_created_by` | text | yes | Contributor identifier (not stored as plaintext PII — use contributor ID) |
+| `aiwa_created_at` | date | yes | Creation date |
 
 ---
 
@@ -147,22 +146,22 @@ Applications are the unit that connects roots to the English scaffold (Conceptic
 
 ### 6.1 New SCF Fields (additions to existing `aiwa-entry`)
 
-| Field                           | Type         | Required   | Description                                                                                                                                             |
-| ------------------------------- | ------------ | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `aiwa_root_id`                  | relationship | no         | Link to parent `aiwa-root` post. Null for word_first entries.                                                                                           |
-| `aiwa_application_context`      | select       | root_first | Semantic context type: `anatomical`, `spatial`, `social`, `commercial`, `verbal_creative`, `temporal`, `epistemic`, `ecological`, `ceremonial`, `other` |
-| `aiwa_native_gloss`             | textarea     | root_first | Brief gloss of this application in the root's language                                                                                                  |
-| `aiwa_english_gloss`            | textarea     | yes        | Brief English gloss                                                                                                                                     |
-| `aiwa_concepticon_id`           | number       | yes        | Concepticon concept ID. This is the bridge to the CSV scaffold and cross-language siblings.                                                             |
-| `aiwa_semantic_domain`          | taxonomy     | no         | SemDom domain code (e.g. `4.3.3.3 Abandon`)                                                                                                             |
-| `aiwa_background_resonances`    | repeater     | no         | See § 7                                                                                                                                                 |
-| `aiwa_foreground_strength`      | select       | root_first | How central this application is to the root: `primary`, `extended_metaphor`, `compound_base`, `idiomatic`, `archaic`                                    |
-| `aiwa_dialect_scope`            | textarea     | no         | Which dialect regions use this application                                                                                                              |
-| `aiwa_example_sentence_native`  | textarea     | no         | Example sentence in the native language                                                                                                                 |
-| `aiwa_example_sentence_english` | textarea     | no         | English translation of example sentence                                                                                                                 |
-| `aiwa_example_audio`            | file         | no         | Audio recording of example sentence                                                                                                                     |
-| `aiwa_application_confidence`   | select       | yes        | See Evidence Status values in § 8                                                                                                                       |
-| `aiwa_evidence_status`          | select       | yes        | See § 8                                                                                                                                                 |
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `aiwa_root_id` | relationship | no | Link to parent `aiwa-root` post. Null for word_first entries. |
+| `aiwa_application_context` | select | root_first | Semantic context type: `anatomical`, `spatial`, `social`, `commercial`, `verbal_creative`, `temporal`, `epistemic`, `ecological`, `ceremonial`, `other` |
+| `aiwa_native_gloss` | textarea | root_first | Brief gloss of this application in the root's language |
+| `aiwa_english_gloss` | textarea | yes | Brief English gloss |
+| `aiwa_concepticon_id` | number | yes | Concepticon concept ID. This is the bridge to the CSV scaffold and cross-language siblings. |
+| `aiwa_semantic_domain` | taxonomy | no | SemDom domain code (e.g. `4.3.3.3 Abandon`) |
+| `aiwa_background_resonances` | repeater | no | See § 7 |
+| `aiwa_foreground_strength` | select | root_first | How central this application is to the root: `primary`, `extended_metaphor`, `compound_base`, `idiomatic`, `archaic` |
+| `aiwa_dialect_scope` | textarea | no | Which dialect regions use this application |
+| `aiwa_example_sentence_native` | textarea | no | Example sentence in the native language |
+| `aiwa_example_sentence_english` | textarea | no | English translation of example sentence |
+| `aiwa_example_audio` | file | no | Audio recording of example sentence |
+| `aiwa_application_confidence` | select | yes | See Evidence Status values in § 8 |
+| `aiwa_evidence_status` | select | yes | See § 8 |
 
 ### 6.2 Existing fields that remain
 
@@ -178,21 +177,21 @@ This is not mystical. It is a testable claim about cognitive activation patterns
 
 ### 7.1 Resonance Record Structure (repeater subfields within `aiwa_background_resonances`)
 
-| Field                      | Type         | Description                                          |
-| -------------------------- | ------------ | ---------------------------------------------------- |
+| Field | Type | Description |
+|---|---|---|
 | `resonance_application_id` | relationship | The sibling Application whose meaning remains active |
-| `resonance_evidence_type`  | select       | How this resonance is established (see below)        |
-| `resonance_confidence`     | number       | 0.0 to 1.0                                           |
-| `resonance_notes`          | textarea     | Evidence notes, citations, speaker quotes            |
+| `resonance_evidence_type` | select | How this resonance is established (see below) |
+| `resonance_confidence` | number | 0.0 to 1.0 |
+| `resonance_notes` | textarea | Evidence notes, citations, speaker quotes |
 
 ### 7.2 Resonance Evidence Types
 
-| Value                | Meaning                                                                                                           |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `speaker_confirmed`  | One or more native speakers explicitly confirmed this resonance is felt when the foregrounded application is used |
-| `linguist_proposed`  | A linguist has proposed this resonance based on etymological or semantic analysis; not yet speaker-confirmed      |
-| `community_disputed` | Resonance has been proposed but community members dispute whether it is felt by contemporary speakers             |
-| `historical_note`    | Resonance was active in historical usage but may no longer be felt by contemporary speakers                       |
+| Value | Meaning |
+|---|---|
+| `speaker_confirmed` | One or more native speakers explicitly confirmed this resonance is felt when the foregrounded application is used |
+| `linguist_proposed` | A linguist has proposed this resonance based on etymological or semantic analysis; not yet speaker-confirmed |
+| `community_disputed` | Resonance has been proposed but community members dispute whether it is felt by contemporary speakers |
+| `historical_note` | Resonance was active in historical usage but may no longer be felt by contemporary speakers |
 
 ### 7.3 What resonance is not
 
@@ -208,14 +207,14 @@ All root, application, and resonance records carry evidence status. The platform
 
 ### 8.1 Evidence Status Values
 
-| Value                 | Meaning                                                                       | Who sets it         |
-| --------------------- | ----------------------------------------------------------------------------- | ------------------- |
-| `speaker_confirmed`   | A native speaker has confirmed this record is accurate                        | DVE speaker review  |
-| `community_confirmed` | Multiple speakers from the dialect region have confirmed                      | DVE community panel |
-| `linguist_proposed`   | A linguist has proposed this based on analysis; awaiting speaker confirmation | Contributor         |
-| `ai_suggested`        | An AI system generated this record; requires human review before use          | AI pipeline         |
-| `disputed`            | Record exists but is actively contested by speakers or linguists              | DVE dispute process |
-| `deprecated`          | Record was once active but is no longer considered accurate                   | DVE governance      |
+| Value | Meaning | Who sets it |
+|---|---|---|
+| `speaker_confirmed` | A native speaker has confirmed this record is accurate | DVE speaker review |
+| `community_confirmed` | Multiple speakers from the dialect region have confirmed | DVE community panel |
+| `linguist_proposed` | A linguist has proposed this based on analysis; awaiting speaker confirmation | Contributor |
+| `ai_suggested` | An AI system generated this record; requires human review before use | AI pipeline |
+| `disputed` | Record exists but is actively contested by speakers or linguists | DVE dispute process |
+| `deprecated` | Record was once active but is no longer considered accurate | DVE governance |
 
 ### 8.2 Graduation path
 
@@ -234,34 +233,34 @@ Compounds are words formed by combining two or more roots (or a root with a gram
 
 ### 9.1 SCF Fields
 
-| Field                         | Type         | Description                                                                    |
-| ----------------------------- | ------------ | ------------------------------------------------------------------------------ |
-| `aiwa_compound_form`          | text         | The compound word as spoken, with tone marks                                   |
-| `aiwa_compound_language`      | taxonomy     | Language                                                                       |
-| `aiwa_compound_audio`         | file         | Audio of the compound                                                          |
-| `aiwa_morphology`             | repeater     | Ordered list of roots/morphemes: `{root_id, form, role}`                       |
-| `aiwa_tonal_change`           | textarea     | Description of tonal shifts that occurred in compounding                       |
-| `aiwa_compound_gloss_native`  | textarea     | Gloss in the native language                                                   |
-| `aiwa_compound_gloss_english` | text         | English translation                                                            |
-| `aiwa_compound_gloss_literal` | text         | Literal morpheme-by-morpheme translation (e.g. "mouth-character" for daajikoo) |
-| `aiwa_concepticon_id`         | number       | Concepticon link if the compound maps to a universal concept                   |
-| `aiwa_semantic_domain`        | taxonomy     | Domain                                                                         |
-| `aiwa_evidence_status`        | select       | Evidence status                                                                |
-| `aiwa_parent_roots`           | relationship | All `aiwa-root` records that contribute to this compound                       |
+| Field | Type | Description |
+|---|---|---|
+| `aiwa_compound_form` | text | The compound word as spoken, with tone marks |
+| `aiwa_compound_language` | taxonomy | Language |
+| `aiwa_compound_audio` | file | Audio of the compound |
+| `aiwa_morphology` | repeater | Ordered list of roots/morphemes: `{root_id, form, role}` |
+| `aiwa_tonal_change` | textarea | Description of tonal shifts that occurred in compounding |
+| `aiwa_compound_gloss_native` | textarea | Gloss in the native language |
+| `aiwa_compound_gloss_english` | text | English translation |
+| `aiwa_compound_gloss_literal` | text | Literal morpheme-by-morpheme translation (e.g. "mouth-character" for daajikoo) |
+| `aiwa_concepticon_id` | number | Concepticon link if the compound maps to a universal concept |
+| `aiwa_semantic_domain` | taxonomy | Domain |
+| `aiwa_evidence_status` | select | Evidence status |
+| `aiwa_parent_roots` | relationship | All `aiwa-root` records that contribute to this compound |
 
 ### 9.2 Canonical Mandinka compound examples
 
-| Compound    | Literal gloss   | Morphology          | Meaning            |
-| ----------- | --------------- | ------------------- | ------------------ |
-| `daajikoo`  | mouth-character | dáa + jikoo         | behavior, conduct  |
-| `daaturoo`  | mouth-stopper   | dáa + turu          | lip                |
-| `daakuloo`  | mouth-bone      | dáa + kuloo         | edge, sideline     |
-| `Daamansoo` | creation-king   | dáa (verb) + mansoo | The Creator        |
-| `kuntiyo`   | head-owner      | kŭn + tiyo          | leader, chief      |
-| `kunino`    | head-wokeness   | kŭn + in            | wisdom, awareness  |
-| `kuntano`   | headless        | kŭn + -tan          | foolish person     |
-| `kunfin`    | dark head       | kŭn + fin           | illiterate person  |
-| `bondi`     | cause-to-exit   | bó + -ndi           | to remove, extract |
+| Compound | Literal gloss | Morphology | Meaning |
+|---|---|---|---|
+| `daajikoo` | mouth-character | dáa + jikoo | behavior, conduct |
+| `daaturoo` | mouth-stopper | dáa + turu | lip |
+| `daakuloo` | mouth-bone | dáa + kuloo | edge, sideline |
+| `Daamansoo` | creation-king | dáa (verb) + mansoo | The Creator |
+| `kuntiyo` | head-owner | kŭn + tiyo | leader, chief |
+| `kunino` | head-wokeness | kŭn + in | wisdom, awareness |
+| `kuntano` | headless | kŭn + -tan | foolish person |
+| `kunfin` | dark head | kŭn + fin | illiterate person |
+| `bondi` | cause-to-exit | bó + -ndi | to remove, extract |
 
 ---
 
@@ -270,7 +269,6 @@ Compounds are words formed by combining two or more roots (or a root with a gram
 Every Application record connects to the English scaffold via its `aiwa_concepticon_id`. This link is the bridge between the native-language root graph and the universal concept layer.
 
 The Concept Link enables:
-
 - Cross-language sibling discovery (which Wolof, Fula, Arabic, Chinese words express the same concept)
 - Colexification analysis (which concepts the root bundles together across its applications — this is what the CLICS data measures)
 - CEFR and AIWA level assignment (via the English scaffold row for that concept)
@@ -289,7 +287,6 @@ The primary API endpoint for root-first language entries returns the full root f
 ### `GET /sparxstar/v1/dictionary/root/{root_id}`
 
 Response:
-
 ```json
 {
   "root": {
@@ -395,23 +392,18 @@ Response:
 Existing `aiwa-entry` posts are not deleted. Migration proceeds in phases.
 
 ### Phase 1 — Categorization
-
 Tag all existing entries with their language. English entries are `word_first` and require no migration. Entries for generative languages are flagged for migration.
 
 ### Phase 2 — Root identification
-
 Group generative-language entries by phonological root form. Each distinct root form becomes a candidate `aiwa-root` record in `draft` status. This can be partially automated but must be reviewed by a linguist or speaker.
 
 ### Phase 3 — Seed authoring
-
 For each candidate root, a native speaker authors the `aiwa_conceptual_seed_native` field. Until this is done, the root remains in `linguist_proposed` status.
 
 ### Phase 4 — Application linking
-
 Existing `aiwa-entry` posts are linked to their parent root via `aiwa_root_id`. Their `aiwa_application_context` and `aiwa_evidence_status` fields are populated.
 
 ### Phase 5 — Resonance mapping
-
 Background resonances between sibling applications are proposed and submitted for speaker confirmation.
 
 Migration is not a one-time event. It is an ongoing editorial process governed by DVE. The platform must support both migrated (root-first) and unmigrated (word-first) entries simultaneously.
@@ -423,7 +415,6 @@ Migration is not a one-time event. It is an ongoing editorial process governed b
 ### Games (deferred — do not redesign until root model is validated)
 
 Once root data exists and carries evidence status `speaker_confirmed`, games can:
-
 - Ask which application of a root is foregrounded in a sentence
 - Ask which words share the same root family
 - Show the radiating semantic field and ask the learner to place a word on it
@@ -447,7 +438,6 @@ DVE governs the evidence graduation path. DVE reviewers work primarily at the Ap
 ### Sky, ESU, Mēh₁n̥s, Dheghom
 
 These platform services interact with the root model as follows:
-
 - **Sky**: when a learner query is ambiguous, Sky can ask "do you mean dáa as mouth, door, price, or creation?" — this requires the root family to exist in the API
 - **ESU**: transcription and alignment must track which application of a root is being used in each utterance
 - **Mēh₁n̥s**: evidence status determines export eligibility; `ai_suggested` and `disputed` records cannot be exported to public products
@@ -468,4 +458,4 @@ The following are out of scope for v1.0 and must not be assumed:
 
 ---
 
-_This spec represents the founding architectural correction for the 3iAtlas language platform. English-shaped word boxes cannot hold Mandinka meaning. Build the root graph first._
+*This spec represents the founding architectural correction for the 3iAtlas language platform. English-shaped word boxes cannot hold Mandinka meaning. Build the root graph first.*

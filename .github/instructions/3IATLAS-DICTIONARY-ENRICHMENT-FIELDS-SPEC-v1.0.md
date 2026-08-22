@@ -28,14 +28,14 @@ The public curriculum field is AIWA's. Not Europe's.
 
 **Scale:**
 
-| Value    | Label                           | Description                                                                                                   |
-| -------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `AIWA-0` | Picture / First Exposure        | Pre-literate vocabulary. Taught through image and audio. Early childhood and first-contact literacy.          |
-| `AIWA-1` | Beginner Survival               | Core survival vocabulary: greetings, numbers, body, family, immediate environment. First reading and writing. |
-| `AIWA-2` | Everyday Sentence               | Vocabulary for everyday conversation and simple sentences: markets, home, community.                          |
-| `AIWA-3` | Storytelling and Explanation    | Vocabulary for oral narrative, explanation, and basic description. School subjects, community life.           |
-| `AIWA-4` | School, Civic, Formal           | Abstract and formal vocabulary: school curriculum, civic life, governance, structured writing.                |
-| `AIWA-5` | Literary, Technical, Specialist | Literary vocabulary, specialist and technical terminology, historical and cultural depth.                     |
+| Value | Label | Description |
+|---|---|---|
+| `AIWA-0` | Picture / First Exposure | Pre-literate vocabulary. Taught through image and audio. Early childhood and first-contact literacy. |
+| `AIWA-1` | Beginner Survival | Core survival vocabulary: greetings, numbers, body, family, immediate environment. First reading and writing. |
+| `AIWA-2` | Everyday Sentence | Vocabulary for everyday conversation and simple sentences: markets, home, community. |
+| `AIWA-3` | Storytelling and Explanation | Vocabulary for oral narrative, explanation, and basic description. School subjects, community life. |
+| `AIWA-4` | School, Civic, Formal | Abstract and formal vocabulary: school curriculum, civic life, governance, structured writing. |
+| `AIWA-5` | Literary, Technical, Specialist | Literary vocabulary, specialist and technical terminology, historical and cultural depth. |
 
 **Note:** This scale is the proposed working version pending AIWA curriculum board final confirmation. The definition of each level against actual Gambian school grades and curriculum standards is a content/curriculum call for AIWA and its language board, not an engineering decision. The field is present in the schema; the definitions are AIWA's authority.
 
@@ -56,7 +56,6 @@ Valid values: `A1`, `A2`, `B1`, `B2`, `C1`, `C2`
 CEFR approximation is informational. It does not override AIWA Level. It is not the published grading field. If `aiwa_cefr_approx` conflicts with `aiwa_level`, the AIWA Level governs.
 
 Approximate mapping (reference only, not normative):
-
 - AIWA-0 → Pre-A1
 - AIWA-1 → A1
 - AIWA-2 → A2
@@ -77,7 +76,6 @@ An optional field recording whether the English translation of this entry appear
 Valid values: `oxford_3000`, `oxford_5000` (not mutually exclusive — 3000 is a subset of 5000)
 
 This field is useful for:
-
 - Learners with English as a background language who want to know if they already know the English equivalent
 - Curriculum alignment with English-medium educational materials
 - Cross-suite interoperability with English-focused learning tools
@@ -184,7 +182,6 @@ These fields carry intra-language relationships. Cross-language related entries 
 An ACF relationship field linking entries that rhyme with this entry in the source language. Rhyme is phonologically defined (based on IPA endings) but the relationship is editorially confirmed — no automatic generation.
 
 Used by:
-
 - Rhyme-based word games
 - Oral tradition teaching — Mandinka, Wolof, and Fula oral poetry and story traditions use rhyme and rhythm
 - BaobabBoom literary content
@@ -203,7 +200,6 @@ This field connects the dictionary to the living oral tradition, not just the wr
 An integer reference to the Concepticon database (concepticon.clld.org). Concepticon is an open cross-linguistic concept list resource that provides stable identifiers for linguistic concepts across language families.
 
 Use:
-
 - Links this entry to a globally recognized concept identifier
 - Enables cross-language concept queries (find all Mandinka entries that map to the same concept as a given Wolof entry)
 - Connects the dictionary to international linguistics research
@@ -221,9 +217,8 @@ This is sparse academic metadata. Many entries will not have a Concepticon ID at
 A reference to the CLICS database (clics.clld.org — Cross-Linguistic Colexifications). CLICS records when multiple concepts share a single word form across language families.
 
 Use:
-
 - Documents cross-linguistic colexification patterns for African languages
-- Provides the academic backing for the Speaker Community Layer — explains _why_ certain concepts travel across language communities
+- Provides the academic backing for the Speaker Community Layer — explains *why* certain concepts travel across language communities
 - Connects to open linguistic research (CLICS is CC-BY 4.0 licensed)
 
 Like Concepticon ID, this is sparse academic metadata. Many entries will not have a CLICS ID. API consumers must handle null.
@@ -237,13 +232,13 @@ Like Concepticon ID, this is sparse academic metadata. Many entries will not hav
 
 Existing repeater field. Each row contains:
 
-| Sub-field                | Description                            |
-| ------------------------ | -------------------------------------- |
-| `aiwa_sentence_example`  | The sentence in the source language    |
-| `aiwa_sentence_ipa`      | IPA pronunciation of the full sentence |
-| `aiwa_sentence_phonetic` | Phonetic pronunciation in plain text   |
-| `aiwa_sentence_english`  | English translation                    |
-| `aiwa_sentence_french`   | French translation                     |
+| Sub-field | Description |
+|---|---|
+| `aiwa_sentence_example` | The sentence in the source language |
+| `aiwa_sentence_ipa` | IPA pronunciation of the full sentence |
+| `aiwa_sentence_phonetic` | Phonetic pronunciation in plain text |
+| `aiwa_sentence_english` | English translation |
+| `aiwa_sentence_french` | French translation |
 
 ---
 
@@ -266,15 +261,14 @@ rhymes: Array<{ uuid, headword, slug }>
 
 New filter parameters added to `/game-set` and `/wordlist`:
 
-| Param         | Values                            | Behavior                                                                                  |
-| ------------- | --------------------------------- | ----------------------------------------------------------------------------------------- |
-| `aiwa_level`  | Comma-separated AIWA level values | Returns entries at these levels only. Ungraded entries excluded.                          |
-| `cefr`        | Comma-separated CEFR values       | Returns entries matching CEFR approximation. Entries without `aiwa_cefr_approx` excluded. |
-| `oxford_tier` | `oxford_3000` or `oxford_5000`    | Returns entries tagged with this Oxford tier.                                             |
-| `domain`      | Domain taxonomy slug              | Returns entries in this domain (including child terms).                                   |
+| Param | Values | Behavior |
+|---|---|---|
+| `aiwa_level` | Comma-separated AIWA level values | Returns entries at these levels only. Ungraded entries excluded. |
+| `cefr` | Comma-separated CEFR values | Returns entries matching CEFR approximation. Entries without `aiwa_cefr_approx` excluded. |
+| `oxford_tier` | `oxford_3000` or `oxford_5000` | Returns entries tagged with this Oxford tier. |
+| `domain` | Domain taxonomy slug | Returns entries in this domain (including child terms). |
 
 Example — Grade 2 game set request:
-
 ```
 GET /game-set?lang_source=mandinka&aiwa_level=AIWA-1,AIWA-2&domain=animals&include_audio=true&limit=10&mode=strict
 ```
@@ -297,27 +291,27 @@ GET /game-set?lang_source=mandinka&aiwa_level=AIWA-1,AIWA-2&domain=animals&inclu
 
 New optional filter params on `/search`:
 
-| Param               | Values                            | Behavior                            |
-| ------------------- | --------------------------------- | ----------------------------------- |
-| `aiwa_level`        | Comma-separated AIWA level values | Filters results to specified levels |
-| `domain`            | Domain taxonomy slug              | Filters results to specified domain |
-| `speaker_community` | Community taxonomy slug           | Used with `mode=ecology`            |
+| Param | Values | Behavior |
+|---|---|---|
+| `aiwa_level` | Comma-separated AIWA level values | Filters results to specified levels |
+| `domain` | Domain taxonomy slug | Filters results to specified domain |
+| `speaker_community` | Community taxonomy slug | Used with `mode=ecology` |
 
 ---
 
 ## 12. Field Assignment Summary
 
-| Field                   | Assigned By              | Editable in Dictionary?          |
-| ----------------------- | ------------------------ | -------------------------------- |
-| AIWA Level              | DVE                      | No — linguistically locked       |
-| CEFR Approximation      | DVE                      | No                               |
-| Oxford Tier             | DVE                      | No                               |
-| Concepticon ID          | DVE (qualified linguist) | No                               |
-| CLICS ID                | DVE (qualified linguist) | No                               |
-| Domain                  | DVE                      | No                               |
-| Synonyms / Antonyms     | DVE                      | No                               |
-| Rhyme Entries           | DVE (editorial)          | No                               |
-| Cross-language Siblings | DVE                      | No                               |
-| Speaker Community Tags  | DVE, AIWA review         | No — corrections via DVE package |
-| Community Usage Status  | DVE, AIWA board          | No — promoted via DVE/AIWA       |
-| Example Sentences       | DVE                      | No                               |
+| Field | Assigned By | Editable in Dictionary? |
+|---|---|---|
+| AIWA Level | DVE | No — linguistically locked |
+| CEFR Approximation | DVE | No |
+| Oxford Tier | DVE | No |
+| Concepticon ID | DVE (qualified linguist) | No |
+| CLICS ID | DVE (qualified linguist) | No |
+| Domain | DVE | No |
+| Synonyms / Antonyms | DVE | No |
+| Rhyme Entries | DVE (editorial) | No |
+| Cross-language Siblings | DVE | No |
+| Speaker Community Tags | DVE, AIWA review | No — corrections via DVE package |
+| Community Usage Status | DVE, AIWA board | No — promoted via DVE/AIWA |
+| Example Sentences | DVE | No |

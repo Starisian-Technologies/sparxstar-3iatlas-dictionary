@@ -1,5 +1,4 @@
 # SPARXSTAR Component Boundaries
-
 ## Reference 04 — What Each Component IS and IS NOT
 
 **Authority:** Platform Integrity Map v1.0, all component specs, Copilot Instructions
@@ -8,10 +7,10 @@
 
 ## The One Question That Cuts Every Boundary Dispute
 
-| System | Answers                                  |
-| ------ | ---------------------------------------- |
-| Sirus  | What is the situation?                   |
-| Helios | Does this specific request proceed?      |
+| System | Answers |
+|---|---|
+| Sirus | What is the situation? |
+| Helios | Does this specific request proceed? |
 | Mḗh₁n̥s | Does this action comply with governance? |
 
 These are three different questions. They must be answered in this order, by these components. No component answers another's question.
@@ -21,7 +20,6 @@ These are three different questions. They must be answered in this order, by the
 ## Ouroboros Integrity
 
 **IS:**
-
 - Platform loader and boot orchestrator (`00-sparxstar-loader.php`)
 - Shared exception classes (BootIntegrityException, ContextBootException, TripleBindingException, TokenValidationException, DraftEncryptionException, ValidationException)
 - Shared DTOs (ContextPulse, AgreementResult, GovernanceToken, ResourceSensitivity, ZonePrimitive)
@@ -32,7 +30,6 @@ These are three different questions. They must be answered in this order, by the
 - GovernanceTokenSigningMaterial (canonical implementation in src/Utils/)
 
 **IS NOT:**
-
 - Business logic of any kind
 - A governance or policy engine
 - A schema definition layer
@@ -44,7 +41,6 @@ These are three different questions. They must be answered in this order, by the
 - Structured field persistence (Dheghom)
 
 **Hard rules:**
-
 - `declare(strict_types=1)` in every PHP file
 - All classes are `final` unless explicitly abstract
 - No WordPress hooks except in the loader
@@ -58,7 +54,6 @@ These are three different questions. They must be answered in this order, by the
 ## Helios Trust
 
 **IS:**
-
 - AgreementEvaluator — canonical logic, identical in TypeScript (edge) and PHP (origin)
 - PulseVerifier — six-check verification
 - KVRevocationClient — reads from and writes to Cloudflare KV
@@ -70,7 +65,6 @@ These are three different questions. They must be answered in this order, by the
 - Cloudflare Worker (TypeScript) + WordPress mu-plugin bridge (PHP)
 
 **IS NOT:**
-
 - An identity store
 - A session manager
 - A user database
@@ -81,7 +75,6 @@ These are three different questions. They must be answered in this order, by the
 - The source of identity claims in the ContextPulse (Sirus produces it, Helios verifies it)
 
 **Hard rules:**
-
 - MUST NOT interact with WordPress authentication in any way
 - MUST NOT create WordPress sessions for frontend users
 - MUST NEVER grant Level 3 access at the edge
@@ -103,7 +96,6 @@ Helios enforcement is opt-in via possession of a Helios-issued credential. Norma
 ## Sirus Context
 
 **IS:**
-
 - ContextEngine — context creation and current() accessor
 - SirusContext DTO — primary output of context engine
 - ContextPulse generation and signing (PulseGenerator)
@@ -114,7 +106,6 @@ Helios enforcement is opt-in via possession of a Helios-issued credential. Norma
 - StepUpPolicy, NetworkContextBroker
 
 **IS NOT:**
-
 - The authentication system — that is Helios
 - The governance engine — that is Mḗh₁n̥s
 - The storage layer — that is Dheghom
@@ -123,7 +114,6 @@ Helios enforcement is opt-in via possession of a Helios-issued credential. Norma
 - The source of identity claims in the ContextPulse (Pulse carries device state and trust signal only)
 
 **Hard rules:**
-
 - Must be deployed as WordPress Must-Use (mu-plugin)
 - MUST NEVER call wp_set_auth_cookie() or issue JWTs
 - MUST NEVER query Dheghom or any external plugin directly
@@ -160,7 +150,6 @@ Helios grants ALLOW_ORIGIN to SYSTEM identity for all maintenance tasks. Cryptog
 ## Sky DVE Core
 
 **IS:**
-
 - spx-sky-engine WordPress plugin (v1.0) / standalone React package (v2.0 draft)
 - wp_spx_sessions custom table — conversation accumulation store (NOT a WordPress auth session)
 - Chat loop (POST /spx/v1/chat)
@@ -171,7 +160,6 @@ Helios grants ALLOW_ORIGIN to SYSTEM identity for all maintenance tasks. Cryptog
 - SpxExtractionService, SpxDraftService, SpxSessionRepository
 
 **IS NOT:**
-
 - Identity resolution — use HeliosClientInterface
 - Device context — comes from Sirus ContextPulse
 - Governance evaluation — that is Mḗh₁n̥s (runs at Release, not at Save)
@@ -179,12 +167,11 @@ Helios grants ALLOW_ORIGIN to SYSTEM identity for all maintenance tasks. Cryptog
 - WordPress authentication — Sky MUST NOT create WordPress sessions
 
 **Hard rules:**
-
-- Session = wp_spx_sessions table ONLY. NEVER WordPress $\_SESSION or wp auth cookies.
+- Session = wp_spx_sessions table ONLY. NEVER WordPress $_SESSION or wp auth cookies.
 - The AI NEVER saves, validates, or publishes. It extracts only.
 - Nothing irreversible executes without the Commit Gate.
 - Sky MUST NOT perform identity checks through any path other than HeliosClientInterface.
-- Asset fields are IMMUTABLE after first write. Any modification produces a new \_derived field.
+- Asset fields are IMMUTABLE after first write. Any modification produces a new _derived field.
 - Merge logic uses array_key_exists() NOT isset(). isset() is PROHIBITED — produces false positives on null.
 - Confirmed fields can only be overwritten by explicit user action, never by AI extraction alone.
 - The AI prompt is fixed across all abilities. Never change it per user.
@@ -194,7 +181,6 @@ Helios grants ALLOW_ORIGIN to SYSTEM identity for all maintenance tasks. Cryptog
 Any reference to "session" within Sky or Dheghom refers exclusively to the custom wp_spx_sessions database table. This is a conversation accumulation store, NOT a PHP session or WordPress authentication session.
 
 **Sky v1.0 vs v2.0:**
-
 - v1.0 (implemented): WordPress plugin, sparxstar-sky-dve-core
 - v2.0 (draft, May 2026): Standalone React package (@sparxstar/sky) + SkyOrchestrator backend service + WordPress abilities layer
 - v2.0 introduces boundary: React package never calls AI model directly — all model interaction passes through SkyOrchestrator via single POST endpoint
@@ -205,21 +191,19 @@ Any reference to "session" within Sky or Dheghom refers exclusively to the custo
 ## Mḗh₁n̥s DVE Core
 
 **IS:**
-
 - PolicyRegistry — 4-layer resolver (global → authority → ability → individual)
 - PolicyDispatcher — orchestrator, runs policies, propagates mutations
 - PolicyCompiler — JSON policy grammar evaluator (AND/OR groups)
 - GovernanceTokenMinter — HMAC-SHA256 token generator
 - CryptographicAuditLedger — SHA-256 chained append-only ledger
 - SieveKernel — boots at muplugins_loaded, registers all interceptors
-- DatabaseWriteInterceptor — blocks rogue writes to aiwa*/sparxstar* fields
+- DatabaseWriteInterceptor — blocks rogue writes to aiwa_/sparxstar_ fields
 - MetadataReadInterceptor — blocks rogue reads of draft/quarantined fields
 - RestApiInterceptor, GraphQlInterceptor, QueryEnforcementFilter
 - PolicyResolver (new — DVE-TRUST-001)
 - Policy schema loading (SPARXSTAR JSON policy grammar)
 
 **IS NOT:**
-
 - Context production — that is Sirus
 - Agreement evaluation — that is Helios
 - Draft accumulation — that is Sky
@@ -228,7 +212,6 @@ Any reference to "session" within Sky or Dheghom refers exclusively to the custo
 - Block schema loading — that is Sky
 
 **Hard rules:**
-
 - QUARANTINE is a SUCCESS STATE. Never treat as a bug to fix by adjusting code.
 - DENY has been deliberately removed. Use QUARANTINE. Data is never dropped.
 - Mḗh₁n̥s MUST NEVER run Policy Pack evaluation on draft records.
@@ -241,7 +224,6 @@ Any reference to "session" within Sky or Dheghom refers exclusively to the custo
 ## Dheghom DVE Core
 
 **IS:**
-
 - ModuleRegistry — single source of truth for all schema field definitions
 - 57 module field groups (Entity + Mapper + Repository per module)
 - AbstractModuleMapper — hydration, validation, persistence. Never caches.
@@ -256,7 +238,6 @@ Any reference to "session" within Sky or Dheghom refers exclusively to the custo
 - SCF schema loading only
 
 **IS NOT:**
-
 - Identity resolution — use HeliosClientInterface
 - Governance policy evaluation — that is Mḗh₁n̥s
 - Draft accumulation — that is Sky (wp_spx_sessions)
@@ -264,10 +245,9 @@ Any reference to "session" within Sky or Dheghom refers exclusively to the custo
 - Agreement evaluation — that is Helios
 
 **Hard rules:**
-
-- EVERY write to a governed field (aiwa*, sparxstar*) requires valid GovernanceToken verified by TokenValidator at all three gates
+- EVERY write to a governed field (aiwa_, sparxstar_) requires valid GovernanceToken verified by TokenValidator at all three gates
 - TRIPLE BINDING before every governed write — session_id + identity_id + device_id must all align. If any signal missing or mismatched: throw TripleBindingException
-- ASSET IMMUTABILITY is absolute. Asset fields never overwritten after first write. Never normalized, cleaned, or improved by automation. Modifications produce new fields with \_derived, \_cleaned, \_translated suffix.
+- ASSET IMMUTABILITY is absolute. Asset fields never overwritten after first write. Never normalized, cleaned, or improved by automation. Modifications produce new fields with _derived, _cleaned, _translated suffix.
 - ALL draft payloads MUST be AES-256 encrypted before any DB write. Plaintext draft write = throw DraftEncryptionException, block save.
 - NO caching in mappers. Caching belongs in repositories only.
 - NO field mapping or validation logic in repositories.
@@ -286,25 +266,22 @@ CLI (SYSTEM) → Repository under SYSTEM context → WP meta API
 ```
 
 **Modular composition pattern:**
-
 - Entity — typed, immutable data container (DTO). No logic; data only.
 - Mapper — translation between storage and entity. Handles hydration, validation, persistence. Never caches.
 - Repository — orchestration, caching, and CRUD. Never contains field mapping or validation logic.
 - Registry — single authoritative source of schema field definitions. Not used for runtime hydration.
-  No class crosses these boundaries. No module is ever merged with another.
+No class crosses these boundaries. No module is ever merged with another.
 
 ---
 
 ## Event Horizon
 
 **IS:**
-
 - Nginx http-context map library
 - Threat intelligence computation — maps, zones, aggregation, worker trust, risk scoring
-- Outputs: $spx*final_decision (binary 0|1) and X-SPX-* / X-SPARXSTAR-\_ headers
+- Outputs: $spx_final_decision (binary 0|1) and X-SPX-* / X-SPARXSTAR-* headers
 
 **IS NOT:**
-
 - Security response headers (HSTS, CSP, X-Frame-Options, Permissions-Policy) — those are system-core
 - Location blocks — operator decisions
 - The firewall gate check itself (`if ($spx_final_decision) { return 444; }`) — placement instruction, not a shipped snippet
@@ -322,20 +299,17 @@ Geo codes act as risk amplifiers only — they never trigger a block without ano
 ## Shine (Social Publishing Engine)
 
 **IS:**
-
 - WordPress plugin (spe_social custom post type) + Node.js engine
 - Token Vault (Node.js + PostgreSQL) — encrypted OAuth token storage
 - Dispatcher Engine (Node.js + BullMQ + Redis) — queue management, SDK execution, retry logic
 - Stats Layer (Node.js + PostgreSQL) — metrics ingestion, engagement data, reply queue
 
 **IS NOT:**
-
 - Connected to DVE pipeline at runtime
 - A governance system
 - A cultural data handler
 
 **Hard rules:**
-
 - WordPress database NEVER holds OAuth tokens — only post content, schedule times, platform targets
 - Token Vault never exposes plaintext tokens via any external API
 - Vault and Dispatcher communicate over private network with mutual TLS — Vault API not exposed to public internet
@@ -351,13 +325,11 @@ Geo codes act as risk amplifiers only — they never trigger a block without ano
 ## 3iAtlas RLC
 
 **IS:**
-
 - Standalone classroom game — React + Node
 - Consumes DVE exports (dictionary export — read-only snapshot)
 - Mobile-first: 360px viewport, low-end Android, variable connectivity
 
 **IS NOT:**
-
 - A DVE component
 - A WordPress plugin
 - Connected to DVE runtime pipeline
@@ -371,9 +343,9 @@ Do NOT apply WordPress coding standards to 3iAtlas RLC code. It is intentionally
 
 ## Schema Loading Map
 
-| Component                              | Loads                        |
-| -------------------------------------- | ---------------------------- |
-| Dheghom DVE Core                       | SCF schema only              |
-| Sky DVE Core (Abilities)               | SCF schema + Block schema    |
-| Mḗh₁n̥s DVE Core                        | Policy schema only           |
+| Component | Loads |
+|---|---|
+| Dheghom DVE Core | SCF schema only |
+| Sky DVE Core (Abilities) | SCF schema + Block schema |
+| Mḗh₁n̥s DVE Core | Policy schema only |
 | sparxstar-digital-village-elder-schema | Reference only — not runtime |

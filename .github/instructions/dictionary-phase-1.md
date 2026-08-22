@@ -1,5 +1,4 @@
 # Dictionary Phase 1 — Marching Orders
-
 ## sparxstar-3iatlas-dictionary
 
 > **Status: `superseded`** — Phase 1 (REST API) is marked done in `AGENTS.md`
@@ -33,11 +32,11 @@ src/
 The AGENTS.md has three wrong ACF field names. The authoritative source is
 `src/includes/Sparxstar3IAtlasPostTypes.php`. Use these exact names:
 
-| AGENTS.md (WRONG)     | PostTypes.php (CORRECT)    |
-| --------------------- | -------------------------- |
-| `aiwa_ipa`            | `aiwa_ipa_pronunciation`   |
+| AGENTS.md (WRONG) | PostTypes.php (CORRECT) |
+|---|---|
+| `aiwa_ipa` | `aiwa_ipa_pronunciation` |
 | `aiwa_translation_en` | `aiwa_translation_english` |
-| `aiwa_translation_fr` | `aiwa_translation_french`  |
+| `aiwa_translation_fr` | `aiwa_translation_french` |
 
 All other field names in AGENTS.md are correct.
 
@@ -847,7 +846,6 @@ final class Sparxstar3IAtlasDictionarySpellChecker
 Register both new classes in `sparxIAtlas_load_dependencies()`.
 
 Find:
-
 ```php
             // Instantiate Auto Linker
             if (class_exists(Sparxstar3IAtlasAutoLinker::class)) {
@@ -856,7 +854,6 @@ Find:
 ```
 
 Replace with:
-
 ```php
             // REST API endpoints
             if (class_exists(\Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryRestApi::class)) {
@@ -882,12 +879,10 @@ wraps the Core and Form classes — the REST API must be outside it.
 ## URL Alignment — WordPad Fix Required
 
 The WordPad `DictionaryService.ts` calls:
-
 - `POST ${VITE_DICTIONARY_API_URL}/v1/lookup`
 - `POST ${VITE_DICTIONARY_API_URL}/v1/spell`
 
 The Dictionary REST API registers routes at:
-
 - `POST /wp-json/sparxstar/v1/dictionary/lookup`
 - `POST /wp-json/sparxstar/v1/dictionary/spell`
 
@@ -898,25 +893,19 @@ to `https://dictionary.aiwa.gm/wp-json/sparxstar/v1/dictionary`, WordPad would c
 **Fix required in WordPad** (`src/services/DictionaryService.ts`):
 
 Change:
-
 ```typescript
 const response = await fetch(`${baseUrl}/v1/lookup`, {
 ```
-
 To:
-
 ```typescript
 const response = await fetch(`${baseUrl}/lookup`, {
 ```
 
 And:
-
 ```typescript
 const response = await fetch(`${baseUrl}/v1/spell`, {
 ```
-
 To:
-
 ```typescript
 const response = await fetch(`${baseUrl}/spell`, {
 ```
@@ -925,7 +914,6 @@ This is a two-line fix in WordPad. Include it in the same PR as Dictionary Phase
 or as a follow-up immediately after.
 
 **Env var to set:**
-
 ```
 VITE_DICTIONARY_API_URL=https://dictionary.aiwa.gm/wp-json/sparxstar/v1/dictionary
 ```

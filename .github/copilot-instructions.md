@@ -6,7 +6,6 @@ When accessible and relevant to the PR under review, read these repos for
 governance context. Don't block a review on an unreachable repo or fetch
 one that has no bearing on the change (e.g. a docs-only typo fix doesn't
 need an ADR registry read):
-
 - ADR Registry: Starisian-Technologies/sparxstar-architecture-governance-registry
 - Product Specs: Starisian-Technologies/sparxstar-product-specification-registry
 - Coding Standards: Starisian-Technologies/starisian-technologies-coding-standards
@@ -17,7 +16,6 @@ need an ADR registry read):
 ## Review checklist
 
 Flag any PR that:
-
 - Contradicts an ADR or invariant
 - Assumes an answer to an open question (OQ in OPEN state)
 - Violates a coding standard
@@ -37,7 +35,6 @@ A standalone WordPress plugin that is the **authoritative lexical data store and
 Every other 3iAtlas tool (WordPad, RLC, Sound to Symbol) is a consumer of this plugin's REST API. Data flow is one-way: this repo serves, others consume. No reverse flow.
 
 **Three responsibilities:**
-
 1. Store and serve dictionary entries (WordPress CPT + ACF fields)
 2. Expose a public REST API at `sparxstar/v1/dictionary`
 3. Render a React PWA with Browse mode (dictionary) and Play mode (six language games)
@@ -56,17 +53,16 @@ Every other 3iAtlas tool (WordPad, RLC, Sound to Symbol) is a consumer of this p
 
 ## Current State — As of June 2026
 
-| Phase          | Description                                              | Status           |
-| -------------- | -------------------------------------------------------- | ---------------- |
-| Phase 0        | Bug fixes — CPT, taxonomies, form                        | ✅ Done          |
-| Phase 1        | REST API — 9 endpoints                                   | ✅ Done          |
-| Phase 2        | React frontend rebuild — Browse mode                     | ✅ Done          |
+| Phase | Description | Status |
+|---|---|---|
+| Phase 0 | Bug fixes — CPT, taxonomies, form | ✅ Done |
+| Phase 1 | REST API — 9 endpoints | ✅ Done |
+| Phase 2 | React frontend rebuild — Browse mode | ✅ Done |
 | Phase 2 UI Fix | Mockup-aligned UI pass (v3 §3.1–3.7) + backend hardening | ✅ Done (PR #64) |
-| Phase 3        | Cross-tool integration tests (WordPad, S2S, RLC)         | ⏸ Pending        |
-| Phase 4        | Games / Play tab — six game types, session management    | ✅ Done (PR #59) |
+| Phase 3 | Cross-tool integration tests (WordPad, S2S, RLC) | ⏸ Pending |
+| Phase 4 | Games / Play tab — six game types, session management | ✅ Done (PR #59) |
 
 **What is in `main` right now:**
-
 - Full React app with Browse and Play tabs; desktop three-column layout, mobile bottom-nav + bottom sheet
 - Phase 2 UI Fix: categories nav, example counts on rows, two-column desktop detail, Favorites CTA, Share icon (Web Share API), sidebar footer placeholder (OQ-V1), `/word-of-day` server endpoint (24h localStorage cache)
 - Six games: MeaningMatch, LetterReveal, ArrangeWord, DomainFlash, CompleteSentence, ListenWrite
@@ -81,15 +77,15 @@ Every other 3iAtlas tool (WordPad, RLC, Sound to Symbol) is a consumer of this p
 
 ## Open Questions — Do Not Implement Without a Spec Decision
 
-| ID        | Status                               | Question                                                                                                                                                                                                                                                                                                                                                                     | Blocking                     |
-| --------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| OQ-V1     | ⏸ Open                               | AIWA logo asset path and tagline copy for the desktop sidebar footer                                                                                                                                                                                                                                                                                                         | Sidebar footer final content |
-| ~~OQ-G1~~ | Retired label — corrected 2026-07-08 | This ID was redefined and reused for two different questions across this repo's own document history (original: Helios-token-source for `/progress/sync`; later: WP nonce auth, closed on a fabricated citation). Do not cite "OQ-G1" going forward — see `docs/dictionary-tech-spec.md` § "OQ-G1 — retired as a citation" for the disambiguated facts, tracked as `OQ-013`. | —                            |
-| OQ-G3     | ⏸ Open                               | Letter Reveal animation — pottery vessel emoji (🏺) is a placeholder; replace with AIWA-approved cultural visual                                                                                                                                                                                                                                                             | Letter Reveal polish         |
-| OQ-G4     | ⏸ Open                               | DomainFlash "I knew it" — fires `aiwa_game_word_correct`; confirm if a separate hook is needed                                                                                                                                                                                                                                                                               | myCred hook map              |
-| OQ-G5     | ✅ Closed                            | Sync destination = 3iAtlas Game Service, suite-JWT authenticated                                                                                                                                                                                                                                                                                                             | —                            |
-| OQ-I3     | ⏸ Open                               | Account-claim flow: merging guest device progress into a new suite account                                                                                                                                                                                                                                                                                                   | Game Service intake spec     |
-| OQ-I4     | ⏸ Open                               | Tier verification: who approves teacher accounts for Lower Basic sessions                                                                                                                                                                                                                                                                                                    | Identity Service spec        |
+| ID | Status | Question | Blocking |
+|---|---|---|---|
+| OQ-V1 | ⏸ Open | AIWA logo asset path and tagline copy for the desktop sidebar footer | Sidebar footer final content |
+| ~~OQ-G1~~ | Retired label — corrected 2026-07-08 | This ID was redefined and reused for two different questions across this repo's own document history (original: Helios-token-source for `/progress/sync`; later: WP nonce auth, closed on a fabricated citation). Do not cite "OQ-G1" going forward — see `docs/dictionary-tech-spec.md` § "OQ-G1 — retired as a citation" for the disambiguated facts, tracked as `OQ-013`. | — |
+| OQ-G3 | ⏸ Open | Letter Reveal animation — pottery vessel emoji (🏺) is a placeholder; replace with AIWA-approved cultural visual | Letter Reveal polish |
+| OQ-G4 | ⏸ Open | DomainFlash "I knew it" — fires `aiwa_game_word_correct`; confirm if a separate hook is needed | myCred hook map |
+| OQ-G5 | ✅ Closed | Sync destination = 3iAtlas Game Service, suite-JWT authenticated | — |
+| OQ-I3 | ⏸ Open | Account-claim flow: merging guest device progress into a new suite account | Game Service intake spec |
+| OQ-I4 | ⏸ Open | Tier verification: who approves teacher accounts for Lower Basic sessions | Identity Service spec |
 
 ---
 
@@ -168,7 +164,6 @@ side of the boundary is the REST API the games app calls — `/game-set`,
 games; it is now enforced in the games repo.
 
 **Game design mandate (from game spec):**
-
 - Users are fluent Mandinka speakers learning to write their own language. The gap is orthographic, not vocabulary.
 - Never start from nothing — always scaffold with audio, partial letters, meaning, or domain hint.
 - Wrong answers reveal more (next letter, IPA, definition) — never just "incorrect."
@@ -207,7 +202,6 @@ Game mechanics data (scores, session state, learned-word records) must never use
 ## SPARXSTAR Platform Context
 
 This repo is SPARXSTAR-family but operates in standalone mode. Standalone means:
-
 - Functional to the highest capability possible without the full DVE stack
 - The Helios TODO stubs are correct — they mark future integration points
 - `syncNow()` no-op is correct — it marks a future governed pipeline integration point
@@ -215,6 +209,7 @@ This repo is SPARXSTAR-family but operates in standalone mode. Standalone means:
 
 **Suite identity (June 2026):**
 All 3iAtlas products share one identity system — the `sparxstar-identity` service (RS256 JWT, Cloudflare Workers). WordPress authentication is prohibited for all user-facing features. The Dictionary React app uses an ephemeral page token (HMAC-SHA256, server-minted) for browse access and will use suite JWTs for authenticated play when the Identity Service is live. Do not add `wp_nonce` or `is_user_logged_in()` to any new user-facing endpoint.
+
 
 **Eshu migration awareness:**
 The platform direction moves PHP processing pipelines toward Eshu MCP and ACF/CPT toward Dheghom vault storage. New capabilities that need persistent storage should be designed lightly. Do not over-invest in WordPress/ACF for new storage layers if they will migrate.

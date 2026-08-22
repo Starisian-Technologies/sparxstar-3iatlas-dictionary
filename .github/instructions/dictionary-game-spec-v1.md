@@ -34,7 +34,6 @@ Every game must:
 Games live inside the Dictionary React app. Browse and Play are **two equal tabs** — neither is secondary.
 
 **Tab structure (top level, mobile and desktop):**
-
 ```
 [ Browse ]  [ Play ]
 ```
@@ -42,13 +41,11 @@ Games live inside the Dictionary React app. Browse and Play are **two equal tabs
 Switching between Browse and Play is a tab switch, not a page navigation. Same session, same login, same Word of the Day visible in both.
 
 **Word of the Day → Practice flow:**
-
 1. Word of the Day card is visible on Browse home
 2. "Learn more" opens the full word detail
 3. "Practice this word" button launches a game seeded with that word and its domain neighbors
 
 **Browse → Practice flow:**
-
 1. User filters words by domain (e.g., Agriculture)
 2. "Practice this domain" button appears — launches a game with that domain's word set
 
@@ -93,7 +90,6 @@ Words without headword + at least one translation are excluded automatically by 
 **Caching:** On domain selection, cache the `/game-set` response in IndexedDB with a 3-day TTL. Games run entirely from cache — no network calls during gameplay. Adjacent domain sets are pre-fetched silently.
 
 **IndexedDB schema (games store):**
-
 ```js
 {
   key: `game-set:${lang_source}:${domain || 'all'}`,
@@ -108,15 +104,13 @@ Words without headword + at least one translation are excluded automatically by 
 ## 4. The Six Games
 
 ### 4.1 Listen & Write
-
-_The most important game. Audio → typed word._
+*The most important game. Audio → typed word.*
 
 **Source:** CodePen reference — word guess game (Screenshots 2 & 3)  
 **Data requirement:** `/game-set?include_audio=true` — words without audio are excluded  
 **Scaffold:** Audio plays automatically. Word length shown as blank tiles (e.g. `_ _ _ _ _ _`). IPA shown below tiles.
 
 **Flow:**
-
 1. Audio clip plays — player hears the word they already know spoken aloud
 2. Blank tiles show word length
 3. Player types using keyboard + AccessoryBar
@@ -129,15 +123,13 @@ _The most important game. Audio → typed word._
 ---
 
 ### 4.2 Arrange the Word
-
-_Scrambled letter tiles → correct order._
+*Scrambled letter tiles → correct order.*
 
 **Source:** CodePen reference — word scramble with arrow navigation (Screenshot 1)  
 **Data requirement:** `/game-set` — any word with headword  
 **Scaffold:** All letters provided as tappable tiles, scrambled. Domain and English translation shown throughout as hints. No typing required.
 
 **Flow:**
-
 1. Scrambled letter tiles displayed (e.g. `A L A B A L I A` shuffled)
 2. Translation shown: "calamity, disaster"
 3. Domain shown: "General"
@@ -152,15 +144,13 @@ _Scrambled letter tiles → correct order._
 ---
 
 ### 4.3 Meaning Match
-
-_Written Mandinka word → correct English/French meaning._
+*Written Mandinka word → correct English/French meaning.*
 
 **Source:** CodePen reference — word association cards (Screenshot 6)  
 **Data requirement:** `/game-set` — needs `translation_en`. Distractors drawn from same domain.  
 **Scaffold:** The written Mandinka headword is shown. Player selects from three meanings — one correct, two distractors from the same domain.
 
 **Flow:**
-
 1. Headword displayed large (e.g. "alibalaa")
 2. IPA shown below: /alibalaː/
 3. Three meaning options displayed as cards
@@ -175,16 +165,14 @@ _Written Mandinka word → correct English/French meaning._
 ---
 
 ### 4.4 Complete the Sentence
-
-_Example sentence with headword blanked → player fills it in._
+*Example sentence with headword blanked → player fills it in.*
 
 **Source:** CodePen reference — hangman/letter reveal (Screenshot 4)  
 **Data requirement:** `/game-set` — words with at least one `example_sentence`  
 **Scaffold:** A real example sentence from the dictionary is shown with the key word removed. Word length shown as blank tiles. Domain and translation of the target word shown.
 
 **Flow:**
-
-1. Sentence displayed with target word blanked: "Alamaa n tanka la **\_\_** la"
+1. Sentence displayed with target word blanked: "Alamaa n tanka la ______ la"
 2. English translation shown: "May God save us from calamity"
 3. Blank tiles show target word length
 4. Player types using keyboard + AccessoryBar
@@ -196,15 +184,13 @@ _Example sentence with headword blanked → player fills it in._
 ---
 
 ### 4.5 Letter Reveal (Word Shape)
-
-_Click letters from a pool to reveal the hidden word._
+*Click letters from a pool to reveal the hidden word.*
 
 **Source:** CodePen reference — letter pool / hangman with animation (Screenshot 4 — the cat/shark mechanic is the hook, not the model)  
 **Data requirement:** `/game-set` — any word with headword  
 **Scaffold:** Word length shown as blank tiles. Full alphabet pool shown. Translation given as hint throughout.
 
 **Flow:**
-
 1. Blank tiles show word length (e.g. 8 blanks for "alibalaa")
 2. Translation shown: "calamity, disaster"
 3. Alphabet pool displayed — player taps letters
@@ -219,15 +205,13 @@ _Click letters from a pool to reveal the hidden word._
 ---
 
 ### 4.6 Domain Flash
-
-_Flashcard through a semantic domain._
+*Flashcard through a semantic domain.*
 
 **Source:** Suite architecture doc — Domain Flash  
 **Data requirement:** `/game-set?domain=agriculture-6.2`  
 **Scaffold:** Each card shows the English/French meaning — player tries to recall the Mandinka word (written). Flip reveals the word + IPA + audio if available. Self-reported result only.
 
 **Flow:**
-
 1. Card shows: "calamity, disaster" + domain badge "General"
 2. Player thinks of the Mandinka word
 3. Player taps "Reveal"
@@ -321,16 +305,16 @@ Sync fires on session complete if online, or on next connection via `window.onli
 
 ## 7. MyCred Hook Map
 
-| Hook                             | Trigger                                | Award                          |
-| -------------------------------- | -------------------------------------- | ------------------------------ |
-| `aiwa_game_word_correct`         | Any correct answer in any game         | +5 XP                          |
+| Hook | Trigger | Award |
+|---|---|---|
+| `aiwa_game_word_correct` | Any correct answer in any game | +5 XP |
 | `aiwa_game_listen_write_correct` | Correct in Listen & Write specifically | +10 XP (harder — extra reward) |
-| `aiwa_game_sentence_correct`     | Correct in Complete the Sentence       | +8 XP                          |
-| `aiwa_game_session_complete`     | Full session completed (min 10 words)  | +25 XP                         |
-| `aiwa_game_domain_mastered`      | 100% correct on full domain set        | +50 Gold                       |
-| `aiwa_game_streak_3`             | 3 correct in a row                     | +15 XP bonus                   |
-| `aiwa_game_new_word_practiced`   | First time practicing a word           | +8 XP                          |
-| `aiwa_game_return_visit`         | Opens Play tab on a new calendar day   | +10 XP                         |
+| `aiwa_game_sentence_correct` | Correct in Complete the Sentence | +8 XP |
+| `aiwa_game_session_complete` | Full session completed (min 10 words) | +25 XP |
+| `aiwa_game_domain_mastered` | 100% correct on full domain set | +50 Gold |
+| `aiwa_game_streak_3` | 3 correct in a row | +15 XP bonus |
+| `aiwa_game_new_word_practiced` | First time practicing a word | +8 XP |
+| `aiwa_game_return_visit` | Opens Play tab on a new calendar day | +10 XP |
 
 MyCred hooks fire server-side on `/progress/sync`. When myCred is absent, hooks fire as no-ops — games still work.
 
@@ -377,12 +361,12 @@ Do not build until separately specced:
 
 The following endpoints must exist in `Sparxstar3IAtlasDictionary.php` before any game UI is built:
 
-| Endpoint                                      | Status            | Blocking             |
-| --------------------------------------------- | ----------------- | -------------------- |
-| `GET /sparxstar/v1/dictionary/game-set`       | **Not yet built** | All games            |
-| `GET /sparxstar/v1/dictionary/domains`        | **Not yet built** | Session setup        |
-| `GET /sparxstar/v1/dictionary/word-of-day`    | **Not yet built** | WotD → Practice flow |
-| `POST /sparxstar/v1/dictionary/progress/sync` | **Not yet built** | XP / MyCred          |
+| Endpoint | Status | Blocking |
+|---|---|---|
+| `GET /sparxstar/v1/dictionary/game-set` | **Not yet built** | All games |
+| `GET /sparxstar/v1/dictionary/domains` | **Not yet built** | Session setup |
+| `GET /sparxstar/v1/dictionary/word-of-day` | **Not yet built** | WotD → Practice flow |
+| `POST /sparxstar/v1/dictionary/progress/sync` | **Not yet built** | XP / MyCred |
 
 **These four endpoints are Phase 3 backend work.** Games UI (Phase 4) cannot begin until Phase 3 is complete and tested.
 
@@ -390,17 +374,17 @@ The following endpoints must exist in `Sparxstar3IAtlasDictionary.php` before an
 
 ## 11. Open Questions
 
-| ID    | Question                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Blocking               |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------- |
+| ID | Question | Blocking |
+|---|---|---|
 | OQ-G1 | Helios auth — how does the Dictionary app obtain a Helios Bearer token for `/progress/sync`? Is there a login flow in the Dictionary frontend, or does it piggyback WordPress session? **Status note (2026-07-08): this is the original definition of "OQ-G1." Later governance docs (`AGENTS.md`, `.github/copilot-instructions.md`) redefined "OQ-G1" to mean a different question (WP nonce auth) and closed it under that redefinition, on a citation that was itself found to be fabricated. This original question — how does an anonymous/guest game client obtain a sync token with no WordPress session and no Helios identity — remains genuinely open and is not resolved by that later closure. See `docs/dictionary-tech-spec.md` § "OQ-G1 — retired as a citation" (tracked there as `OQ-013`) for the full disambiguation. Treat this row, not the later redefinition, as the live open question.** | Progress sync / MyCred |
-| OQ-G2 | Adjacent domain pre-fetch map — which domains are "adjacent" to each other for background caching? Depends on 7-week curriculum document.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Offline pre-fetch      |
-| OQ-G3 | Animation asset for Letter Reveal game — what culturally appropriate visual replaces the cat/shark mechanic from the CodePen reference?                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Letter Reveal polish   |
-| OQ-G4 | Domain Flash self-report — does "I knew it" result sync to server as `aiwa_game_word_correct` or as a separate hook?                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | MyCred hook map        |
+| OQ-G2 | Adjacent domain pre-fetch map — which domains are "adjacent" to each other for background caching? Depends on 7-week curriculum document. | Offline pre-fetch |
+| OQ-G3 | Animation asset for Letter Reveal game — what culturally appropriate visual replaces the cat/shark mechanic from the CodePen reference? | Letter Reveal polish |
+| OQ-G4 | Domain Flash self-report — does "I knew it" result sync to server as `aiwa_game_word_correct` or as a separate hook? | MyCred hook map |
 
 ---
 
 ## 12. Version History
 
-| Version | Date     | Changes                                                                                                        |
-| ------- | -------- | -------------------------------------------------------------------------------------------------------------- |
-| 1.0     | May 2026 | Initial games specification. Six game types, session flow, MyCred hooks, backend dependencies, file structure. |
+| Version | Date | Changes |
+|---|---|---|
+| 1.0 | May 2026 | Initial games specification. Six game types, session flow, MyCred hooks, backend dependencies, file structure. |

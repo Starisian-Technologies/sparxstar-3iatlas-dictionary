@@ -1,5 +1,4 @@
 # SPARXSTAR Canonical Types
-
 ## Reference 02 — PAM-002 Canonical DTOs, Enums, Interfaces, Signing Material, TTL Tiers
 
 **Authority:** PAM-002 (normative, supersedes PAM-001 entirely)
@@ -41,24 +40,20 @@ final class ContextPulse
 ```
 
 **PAM-001 reversals — these fields were EXCLUDED in PAM-001 and are INCLUDED in PAM-002:**
-
 - `behavior_flags` — INCLUDED (required for Helios Group trust evaluation)
 - `geo_zone` — INCLUDED (required for hyper-localized Group authority enforcement)
 - `network_effective_type` — INCLUDED (required for GovernanceToken TTL resolution)
 - `session_duration` — INCLUDED (session stability signal for trust computation)
 
 **Always excluded:**
-
 - `user_id` — identity never travels in a pulse (Rule 9.3 — replay attack surface)
 - `ttl` — use `expires` (absolute timestamp). Duration creates clock-skew ambiguity.
 
 **Field naming:**
-
 - `sig` (not `signature`) — canonical name
 - `expires` (not `expires_at`) — canonical name
 
 **ContextPulse transport:**
-
 - HttpOnly, SameSite=Strict cookie — never header, never localStorage, never URL parameter
 - Size limit: under 1 KB including signature. PROHIBITED: adding fields without removing others.
 - JavaScript access: strictly forbidden
@@ -152,7 +147,6 @@ interface HeliosClientInterface
 ```
 
 **Key notes:**
-
 - `$proof` is `mixed` — pass `null` unless implementing hardware key proof for Level 3
 - `$now` is caller-supplied for testability
 - `$zone` is `ZonePrimitive`, NOT string — callers must resolve raw string before calling
@@ -208,7 +202,6 @@ issued_at={unix_integer}
 ```
 
 **Three immutable signing rules — never change without PAM-003 amendment:**
-
 1. Timestamps are Unix integers serialized as plain decimal strings. NOT ISO 8601.
 2. session_id and device_id are read from routing_flags, not from token fields.
 3. content_id is intentionally excluded from the signing payload.
@@ -248,14 +241,13 @@ return match ($pulse->network_effective_type) {
 
 ## Three Trust Primitives
 
-| Primitive | Scope                                                | Geo-Zone Model                                                                    |
-| --------- | ---------------------------------------------------- | --------------------------------------------------------------------------------- |
-| Personal  | Device-to-device capability grants                   | Not geography-based. Travels with device.                                         |
-| Group     | Institutional perimeter with geographic trust radius | The Agua Caliente model — hyper-localized. IP geo-zone + behavior profile.        |
-| Brain     | Content access control via keys and entitlements     | Global by design. Geography does not restrict Brain access — entitlement keys do. |
+| Primitive | Scope | Geo-Zone Model |
+|---|---|---|
+| Personal | Device-to-device capability grants | Not geography-based. Travels with device. |
+| Group | Institutional perimeter with geographic trust radius | The Agua Caliente model — hyper-localized. IP geo-zone + behavior profile. |
+| Brain | Content access control via keys and entitlements | Global by design. Geography does not restrict Brain access — entitlement keys do. |
 
 **Group trust enforcement:**
-
 - Recognized geo_zone + known device + clean behavior_flags → ALLOW_ORIGIN
 - Unrecognized geo_zone + known device → STEP_UP
 - Any geo_zone + attack behavioral pattern in behavior_flags → DENY (posture overrides zone)
@@ -269,15 +261,15 @@ return match ($pulse->network_effective_type) {
 
 Produced by Sirus TrustEngine and BehaviorAnalyzer. Values are lowercase snake_case.
 
-| Flag                   | Meaning                                                    |
-| ---------------------- | ---------------------------------------------------------- |
-| credential_stuffing    | Request pattern matches credential stuffing attack profile |
-| rapid_device_shift     | Multiple new device fingerprints in short duration         |
-| geo_impossibility      | Geographic jump that cannot be explained by travel time    |
-| bot_signature          | User-agent and request pattern match known bot profiles    |
-| asm_jump               | ASN/country jump within a window that exceeds tolerance    |
-| repeated_failures      | Multiple consecutive agreement failures from this device   |
-| session_hijack_pattern | Behavior consistent with stolen session exploitation       |
+| Flag | Meaning |
+|---|---|
+| credential_stuffing | Request pattern matches credential stuffing attack profile |
+| rapid_device_shift | Multiple new device fingerprints in short duration |
+| geo_impossibility | Geographic jump that cannot be explained by travel time |
+| bot_signature | User-agent and request pattern match known bot profiles |
+| asm_jump | ASN/country jump within a window that exceeds tolerance |
+| repeated_failures | Multiple consecutive agreement failures from this device |
+| session_hijack_pattern | Behavior consistent with stolen session exploitation |
 
 Empty `behavior_flags` = no threat signals. Helios and Mḗh₁n̥s must NEVER assume behavior_flags is empty — always check.
 
@@ -285,29 +277,28 @@ Empty `behavior_flags` = no threat signals. Helios and Mḗh₁n̥s must NEVER a
 
 ## Namespaces
 
-| Component     | Namespace                                               |
-| ------------- | ------------------------------------------------------- |
-| Ouroboros     | `Starisian\Sparxstar\Infrastructure\`                   |
-| Sirus         | `Starisian\Sparxstar\Sirus\`                            |
-| Mḗh₁n̥s        | `Starisian\Sparxstar\Mehns\`                            |
-| Dheghom       | `Starisian\Sparxstar\Dheghom\`                          |
+| Component | Namespace |
+|---|---|
+| Ouroboros | `Starisian\Sparxstar\Infrastructure\` |
+| Sirus | `Starisian\Sparxstar\Sirus\` |
+| Mḗh₁n̥s | `Starisian\Sparxstar\Mehns\` |
+| Dheghom | `Starisian\Sparxstar\Dheghom\` |
 | ZonePrimitive | `Starisian\Sparxstar\Infrastructure\DTOs\ZonePrimitive` |
 
 ---
 
 ## Migration Status (as of PAM-002, May 2026)
 
-| Repo                  | Status            |
-| --------------------- | ----------------- |
-| Ouroboros CO-001      | ✅ Merged         |
+| Repo | Status |
+|---|---|
+| Ouroboros CO-001 | ✅ Merged |
 | Helios Phase 3 PR #18 | ✅ Ready to merge |
-| Sirus PR #53          | ⏳ Pending merge  |
-| Mḗh₁n̥s                | 🔜 Next           |
-| Dheghom               | 🔜 After Mḗh₁n̥s   |
-| Sky Eshu              | 🔜 Planned        |
+| Sirus PR #53 | ⏳ Pending merge |
+| Mḗh₁n̥s | 🔜 Next |
+| Dheghom | 🔜 After Mḗh₁n̥s |
+| Sky Eshu | 🔜 Planned |
 
 **PAM-002 migration phases still pending:**
-
 - PAM-002-P1: Update Ouroboros ContextPulse with four restored fields. Recompute all HMAC signatures.
 - PAM-002-P2: Update Sirus PulseGenerator. Update Helios PulseVerifier.
 - PAM-002-P3: Update Helios AgreementEvaluator with Group trust geo-zone + behavior_flags logic.
