@@ -51,7 +51,7 @@ Release-As: 2.8.14
 ```
 
 Because this repo squash-merges, the commit release-please parses is the
-*squashed* message, and GitHub builds that by concatenating every commit on the
+_squashed_ message, and GitHub builds that by concatenating every commit on the
 branch. A branch with two or more commits therefore buries the footer in the
 middle of the body, between prose from the other commits — where release-please
 does not read it, so the override is silently ignored and you get the computed

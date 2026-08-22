@@ -1,4 +1,5 @@
 # SPARXSTAR Governance Chain
+
 ## Reference 03 — Three-Token Model, Release Gate, QUARANTINE, DecisionStatus, PolicyResolver
 
 **Authority:** DVE Trust Architecture (DVE-TRUST-001), Mḗh₁n̥s v3.1, PAM-002
@@ -9,13 +10,14 @@
 
 The platform requires three distinct cryptographic instruments. These are NOT variants of the same object. Conflating them is a design error.
 
-| Token | Minted By | Consumed By | Lifetime |
-|---|---|---|---|
-| Personal Policy Token | Sky Eshu at intake | Mḗh₁n̥s PolicyResolver | Short — 300s default |
-| Group Policy | Community authority (declarative) | Mḗh₁n̥s PolicyResolver + PolicyDispatcher | Standing — until amended |
-| Release Receipt (GovernanceToken) | Mḗh₁n̥s GovernanceTokenMinter | Dheghom TokenValidator | 60–3600s, one-time |
+| Token                             | Minted By                         | Consumed By                              | Lifetime                 |
+| --------------------------------- | --------------------------------- | ---------------------------------------- | ------------------------ |
+| Personal Policy Token             | Sky Eshu at intake                | Mḗh₁n̥s PolicyResolver                    | Short — 300s default     |
+| Group Policy                      | Community authority (declarative) | Mḗh₁n̥s PolicyResolver + PolicyDispatcher | Standing — until amended |
+| Release Receipt (GovernanceToken) | Mḗh₁n̥s GovernanceTokenMinter      | Dheghom TokenValidator                   | 60–3600s, one-time       |
 
 **Plus the permanent record:**
+
 - ArtifactGovernanceDeclaration — minted by Mḗh₁n̥s at Release Gate alongside Release Receipt. Stored permanently in Dheghom. Never consumed and discarded. The deed that says who owns what is inside.
 
 ---
@@ -74,6 +76,7 @@ issued_at={unix_integer}
 **Location:** `/policies/authority/{authority_id}/` directory. Loaded by PolicyRegistry.
 
 **Key rule — Group Policy supersedes Personal Policy Token in the direction of restriction:**
+
 - Community AI opt-out overrides member's AI opt-in
 - Individual AI opt-out always stands even if community permits AI
 - Resolution: most restrictive of Group and Personal on every dimension
@@ -151,6 +154,7 @@ Complete flow at Release Gate:
 ```
 
 **Draft vs Release — fundamental separation:**
+
 - Save = store draft (encrypted, invisible to AI pipeline, no validation of required fields)
 - Release = governance runs (all required fields checked, Policy Packs evaluated, token minted)
 
@@ -193,12 +197,14 @@ enum DecisionStatus: string {
 When any rule in any Policy Pack returns QUARANTINE:
 
 **At the Sieve Layer:**
+
 - PolicyDispatcher immediately halts — no further policy rules execute
 - Decision logged to CryptographicAuditLedger with full rule-by-rule trace
 - No GovernanceToken minted
 - Triggering rule's message surfaced to user interface verbatim
 
 **At the Storage Layer:**
+
 - Payload saved unconditionally — QUARANTINE does not prevent storage
 - post_status forced to 'draft' regardless of what user requested
 - aiwa_qc_status set to value declared in rule's qc_status field
@@ -206,10 +212,12 @@ When any rule in any Policy Pack returns QUARANTINE:
 - Record flagged as locked — no further user edits until authorized reviewer acts
 
 **At the AI Pipeline Layer:**
+
 - QUARANTINEd record permanently invisible to AI training pipeline
 - Produces no governance_token, cannot be queried by the training SELECT
 
 **At the Review Layer:**
+
 - Appears in Elder / Admin review queue
 - Reviewer can: approve (re-run Release Gate), reject (permanent sealed status), or request correction (unlock for creator amendment)
 - Every reviewer action appended to AuditLedger as new chained entry
@@ -266,6 +274,7 @@ Every write to a governed field MUST pass all three gates:
 When a user saves a Draft, the payload MUST be AES-256 encrypted using a key tied exclusively to their identity_id.
 
 **Envelope encryption model:**
+
 1. Unique Data Encryption Key (DEK) generated per draft record (AES-256)
 2. DEK encrypted using creator's identity key (Key Encryption Key / KEK)
 3. Encrypted DEK stored alongside ciphertext payload in database
@@ -291,7 +300,7 @@ When a user saves a Draft, the payload MUST be AES-256 encrypted using a key tie
 Returning `false` tells WordPress the meta does not exist and triggers a DB lookup.
 Returning `null` denies the value without information leakage.
 
-Namespacing (aiwa_, sparxstar_) is classification, not protection. Any plugin can read governed fields via `get_post_meta()`. The interceptor is the defense layer.
+Namespacing (aiwa*, sparxstar*) is classification, not protection. Any plugin can read governed fields via `get_post_meta()`. The interceptor is the defense layer.
 
 ---
 
@@ -302,6 +311,7 @@ Global → Authority → Ability → Individual
 ```
 
 Policy files live in:
+
 - `/policies/global/`
 - `/policies/authority/{authority_id}/`
 - `/policies/ability/{ability_id}/`
@@ -316,6 +326,7 @@ Mḗh₁n̥s loads Policy schema only — the SPARXSTAR JSON policy grammar. M�
 Internal Mḗh₁n̥s working object. NOT a token. Appended to ExecutionContext before PolicyDispatcher runs.
 
 New condition types in JSON policy grammar:
+
 - `resolved_ai_consent_is` — evaluates resolved_posture.ai_consent
 - `resolved_sharing_scope_is` — evaluates resolved_posture.sharing_scope
 - `resolved_voice_reconstruction_is` — evaluates resolved_posture.voice_reconstruction_consent

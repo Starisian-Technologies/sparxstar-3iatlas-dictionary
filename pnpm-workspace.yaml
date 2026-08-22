@@ -1,6 +1,6 @@
 allowBuilds:
-  unrs-resolver: true
+    unrs-resolver: true
 overrides:
-  js-yaml@<=4.1.1: '>=4.2.0'
-  serialize-javascript@<=7.0.2: '>=7.0.3'
-  serialize-javascript@>=5.0.0 <7.0.5: '>=7.0.5'
+    js-yaml@<=4.1.1: '>=4.2.0'
+    serialize-javascript@<=7.0.2: '>=7.0.3'
+    serialize-javascript@>=5.0.0 <7.0.5: '>=7.0.5'

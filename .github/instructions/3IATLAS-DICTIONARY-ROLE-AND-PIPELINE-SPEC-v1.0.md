@@ -35,6 +35,7 @@ The dictionary is **linguistically read-only** after import. WordPress operation
 - A place where headwords, definitions, pronunciations, or cross-language relationships are decided
 
 The dictionary should never contain:
+
 - Provisional spellings under review
 - Entries flagged "Muhammed needs to check"
 - Disputed entries pending elder review
@@ -70,48 +71,48 @@ DVE governs truth. The dictionary distributes truth.
 
 **Linguistic fields — locked after import. Edit prohibited in WordPress UI. Corrections require a new DVE-approved package.**
 
-| Field | Type | Minted By |
-|---|---|---|
-| `aiwa_entry_uuid` | UUID | DVE — immutable after import |
-| Normalized headword | Post title | DVE |
-| Slug | Post name | Derived from normalized headword at import |
-| Primary language | Taxonomy: `starmus_tax_language` | DVE |
-| Part of speech | Taxonomy: `starmus_part_of_speech` | DVE |
-| English gloss | ACF: `aiwa_translation_english` | DVE |
-| French gloss | ACF: `aiwa_translation_french` | DVE |
-| Definition / extract | ACF: `aiwa_extract` | DVE |
-| IPA pronunciation | ACF: `aiwa_ipa_pronunciation` | DVE or derived |
-| Phonetic pronunciation | ACF: `aiwa_phonetic` | DVE or derived |
-| Audio URL | ACF: `aiwa_audio_file` | DVE |
-| Origin notes | ACF: `aiwa_origin` | DVE |
-| Synonyms | ACF relationship: `aiwa_synonyms` | DVE |
-| Antonyms | ACF relationship: `aiwa_antonyms` | DVE |
-| Rhyme entries | ACF relationship: `aiwa_rhyme_entries` | DVE |
-| Cross-language siblings | ACF relationship: `aiwa_cross_language_siblings` | DVE |
-| Cross-language relation type | ACF: `aiwa_cross_language_relation_type` | DVE |
-| Speaker community tags | Taxonomy: `aiwa_speaker_community` | DVE |
-| Community usage status | ACF: `aiwa_community_usage_status` (per tag) | DVE / AIWA review |
-| Semantic domain | Taxonomy: `aiwa_domain` | DVE |
-| AIWA Level | ACF select: `aiwa_level` | DVE |
-| CEFR approximation | ACF select: `aiwa_cefr_approx` | DVE (optional mapping) |
-| Oxford tier | ACF checkbox: `aiwa_oxford_tier` | DVE (optional) |
-| Concepticon ID | ACF number: `aiwa_concepticon_id` | DVE (academic anchor) |
-| CLICS ID | ACF text: `aiwa_clics_id` | DVE (academic anchor) |
-| Example sentences | ACF repeater: `aiwa_example_sentences` | DVE |
+| Field                        | Type                                             | Minted By                                  |
+| ---------------------------- | ------------------------------------------------ | ------------------------------------------ |
+| `aiwa_entry_uuid`            | UUID                                             | DVE — immutable after import               |
+| Normalized headword          | Post title                                       | DVE                                        |
+| Slug                         | Post name                                        | Derived from normalized headword at import |
+| Primary language             | Taxonomy: `starmus_tax_language`                 | DVE                                        |
+| Part of speech               | Taxonomy: `starmus_part_of_speech`               | DVE                                        |
+| English gloss                | ACF: `aiwa_translation_english`                  | DVE                                        |
+| French gloss                 | ACF: `aiwa_translation_french`                   | DVE                                        |
+| Definition / extract         | ACF: `aiwa_extract`                              | DVE                                        |
+| IPA pronunciation            | ACF: `aiwa_ipa_pronunciation`                    | DVE or derived                             |
+| Phonetic pronunciation       | ACF: `aiwa_phonetic`                             | DVE or derived                             |
+| Audio URL                    | ACF: `aiwa_audio_file`                           | DVE                                        |
+| Origin notes                 | ACF: `aiwa_origin`                               | DVE                                        |
+| Synonyms                     | ACF relationship: `aiwa_synonyms`                | DVE                                        |
+| Antonyms                     | ACF relationship: `aiwa_antonyms`                | DVE                                        |
+| Rhyme entries                | ACF relationship: `aiwa_rhyme_entries`           | DVE                                        |
+| Cross-language siblings      | ACF relationship: `aiwa_cross_language_siblings` | DVE                                        |
+| Cross-language relation type | ACF: `aiwa_cross_language_relation_type`         | DVE                                        |
+| Speaker community tags       | Taxonomy: `aiwa_speaker_community`               | DVE                                        |
+| Community usage status       | ACF: `aiwa_community_usage_status` (per tag)     | DVE / AIWA review                          |
+| Semantic domain              | Taxonomy: `aiwa_domain`                          | DVE                                        |
+| AIWA Level                   | ACF select: `aiwa_level`                         | DVE                                        |
+| CEFR approximation           | ACF select: `aiwa_cefr_approx`                   | DVE (optional mapping)                     |
+| Oxford tier                  | ACF checkbox: `aiwa_oxford_tier`                 | DVE (optional)                             |
+| Concepticon ID               | ACF number: `aiwa_concepticon_id`                | DVE (academic anchor)                      |
+| CLICS ID                     | ACF text: `aiwa_clics_id`                        | DVE (academic anchor)                      |
+| Example sentences            | ACF repeater: `aiwa_example_sentences`           | DVE                                        |
 
 **Operational fields — editable in WordPress by authorized dictionary administrators.**
 
-| Field | Purpose |
-|---|---|
-| Post status (publish/draft) | Visibility control |
-| Entry lifecycle status | active / deprecated / merged / hidden / withdrawn |
-| Merge target UUID | If deprecated or merged, points to canonical entry |
-| Featured flag | Highlights entry in browse/word-of-day pool |
-| API eligibility flag | Enables or disables entry in REST API responses |
-| Workbook inclusion flag | Marks entries approved for WordPad workbook export |
-| Cache invalidation controls | Force-refresh cached API responses |
-| Public display notes | Editorial notes visible to end users |
-| Internal admin notes | Notes not exposed via API |
+| Field                       | Purpose                                            |
+| --------------------------- | -------------------------------------------------- |
+| Post status (publish/draft) | Visibility control                                 |
+| Entry lifecycle status      | active / deprecated / merged / hidden / withdrawn  |
+| Merge target UUID           | If deprecated or merged, points to canonical entry |
+| Featured flag               | Highlights entry in browse/word-of-day pool        |
+| API eligibility flag        | Enables or disables entry in REST API responses    |
+| Workbook inclusion flag     | Marks entries approved for WordPad workbook export |
+| Cache invalidation controls | Force-refresh cached API responses                 |
+| Public display notes        | Editorial notes visible to end users               |
+| Internal admin notes        | Notes not exposed via API                          |
 
 ---
 
@@ -157,13 +158,13 @@ wp aiwa-dictionary import --file=approved-entry-batch.json --publish
 
 Once imported, an entry has a lifecycle managed through operational fields, not linguistic fields.
 
-| State | Meaning |
-|---|---|
-| `active` | Published and served via API. Default state after import. |
-| `deprecated` | Superseded by a newer approved entry. UUID preserved. Not served in primary results. |
-| `merged` | Identified as duplicate. Merged into a canonical entry (referenced by merge target UUID). UUID preserved for historical continuity. |
-| `hidden` | Temporarily removed from API without correction. Operational decision. |
-| `withdrawn` | Approved entry retracted after publication. Requires DVE authority. UUID preserved. |
+| State        | Meaning                                                                                                                             |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `active`     | Published and served via API. Default state after import.                                                                           |
+| `deprecated` | Superseded by a newer approved entry. UUID preserved. Not served in primary results.                                                |
+| `merged`     | Identified as duplicate. Merged into a canonical entry (referenced by merge target UUID). UUID preserved for historical continuity. |
+| `hidden`     | Temporarily removed from API without correction. Operational decision.                                                              |
+| `withdrawn`  | Approved entry retracted after publication. Requires DVE authority. UUID preserved.                                                 |
 
 **Entries are never silently deleted.** Games, workbooks, audio assets, citations, and printed materials may reference entry UUIDs. Historical continuity is required. When a game session recorded a score against a UUID, that UUID must remain resolvable forever, even if the entry is deprecated or merged.
 
@@ -184,8 +185,8 @@ DVE has determined that an entry is a duplicate, superseded, or should be consol
 1. WordPress administrators may not edit linguistic fields after import via the standard ACF edit UI.
 2. All linguistic fields on the dictionary CPT must be rendered read-only in the WordPress admin after the entry is imported.
 3. The only paths to change a linguistic field are:
-   - A DVE replacement package imported via WP-CLI
-   - An emergency admin override with documented DVE authorization and an audit log entry
+    - A DVE replacement package imported via WP-CLI
+    - An emergency admin override with documented DVE authorization and an audit log entry
 4. Operational fields (visibility, lifecycle status, featured flag, API eligibility) may be edited directly by authorized dictionary administrators.
 5. The `aiwa_entry_uuid` field is never editable by any WordPress role under any circumstances.
 6. No plugin, WordPress admin action, or REST API endpoint may overwrite `aiwa_entry_uuid` after initial import.
@@ -203,6 +204,7 @@ The dictionary receives data. It does not generate linguistic data. It serves:
 - External API consumers via consumer API key
 
 The dictionary does not:
+
 - Route content for quality control
 - Generate signals to Esu or any other downstream system (game service handles that)
 - Flag entries for review

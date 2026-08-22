@@ -1,4 +1,5 @@
 # 3iAtlas Literacy Reward Model
+
 ## Specification v1.0
 
 **Status:** Approved  
@@ -17,11 +18,11 @@ The Dictionary is the entry point of the literacy loop. It helps the learner dis
 
 The three surfaces have distinct roles:
 
-| Surface | Primary reward category |
-|---|---|
-| Games | Recall and recognition |
+| Surface    | Primary reward category         |
+| ---------- | ------------------------------- |
+| Games      | Recall and recognition          |
 | Dictionary | Contribution and delayed recall |
-| WordPad | Production and revision |
+| WordPad    | Production and revision         |
 
 ---
 
@@ -52,28 +53,28 @@ The learner is rewarded for demonstrated learning at each step, not for passive 
 
 ### 3.1 Dictionary-origin events
 
-| Event | XP | Notes |
-|---|---|---|
-| Lookup | **0** | Enqueues word into SRS; no XP |
-| Correct meaning selected (recognition task) | **5** | Task served during SRS window |
-| Looked-up word recalled in a game | **15** | Cross-surface; see § 3.3 for credit split |
-| Looked-up word used correctly in WordPad | **25** | Production proof |
-| Example sentence submitted | **5–10 pending** | Held until reviewed |
-| Example sentence accepted | **+40** | Net 45–50 total |
-| Pronunciation submitted | **5–10 pending** | Held until reviewed |
-| Pronunciation confirmed | **+40** | Net 45–50 total |
-| Error flag confirmed as materially useful | **25** | Max 3/day; see anti-farming rules |
+| Event                                                                            | XP                       | Notes                                       |
+| -------------------------------------------------------------------------------- | ------------------------ | ------------------------------------------- |
+| Lookup                                                                           | **0**                    | Enqueues word into SRS; no XP               |
+| Correct meaning selected (recognition task)                                      | **5**                    | Task served during SRS window               |
+| Looked-up word recalled in a game                                                | **15**                   | Cross-surface; see § 3.3 for credit split   |
+| Looked-up word used correctly in WordPad                                         | **25**                   | Production proof                            |
+| Example sentence submitted                                                       | **5–10 pending**         | Held until reviewed                         |
+| Example sentence accepted                                                        | **+40**                  | Net 45–50 total                             |
+| Pronunciation submitted                                                          | **5–10 pending**         | Held until reviewed                         |
+| Pronunciation confirmed                                                          | **+40**                  | Net 45–50 total                             |
+| Error flag confirmed as materially useful                                        | **25**                   | Max 3/day; see anti-farming rules           |
 | Accepted contribution helps another learner complete a meaningful learning event | **5 per unique learner** | Capped at 50 XP per contribution; see § 3.4 |
 
 ### 3.2 WordPad production tiers
 
 Production events are tiered to keep struggling learners engaged without letting unvalidated output flood the ledger.
 
-| Production level | XP |
-|---|---|
-| Attempted (submitted but incorrect) | 2 |
-| Improved (measurably better revision) | 10 |
-| Correct (target word used correctly) | 25 |
+| Production level                                   | XP  |
+| -------------------------------------------------- | --- |
+| Attempted (submitted but incorrect)                | 2   |
+| Improved (measurably better revision)              | 10  |
+| Correct (target word used correctly)               | 25  |
 | Validated contribution (DVE or community accepted) | 100 |
 
 "Attempted" earns 2 XP as encouragement only. It does not advance the per-word mastery state.
@@ -84,17 +85,17 @@ When a learner recalls a word in a game that was previously enqueued from a Dict
 
 ```json
 {
-  "event": "word_recalled",
-  "learner_id": "...",
-  "aiwa_entry_uuid": "...",
-  "xp_awarded": 15,
-  "earning_surface": "game",
-  "origin_surface": "dictionary",
-  "origin_event": "lookup",
-  "credit": {
-    "dictionary": "origin",
-    "game": "performance"
-  }
+    "event": "word_recalled",
+    "learner_id": "...",
+    "aiwa_entry_uuid": "...",
+    "xp_awarded": 15,
+    "earning_surface": "game",
+    "origin_surface": "dictionary",
+    "origin_event": "lookup",
+    "credit": {
+        "dictionary": "origin",
+        "game": "performance"
+    }
 }
 ```
 
@@ -122,15 +123,15 @@ This rule is enforced server-side by the manifest. The contribution reward fires
 
 These rules are declared in the Dictionary manifest and enforced server-side.
 
-| Rule | Detail |
-|---|---|
-| Same-word lookup deduplication | A word looked up more than once per day by the same learner creates no additional SRS signal and no XP |
-| Daily XP cap — Dictionary origin | 150 XP/day from Dictionary-origin events |
-| Daily XP cap — Presence bonus | 10 XP/day; structurally separate from learning XP; cannot be farmed into significance |
-| Recognition task cap | 10 tasks/day from Dictionary source |
+| Rule                             | Detail                                                                                                     |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Same-word lookup deduplication   | A word looked up more than once per day by the same learner creates no additional SRS signal and no XP     |
+| Daily XP cap — Dictionary origin | 150 XP/day from Dictionary-origin events                                                                   |
+| Daily XP cap — Presence bonus    | 10 XP/day; structurally separate from learning XP; cannot be farmed into significance                      |
+| Recognition task cap             | 10 tasks/day from Dictionary source                                                                        |
 | Contribution submission cooldown | One pending submission per word per learner per 24-hour window; cooldown resets on acceptance or rejection |
-| Error flag cap | 3 confirmed-useful flags/day; unconfirmed flags earn no XP |
-| Contribution sharing reward gate | Requires a qualifying downstream learning event (§ 3.4); raw view or open does not trigger |
+| Error flag cap                   | 3 confirmed-useful flags/day; unconfirmed flags earn no XP                                                 |
+| Contribution sharing reward gate | Requires a qualifying downstream learning event (§ 3.4); raw view or open does not trigger                 |
 
 ---
 
@@ -138,14 +139,14 @@ These rules are declared in the Dictionary manifest and enforced server-side.
 
 **Seen** is a status, not a star. The five-star ladder begins at recognition — the first point where the learner has demonstrated active engagement with the word, not merely passive exposure.
 
-| Level | State | How earned |
-|---|---|---|
-| (status) | **Seen** | Word looked up |
-| ★ | **Recognized** | Correct meaning selected in a recognition task |
-| ★★ | **Recalled** | Word recalled correctly in a game |
-| ★★★ | **Used** | Word used correctly in WordPad production |
-| ★★★★ | **Contributed** | Example sentence or pronunciation accepted |
-| ★★★★★ | **Shared** | Accepted contribution helps another learner complete a meaningful learning event |
+| Level    | State           | How earned                                                                       |
+| -------- | --------------- | -------------------------------------------------------------------------------- |
+| (status) | **Seen**        | Word looked up                                                                   |
+| ★        | **Recognized**  | Correct meaning selected in a recognition task                                   |
+| ★★       | **Recalled**    | Word recalled correctly in a game                                                |
+| ★★★      | **Used**        | Word used correctly in WordPad production                                        |
+| ★★★★     | **Contributed** | Example sentence or pronunciation accepted                                       |
+| ★★★★★    | **Shared**      | Accepted contribution helps another learner complete a meaningful learning event |
 
 A five-star word is not merely known. It has been recognized, recalled, written, contributed back, and shared with the community.
 
@@ -167,27 +168,27 @@ Per-word state is stored on the learner record indexed by `aiwa_entry_uuid`. The
 
 ### 6.1 Learning badges
 
-| Badge | Trigger |
-|---|---|
-| First Word | First lookup |
-| Word Collector (Bronze / Silver / Gold) | 10 / 50 / 100 unique words looked up |
-| Memory | First recall of a looked-up word in a game |
-| Recall Champion (Silver / Gold) | 25 / 100 cross-surface recalls |
-| First Writer | First correct use of a Dictionary word in WordPad |
-| Production (Silver / Gold) | 10 / 50 correct WordPad productions |
-| Full Loop | Lookup → recall → written use completed on a single word |
+| Badge                                   | Trigger                                                  |
+| --------------------------------------- | -------------------------------------------------------- |
+| First Word                              | First lookup                                             |
+| Word Collector (Bronze / Silver / Gold) | 10 / 50 / 100 unique words looked up                     |
+| Memory                                  | First recall of a looked-up word in a game               |
+| Recall Champion (Silver / Gold)         | 25 / 100 cross-surface recalls                           |
+| First Writer                            | First correct use of a Dictionary word in WordPad        |
+| Production (Silver / Gold)              | 10 / 50 correct WordPad productions                      |
+| Full Loop                               | Lookup → recall → written use completed on a single word |
 
 **Full Loop** is the signature badge for this model. It represents the complete literacy journey on a single word and should be surfaced prominently.
 
 ### 6.2 Contribution badges
 
-| Badge | Trigger |
-|---|---|
-| Voice | First accepted example sentence or pronunciation |
-| Chronicler | 10 accepted contributions |
-| Griot | 5 accepted audio or pronunciation contributions — oral tradition recognized explicitly |
-| Error Hunter | 5 confirmed, materially useful error flags |
-| Trusted Voice | 50 accepted contributions |
+| Badge            | Trigger                                                                                         |
+| ---------------- | ----------------------------------------------------------------------------------------------- |
+| Voice            | First accepted example sentence or pronunciation                                                |
+| Chronicler       | 10 accepted contributions                                                                       |
+| Griot            | 5 accepted audio or pronunciation contributions — oral tradition recognized explicitly          |
+| Error Hunter     | 5 confirmed, materially useful error flags                                                      |
+| Trusted Voice    | 50 accepted contributions                                                                       |
 | Knowledge Keeper | 200 validated contributions that have helped other learners complete meaningful learning events |
 
 **Note on "Knowledge Keeper":** In many African contexts, "Elder" carries cultural authority grounded in age and lived experience. Awarding an "Elder" badge from point accumulation may feel disrespectful to learners and communities. "Knowledge Keeper" honors the same idea — deep, trustworthy contribution — without appropriating cultural meaning.
@@ -196,11 +197,11 @@ Per-word state is stored on the learner record indexed by `aiwa_entry_uuid`. The
 
 ### 6.3 Cultural and language badges
 
-| Badge | Trigger |
-|---|---|
-| Pioneer | Contribution to a language with fewer than 500 dictionary entries at the time of contribution |
-| Domain badge | Accepted contribution in one of the platform's recognized domains (see § 6.4) |
-| Language badge | Active study or accepted contribution in a specific named language |
+| Badge          | Trigger                                                                                       |
+| -------------- | --------------------------------------------------------------------------------------------- |
+| Pioneer        | Contribution to a language with fewer than 500 dictionary entries at the time of contribution |
+| Domain badge   | Accepted contribution in one of the platform's recognized domains (see § 6.4)                 |
+| Language badge | Active study or accepted contribution in a specific named language                            |
 
 Domain and language badges appear on the learner's profile and visually represent the breadth of their engagement across the platform's linguistic scope.
 
@@ -223,12 +224,12 @@ Domains are defined by the `aiwa_domain` taxonomy in the dictionary entry. A lea
 
 ### 6.5 Milestone badges
 
-| Badge | Trigger |
-|---|---|
-| Daily Learner (Bronze / Silver / Gold / Platinum) | Meaningful engagement streak: 3 / 7 / 30 / 100 days |
-| Centurion | 100 words at ★★ (Recalled) or higher |
-| Scholar | 250 words at ★★★ (Used) or higher |
-| Bridge Builder | A contribution you made was used in the meaningful learning of 10 or more unique learners |
+| Badge                                             | Trigger                                                                                   |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Daily Learner (Bronze / Silver / Gold / Platinum) | Meaningful engagement streak: 3 / 7 / 30 / 100 days                                       |
+| Centurion                                         | 100 words at ★★ (Recalled) or higher                                                      |
+| Scholar                                           | 250 words at ★★★ (Used) or higher                                                         |
+| Bridge Builder                                    | A contribution you made was used in the meaningful learning of 10 or more unique learners |
 
 **Streak badges** are capped-presence glue only. They must remain structurally separate from learning XP. A learner should not be able to achieve Scholar or Knowledge Keeper through streak farming. The 10 XP/day presence cap enforces this.
 
@@ -268,22 +269,22 @@ Games are unchanged by this spec. They do not need to know whether a word entere
 
 Dictionary and WordPad compose the following existing reward engine primitives:
 
-| Primitive | Used by |
-|---|---|
-| `recall_srs` | Games (recall), Dictionary (recognition task) |
-| `validate_single` | Dictionary (meaning recognition), WordPad (correct production) |
-| `collect_text` | Dictionary (example sentence submission), WordPad (production submission) |
-| `collect_audio` | Dictionary (pronunciation submission) |
-| `correct_text` | WordPad (revision improvement) |
-| `presence_daily` | All surfaces (capped at 10 XP/day, separate from learning XP) |
+| Primitive         | Used by                                                                   |
+| ----------------- | ------------------------------------------------------------------------- |
+| `recall_srs`      | Games (recall), Dictionary (recognition task)                             |
+| `validate_single` | Dictionary (meaning recognition), WordPad (correct production)            |
+| `collect_text`    | Dictionary (example sentence submission), WordPad (production submission) |
+| `collect_audio`   | Dictionary (pronunciation submission)                                     |
+| `correct_text`    | WordPad (revision improvement)                                            |
+| `presence_daily`  | All surfaces (capped at 10 XP/day, separate from learning XP)             |
 
 ### New primitives required
 
-| Primitive | Description |
-|---|---|
-| `contribution_pending` | Holds XP on submission; fires `contribution_accepted` or `contribution_rejected` on resolution |
-| `contribution_helped` | Fires when a downstream meaningful learning event is attributed to an accepted contribution; carries `contribution_id` and `helped_learner_id` |
-| `origin_credit` | Annotates a ledger event with the surface and event that initiated the SRS enqueue path |
+| Primitive              | Description                                                                                                                                    |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contribution_pending` | Holds XP on submission; fires `contribution_accepted` or `contribution_rejected` on resolution                                                 |
+| `contribution_helped`  | Fires when a downstream meaningful learning event is attributed to an accepted contribution; carries `contribution_id` and `helped_learner_id` |
+| `origin_credit`        | Annotates a ledger event with the surface and event that initiated the SRS enqueue path                                                        |
 
 ---
 
@@ -346,4 +347,4 @@ The following are out of scope for v1.0 and must not be assumed:
 
 ---
 
-*Approved for implementation. Dictionary and WordPad are first-class non-game literacy clients. They do not need to look like games to participate in the reward engine — they need only produce meaningful literacy events.*
+_Approved for implementation. Dictionary and WordPad are first-class non-game literacy clients. They do not need to look like games to participate in the reward engine — they need only produce meaningful literacy events._

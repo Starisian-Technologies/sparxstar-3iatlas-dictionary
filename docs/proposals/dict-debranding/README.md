@@ -12,10 +12,10 @@ de-brands** and the rename becomes coordinated platform-wide.
 
 ## What's in here
 
-| File | What it is | Why it's parked |
-|------|------------|-----------------|
-| `aiwa-to-sparx-dict-migration-plan.md` | The full migration plan (inventory, tiers, WP-CLI mechanics, open questions). | Planning artifact only — it specifies the migration, it does not perform it. |
-| `adr-conformance.yml` | The ADR-registry `repository_dispatch` receiver workflow. | **Deliberately parked out of `.github/workflows/`.** GitHub only executes workflows located in `.github/workflows/`, so sitting here it is **inert by location** — preserved as a reference, not an active gate. |
+| File                                   | What it is                                                                    | Why it's parked                                                                                                                                                                                                  |
+| -------------------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `aiwa-to-sparx-dict-migration-plan.md` | The full migration plan (inventory, tiers, WP-CLI mechanics, open questions). | Planning artifact only — it specifies the migration, it does not perform it.                                                                                                                                     |
+| `adr-conformance.yml`                  | The ADR-registry `repository_dispatch` receiver workflow.                     | **Deliberately parked out of `.github/workflows/`.** GitHub only executes workflows located in `.github/workflows/`, so sitting here it is **inert by location** — preserved as a reference, not an active gate. |
 
 ## How to activate (later, when upstream de-brands)
 

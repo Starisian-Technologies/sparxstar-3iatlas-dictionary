@@ -26,12 +26,12 @@ This is what AIWA and Starisian Technologies are building. Everything else follo
 
 Four tools. One shared data foundation. Independent frontends.
 
-| Tool | Repo | What It Is |
-| :---- | :---- | :---- |
-| **Dictionary** | `sparxstar-3iatlas-dictionary` | The hub. Authoritative lexical data store. Public-facing dictionary experience \+ word games. Every other tool consumes from here. |
-| **WordPad** | `sparxstar-3iatlas-wordpad` | Writing tool. First place many users will ever write in their mother tongue. Draws spelling, thesaurus, and rhyme support from the Dictionary API. |
-| **RLC** | `sparxstar-3iatlas-rlc` | Classroom collection game. Collects new words from the community. Feeds the pipeline that enriches the Dictionary over time. |
-| **S2S** | `sparxstar-3iatlas-s2s` | Sound to Symbol. Speaks → sees it written. The bridge between oral mastery and written form. Reads from Brain, writes through Esu. |
+| Tool           | Repo                           | What It Is                                                                                                                                         |
+| :------------- | :----------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Dictionary** | `sparxstar-3iatlas-dictionary` | The hub. Authoritative lexical data store. Public-facing dictionary experience \+ word games. Every other tool consumes from here.                 |
+| **WordPad**    | `sparxstar-3iatlas-wordpad`    | Writing tool. First place many users will ever write in their mother tongue. Draws spelling, thesaurus, and rhyme support from the Dictionary API. |
+| **RLC**        | `sparxstar-3iatlas-rlc`        | Classroom collection game. Collects new words from the community. Feeds the pipeline that enriches the Dictionary over time.                       |
+| **S2S**        | `sparxstar-3iatlas-s2s`        | Sound to Symbol. Speaks → sees it written. The bridge between oral mastery and written form. Reads from Brain, writes through Esu.                 |
 
 ---
 
@@ -67,8 +67,8 @@ The Dictionary exposes a REST API. Consumers do not care whether the backend is 
 
 **Auth model:**
 
-- Read endpoints (`/lookup`, `/search`, `/wordlist`, `/languages`, `/domains`, `/game-set`, `/word-of-day`): Public, rate-limited (100 requests / 15 min / IP). No auth required.  
-- Progress endpoints (`/progress/sync`): Require Helios Bearer token. WordPress session is for admins only — regular users authenticate through Helios.  
+- Read endpoints (`/lookup`, `/search`, `/wordlist`, `/languages`, `/domains`, `/game-set`, `/word-of-day`): Public, rate-limited (100 requests / 15 min / IP). No auth required.
+- Progress endpoints (`/progress/sync`): Require Helios Bearer token. WordPress session is for admins only — regular users authenticate through Helios.
 - No community voting endpoints — removed. Games replace that mechanism.
 
 ### Endpoints
@@ -97,13 +97,13 @@ No parameters. Returns all language terms with word counts.
 
 ```json
 {
-  "success": true,
-  "data": {
-    "languages": [
-      { "slug": "mandinka", "name": "Mandinka", "count": 4231 },
-      { "slug": "wolof",    "name": "Wolof",    "count": 1820 }
-    ]
-  }
+    "success": true,
+    "data": {
+        "languages": [
+            { "slug": "mandinka", "name": "Mandinka", "count": 4231 },
+            { "slug": "wolof", "name": "Wolof", "count": 1820 }
+        ]
+    }
 }
 ```
 
@@ -117,13 +117,13 @@ Returns semantic domain taxonomy for a language. Used by RLC to populate session
 
 ```json
 {
-  "success": true,
-  "data": {
-    "domains": [
-      { "slug": "agriculture-6.2", "name": "Agriculture", "code": "6.2", "count": 312 },
-      { "slug": "family-2.1",      "name": "Family",      "code": "2.1", "count": 189 }
-    ]
-  }
+    "success": true,
+    "data": {
+        "domains": [
+            { "slug": "agriculture-6.2", "name": "Agriculture", "code": "6.2", "count": 312 },
+            { "slug": "family-2.1", "name": "Family", "code": "2.1", "count": 189 }
+        ]
+    }
 }
 ```
 
@@ -135,24 +135,24 @@ Purpose: Returns a curated word set for game use. Words must have: headword, at 
 
 ```json
 {
-  "success": true,
-  "data": {
-    "words": [
-      {
-        "uuid": "...",
-        "headword": "alibalaa",
-        "ipa": "/alibalaː/",
-        "phonetic": "ahl-ehhb-ahl-ah-ah",
-        "translation_en": "calamity, disaster",
-        "translation_fr": "calamité, désastre",
-        "part_of_speech": "n",
-        "domain": "General",
-        "example_sentence": "Alamaa n tanka la alibalaa la",
-        "example_translation_en": "May God save us from calamity",
-        "audio_url": null
-      }
-    ]
-  }
+    "success": true,
+    "data": {
+        "words": [
+            {
+                "uuid": "...",
+                "headword": "alibalaa",
+                "ipa": "/alibalaː/",
+                "phonetic": "ahl-ehhb-ahl-ah-ah",
+                "translation_en": "calamity, disaster",
+                "translation_fr": "calamité, désastre",
+                "part_of_speech": "n",
+                "domain": "General",
+                "example_sentence": "Alamaa n tanka la alibalaa la",
+                "example_translation_en": "May God save us from calamity",
+                "audio_url": null
+            }
+        ]
+    }
 }
 ```
 
@@ -164,11 +164,13 @@ No parameters. Returns one entry per calendar day (deterministic — same word f
 
 ```json
 {
-  "success": true,
-  "data": {
-    "word": { /* full entry object */ },
-    "date": "2026-05-14"
-  }
+    "success": true,
+    "data": {
+        "word": {
+            /* full entry object */
+        },
+        "date": "2026-05-14"
+    }
 }
 ```
 
@@ -198,7 +200,7 @@ Accepts a batch of game events from the client's offline outbox. Fires myCred ho
 }
 ```
 
-Idempotent — duplicate events (same word\_uuid \+ type \+ ts) are detected and skipped. Safe to retry.
+Idempotent — duplicate events (same word_uuid \+ type \+ ts) are detected and skipped. Safe to retry.
 
 ---
 
@@ -218,13 +220,13 @@ Games live inside the Dictionary. You log in once. The same session, the same ap
 
 **Word of the Day → Learn → Play** is the core flow:
 
-1. Word of the Day card is visible on the Dictionary home  
-2. "Learn more" opens the full entry  
+1. Word of the Day card is visible on the Dictionary home
+2. "Learn more" opens the full entry
 3. "Practice this word" launches a game seeded with that word and its domain neighbors
 
 **Browse → Practice** is the secondary flow:
 
-1. User browses words in a domain (e.g., Agriculture)  
+1. User browses words in a domain (e.g., Agriculture)
 2. "Practice this domain" button → launches a game with that domain's word set
 
 ### Games Design Principles
@@ -233,16 +235,16 @@ These are not vocabulary games. The user already has the vocabulary. They are **
 
 The design must honor this:
 
-- **Never start from nothing.** Every game gives a clue — an audio clip, a definition, partial letters, a domain hint. Cold recall of spelling in an unfamiliar orthography is humiliating. Scaffolding is respect.  
-- **The AccessoryBar is always present.** Mandinka has characters (ŋ ɓ ɗ ñ ɲ ʔ) that are not on a standard keyboard. Any game requiring typed input must surface the AccessoryBar. This is non-negotiable.  
-- **Wrong answers teach, they don't shame.** A wrong answer reveals more information, not just "incorrect."  
+- **Never start from nothing.** Every game gives a clue — an audio clip, a definition, partial letters, a domain hint. Cold recall of spelling in an unfamiliar orthography is humiliating. Scaffolding is respect.
+- **The AccessoryBar is always present.** Mandinka has characters (ŋ ɓ ɗ ñ ɲ ʔ) that are not on a standard keyboard. Any game requiring typed input must surface the AccessoryBar. This is non-negotiable.
+- **Wrong answers teach, they don't shame.** A wrong answer reveals more information, not just "incorrect."
 - **Progress is visible.** "You can now write 23 words" is meaningful. Letter grades are not.
 
 ### Games — The Five Types
 
 #### 1\. Listen & Write
 
-*Audio → Typed word. The most important game.*
+_Audio → Typed word. The most important game._
 
 The audio file for a dictionary word plays. The player types the word. Length is shown as blank tiles. AccessoryBar present. On correct answer: IPA and definition appear, confirming what they already knew. On wrong answer: first letter is revealed, they try again.
 
@@ -252,7 +254,7 @@ The audio file for a dictionary word plays. The player types the word. Length is
 
 #### 2\. Arrange the Word
 
-*Scrambled letter tiles → correct order.*
+_Scrambled letter tiles → correct order._
 
 Letters of the word are presented as movable tiles, scrambled. Player drags or taps to arrange them. Domain and English meaning are shown as hints throughout. AccessoryBar is not needed — letters are pre-provided.
 
@@ -262,17 +264,17 @@ Letters of the word are presented as movable tiles, scrambled. Player drags or t
 
 #### 3\. Meaning Match
 
-*Written Mandinka word → correct English meaning.*
+_Written Mandinka word → correct English meaning._
 
 The written Mandinka form is shown. Player picks from three English meanings. This tests whether they can connect the written form to the meaning they already know.
 
 **Why this matters:** Reinforces the bridge between written form and oral knowledge.
 
-**Data requirement:** `/game-set` — needs translation\_en. Distractors drawn from same domain.
+**Data requirement:** `/game-set` — needs translation_en. Distractors drawn from same domain.
 
 #### 4\. Complete the Sentence
 
-*Example sentence with headword blanked → player fills it in.*
+_Example sentence with headword blanked → player fills it in._
 
 A real example sentence from the dictionary is shown with the key word removed. Player types it using AccessoryBar.
 
@@ -282,7 +284,7 @@ A real example sentence from the dictionary is shown with the key word removed. 
 
 #### 5\. Domain Flash
 
-*Flashcard through a semantic domain.*
+_Flashcard through a semantic domain._
 
 Cards cycle through all words in a domain. Each card shows the English meaning — player tries to recall the Mandinka word (written). Flip reveals the word \+ IPA \+ audio if available. Self-reported: "I knew it" or "Still learning."
 
@@ -294,9 +296,9 @@ Cards cycle through all words in a domain. Each card shows the English meaning �
 
 Games are not separate from the course — they are part of it. The 7-week course curriculum should map directly to game types and domain sets:
 
-- Early weeks: Arrange the Word (low barrier, letter recognition)  
-- Mid weeks: Listen & Write for core vocabulary domains  
-- Later weeks: Complete the Sentence (grammar and context)  
+- Early weeks: Arrange the Word (low barrier, letter recognition)
+- Mid weeks: Listen & Write for core vocabulary domains
+- Later weeks: Complete the Sentence (grammar and context)
 - Throughout: Domain Flash as homework / self-directed review
 
 When the course ends, students already know where to go. They have been playing on the same Dictionary site they will keep using. The transition from structured to self-directed is seamless because there is no transition — it is the same tool.
@@ -309,19 +311,19 @@ When the course ends, students already know where to go. They have been playing 
 
 WordPad consumes the Dictionary API via a server-side proxy. The dictionary never goes to the device directly.
 
-| WordPad Need | Dictionary Endpoint |
-| :---- | :---- |
-| Spell check | `/search?q={word}&lang_source={lang}` — checks if word exists, returns variants |
-| Synonym lookup | `/lookup?slug={word}` — returns synonyms from entry |
-| Antonym lookup | `/lookup?slug={word}` — returns antonyms from entry |
-| Rhyme lookup | `/lookup?slug={word}` — returns phonetic variants as rhyme approximation |
-| Language list for selector | `/languages` |
-| Domain list | `/domains?lang_source={lang}` |
+| WordPad Need               | Dictionary Endpoint                                                             |
+| :------------------------- | :------------------------------------------------------------------------------ |
+| Spell check                | `/search?q={word}&lang_source={lang}` — checks if word exists, returns variants |
+| Synonym lookup             | `/lookup?slug={word}` — returns synonyms from entry                             |
+| Antonym lookup             | `/lookup?slug={word}` — returns antonyms from entry                             |
+| Rhyme lookup               | `/lookup?slug={word}` — returns phonetic variants as rhyme approximation        |
+| Language list for selector | `/languages`                                                                    |
+| Domain list                | `/domains?lang_source={lang}`                                                   |
 
 **What WordPad does not do:**
 
-- Write to the Dictionary  
-- Store dictionary data locally in any form  
+- Write to the Dictionary
+- Store dictionary data locally in any form
 - Make direct calls to the Dictionary REST API from the browser (all calls go through WordPad's server-side layer)
 
 ### WordPad → Games Bridge (Future)
@@ -334,10 +336,10 @@ When spell check suggests a correction, a "Practice this word" micro-link can de
 
 RLC consumes the Dictionary API at session setup and during gameplay. It does not call the Dictionary at any other time.
 
-| RLC Need | Dictionary Endpoint |
-| :---- | :---- |
-| Populate language selector | `/languages` |
-| Populate domain selector | `/domains?lang_source={lang}` |
+| RLC Need                              | Dictionary Endpoint                                                    |
+| :------------------------------------ | :--------------------------------------------------------------------- |
+| Populate language selector            | `/languages`                                                           |
+| Populate domain selector              | `/domains?lang_source={lang}`                                          |
 | Offline word list for spelling signal | `/wordlist?lang_source={lang}&per_page=2000` (cached at session start) |
 
 **The spelling signal:** RLC checks submitted words against the cached wordlist. If the submitted word exactly matches a wordlist entry → `confirmed`. If it fuzzy-matches (trigram score 50–89) → `variant`. If no match → `discovery`. This logic runs in the RLC backend against the cached wordlist — not via live Dictionary calls during gameplay.
@@ -365,17 +367,17 @@ This is the community-sourced enrichment pipeline. The dictionary grows because 
 
 **Remove entirely:**
 
-- Section 2 (Community Corrections & Voting) — the aiwa-cpt-correction CPT, all AJAX voting endpoints, correction routing, admin queue, and all frontend voting UI  
-- The `user_vote`, `vote_counts`, and `corrections` fields from the `/lookup` endpoint response  
+- Section 2 (Community Corrections & Voting) — the aiwa-cpt-correction CPT, all AJAX voting endpoints, correction routing, admin queue, and all frontend voting UI
+- The `user_vote`, `vote_counts`, and `corrections` fields from the `/lookup` endpoint response
 - The `isLoggedIn`/`userId` fields from `wp_localize_script` (no longer needed for community features)
 
 **Add:**
 
-- `/domains` endpoint (Section 3\)  
-- `/game-set` endpoint (Section 3\)  
-- `/word-of-day` endpoint (Section 3\)  
-- Games as a first-class feature of the frontend (new Section 4 alongside Browse)  
-- Play mode UI spec (Browse ↔ Play tab navigation)  
+- `/domains` endpoint (Section 3\)
+- `/game-set` endpoint (Section 3\)
+- `/word-of-day` endpoint (Section 3\)
+- Games as a first-class feature of the frontend (new Section 4 alongside Browse)
+- Play mode UI spec (Browse ↔ Play tab navigation)
 - Five game types with data requirements (from this document)
 
 **Modify:**
@@ -394,13 +396,13 @@ Add `/domains` endpoint as the source for the session domain selector. Currently
 
 ## Resolved Decisions
 
-| ID | Question | Answer |
-| :---- | :---- | :---- |
+| ID    | Question                     | Answer                                                                                                                                                                                                                  |
+| :---- | :--------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | OQ-S1 | Auth layer for regular users | **Helios** — not WordPress. WP auth is for admins only. Regular users authenticate through Helios Bearer tokens. The Dictionary REST API validates Helios tokens on any endpoint that writes progress or awards points. |
-| OQ-S2 | Game progress persistence | **Yes — myCred**, same pattern as RLC. Points awarded for game activity. Real-world rewards drive return visits. Progress stored server-side against the user's myCred account. See MyCred section below. |
-| OQ-S3 | URL structure | **Subdomain** — `dictionary.aiwa.gm` (or equivalent). Deep-link format from WordPad: `https://dictionary.aiwa.gm/play?word={slug}&lang={lang}` |
-| OQ-S4 | Curriculum document | Exists or will exist. Domain sequencing in games follows it. Not a blocker for games spec. |
-| OQ-S5 | Offline support | **Yes — offline-first, cache aggressively.** Gambia connectivity is improving but not consistent everywhere. Download more than needed. See Offline Strategy section below. |
+| OQ-S2 | Game progress persistence    | **Yes — myCred**, same pattern as RLC. Points awarded for game activity. Real-world rewards drive return visits. Progress stored server-side against the user's myCred account. See MyCred section below.               |
+| OQ-S3 | URL structure                | **Subdomain** — `dictionary.aiwa.gm` (or equivalent). Deep-link format from WordPad: `https://dictionary.aiwa.gm/play?word={slug}&lang={lang}`                                                                          |
+| OQ-S4 | Curriculum document          | Exists or will exist. Domain sequencing in games follows it. Not a blocker for games spec.                                                                                                                              |
+| OQ-S5 | Offline support              | **Yes — offline-first, cache aggressively.** Gambia connectivity is improving but not consistent everywhere. Download more than needed. See Offline Strategy section below.                                             |
 
 ---
 
@@ -412,15 +414,15 @@ Games award points through the same myCred hook pattern as RLC. The Dictionary p
 
 ### Hook Map
 
-| Hook | Trigger | Award |
-| :---- | :---- | :---- |
-| `aiwa_game_word_correct` | Player answers a word correctly in any game | \+5 XP |
-| `aiwa_game_listen_write_correct` | Correct answer specifically in Listen & Write | \+10 XP (harder — extra reward) |
-| `aiwa_game_session_complete` | Player completes a full game session (min 10 words) | \+25 XP |
-| `aiwa_game_domain_mastered` | Player scores 100% on a full domain set | \+50 Gold |
-| `aiwa_game_streak_3` | 3 correct answers in a row | \+15 XP bonus |
-| `aiwa_game_new_word_practiced` | First time practicing a word not previously seen | \+8 XP |
-| `aiwa_game_return_visit` | Player opens games on a new calendar day | \+10 XP |
+| Hook                             | Trigger                                             | Award                           |
+| :------------------------------- | :-------------------------------------------------- | :------------------------------ |
+| `aiwa_game_word_correct`         | Player answers a word correctly in any game         | \+5 XP                          |
+| `aiwa_game_listen_write_correct` | Correct answer specifically in Listen & Write       | \+10 XP (harder — extra reward) |
+| `aiwa_game_session_complete`     | Player completes a full game session (min 10 words) | \+25 XP                         |
+| `aiwa_game_domain_mastered`      | Player scores 100% on a full domain set             | \+50 Gold                       |
+| `aiwa_game_streak_3`             | 3 correct answers in a row                          | \+15 XP bonus                   |
+| `aiwa_game_new_word_practiced`   | First time practicing a word not previously seen    | \+8 XP                          |
+| `aiwa_game_return_visit`         | Player opens games on a new calendar day            | \+10 XP                         |
 
 **Point types:** XP \= session leaderboard and lifetime total. Gold \= redeemable currency for real-world rewards. Same split as RLC.
 
@@ -446,14 +448,14 @@ When a user is connected, the app pre-fetches beyond what they've explicitly req
 
 **What gets cached:**
 
-| Data | When | TTL |
-| :---- | :---- | :---- |
-| Word of the Day | On app load | 24 hours |
-| `/languages` response | On app load | 7 days |
-| `/domains` for selected language | On language selection | 7 days |
-| `/game-set` for selected domain | On domain selection | 3 days |
-| **Adjacent domain sets** | Automatically, after selected domain loads | 3 days |
-| `/wordlist` for RLC spelling signal | On language selection | 3 days |
+| Data                                | When                                       | TTL      |
+| :---------------------------------- | :----------------------------------------- | :------- |
+| Word of the Day                     | On app load                                | 24 hours |
+| `/languages` response               | On app load                                | 7 days   |
+| `/domains` for selected language    | On language selection                      | 7 days   |
+| `/game-set` for selected domain     | On domain selection                        | 3 days   |
+| **Adjacent domain sets**            | Automatically, after selected domain loads | 3 days   |
+| `/wordlist` for RLC spelling signal | On language selection                      | 3 days   |
 
 **Adjacent domain pre-fetch:** When a user selects Agriculture (domain 6.2), the app also pre-fetches Family (2.1) and Food (5.2) in the background without prompting. The exact adjacency map is defined by the curriculum sequence — domains taught near each other in the 7-week course are "adjacent" for pre-fetch purposes.
 
@@ -478,8 +480,8 @@ If sync fails (still offline or server error), the outbox retains the events and
 
 A service worker handles:
 
-- Cache-first for all `/sparxstar/v1/dictionary/*` GET responses (with network fallback for stale)  
-- Offline fallback page if the app shell itself fails to load  
+- Cache-first for all `/sparxstar/v1/dictionary/*` GET responses (with network fallback for stale)
+- Offline fallback page if the app shell itself fails to load
 - Background sync for the progress outbox
 
 The service worker is versioned. On update, old caches are cleared and fresh word sets are downloaded when connection is available.
@@ -488,14 +490,14 @@ The service worker is versioned. On update, old caches are cleared and fresh wor
 
 ## Version History
 
-| Version | Date | Changes |
-| :---- | :---- | :---- |
-| 1.0 | May 2026 | Initial document. Suite architecture, API contract, games design, consumer relationships, resolved decisions, MyCred gamification, offline strategy. |
+| Version | Date     | Changes                                                                                                                                              |
+| :------ | :------- | :--------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.0     | May 2026 | Initial document. Suite architecture, API contract, games design, consumer relationships, resolved decisions, MyCred gamification, offline strategy. |
 
-| Version | Date | Changes |
-| :---- | :---- | :---- |
-| 1.0 | May 2026 | Initial document. Suite architecture, API contract, games design, consumer relationships. |
+| Version | Date     | Changes                                                                                   |
+| :------ | :------- | :---------------------------------------------------------------------------------------- |
+| 1.0     | May 2026 | Initial document. Suite architecture, API contract, games design, consumer relationships. |
 
 ---
 
-*Starisian Technologies · AIWA · Confidential — Internal Use Only*  
+_Starisian Technologies · AIWA · Confidential — Internal Use Only_

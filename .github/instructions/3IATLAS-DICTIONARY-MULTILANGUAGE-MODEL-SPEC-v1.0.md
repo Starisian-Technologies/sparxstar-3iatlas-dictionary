@@ -30,9 +30,9 @@ Each entry has exactly one primary language — the language to which the entry 
 - Set by: DVE, preserved immutably in the dictionary after import
 - Used by: game service (strict mode), curriculum alignment, wordlist filtering, formal language learning
 
-The primary language is the answer to: *where does this word belong linguistically?*
+The primary language is the answer to: _where does this word belong linguistically?_
 
-It is not the answer to: *who uses this word?* That is the Speaker Community Layer.
+It is not the answer to: _who uses this word?_ That is the Speaker Community Layer.
 
 ---
 
@@ -45,7 +45,7 @@ An entry may be tagged with one or more speaker communities — the communities 
 - Set by: DVE, with AIWA review authority for `editorial_approved` status
 - Used by: browse app (ecology mode), adult literacy, real-speech exploration, community dictionary contexts
 
-The speaker community layer answers: *who actually uses this word, and in what context?*
+The speaker community layer answers: _who actually uses this word, and in what context?_
 
 The full taxonomy of valid speaker community terms and their definitions is in the Approved Entry Package Spec §5. Terms are controlled and governed by AIWA. Freeform tags are not permitted.
 
@@ -55,16 +55,17 @@ The full taxonomy of valid speaker community terms and their definitions is in t
 
 Each of these questions is answered by a different field. No single field answers more than one question.
 
-| Question | Field |
-|---|---|
-| What is the normalized form of this word? | Normalized headword (post title) |
-| What language does this word belong to? | Primary language taxonomy |
-| Who uses or recognizes this word? | Speaker community taxonomy |
-| How is this word related to words in other languages? | Cross-language siblings |
-| What is the meaning or concept? | Definition + glosses + Concepticon ID |
-| How is this word pronounced? | IPA + phonetic + audio |
+| Question                                              | Field                                 |
+| ----------------------------------------------------- | ------------------------------------- |
+| What is the normalized form of this word?             | Normalized headword (post title)      |
+| What language does this word belong to?               | Primary language taxonomy             |
+| Who uses or recognizes this word?                     | Speaker community taxonomy            |
+| How is this word related to words in other languages? | Cross-language siblings               |
+| What is the meaning or concept?                       | Definition + glosses + Concepticon ID |
+| How is this word pronounced?                          | IPA + phonetic + audio                |
 
 These are independent. A word may be:
+
 - Primary language: Wolof
 - Speaker community: Wolof speakers, Mandinka speakers, mixed-urban-gambia
 - Used in: market speech, youth speech, Banjul/Serekunda
@@ -126,8 +127,8 @@ Ecology mode response shape includes a `match_type` field on each result:
 
 ```json
 {
-  "match_type": "primary_language | speaker_community",
-  "community_usage_status": "observed | speaker_confirmed | editorial_approved"
+    "match_type": "primary_language | speaker_community",
+    "community_usage_status": "observed | speaker_confirmed | editorial_approved"
 }
 ```
 
@@ -151,15 +152,15 @@ Results from different layers must never be combined without labeling. A search 
 
 Required display labels (example values — exact rendering is consumer's responsibility):
 
-| Match type | Label |
-|---|---|
-| `primary_language` | "Mandinka Word" |
-| `speaker_community` with `editorial_approved` | "Also Used by Mandinka Speakers" |
-| `speaker_community` with `speaker_confirmed` | "Reported Used by Mandinka Speakers" |
-| `speaker_community` with `observed` | "Observed in Mandinka Speaker Contexts" |
-| Cross-language sibling, `same_concept` | "Related Wolof Word — Same Concept" |
-| Cross-language sibling, `loanword` | "Borrowed Word" |
-| Cross-language sibling, `false_friend` | "Looks Similar — Different Meaning" |
+| Match type                                    | Label                                   |
+| --------------------------------------------- | --------------------------------------- |
+| `primary_language`                            | "Mandinka Word"                         |
+| `speaker_community` with `editorial_approved` | "Also Used by Mandinka Speakers"        |
+| `speaker_community` with `speaker_confirmed`  | "Reported Used by Mandinka Speakers"    |
+| `speaker_community` with `observed`           | "Observed in Mandinka Speaker Contexts" |
+| Cross-language sibling, `same_concept`        | "Related Wolof Word — Same Concept"     |
+| Cross-language sibling, `loanword`            | "Borrowed Word"                         |
+| Cross-language sibling, `false_friend`        | "Looks Similar — Different Meaning"     |
 
 Consumer applications are responsible for implementing the labeling. The API provides the data to make it possible. Not labeling is a product violation of this spec.
 
@@ -188,4 +189,4 @@ A game teaching Mandinka vocabulary must contain only primary-language-Mandinka 
 
 The game service parameter: `lang_source` + `mode=strict` (or omit mode, which defaults to strict).
 
-The game service may use cross-language sibling data for cultural context display *after* a game interaction (e.g., "This Mandinka word has a Wolof cognate — see also [link]"). This is enrichment, not the game set itself.
+The game service may use cross-language sibling data for cultural context display _after_ a game interaction (e.g., "This Mandinka word has a Wolof cognate — see also [link]"). This is enrichment, not the game set itself.

@@ -9,96 +9,96 @@
 name: Governance
 
 on:
-  workflow_dispatch:
-  pull_request:
-  push:
-    branches: [main]
+    workflow_dispatch:
+    pull_request:
+    push:
+        branches: [main]
 
 permissions:
-  contents: read
+    contents: read
 
 jobs:
-  # ─── STEP 1: PULL SPEC ────────────────────────────────────
-  pull-spec:
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    uses: Starisian-Technologies/sparxstar-product-specification-registry/.github/workflows/fetch-specs.yml@v1.0.0
-    with:
-      specs: "dictionary"
-      agent-ref: main
-      contract-ref: "v1.0.0"
-    secrets:
-      COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
-
-  # ─── STEP 3A: PROPOSE SPEC UPDATE ─────────────────────────
-  # On merge to main, if docs/dictionary-tech-spec.md changed, opens a PR on
-  # the spec registry with the update. The registry reviews and approves —
-  # this repo proposes, the registry owns.
-  propose-spec:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.CONTRACT_SYNC_CLIENT_ID != '' && secrets.CONTRACT_SYNC_PRIVATE_KEY != ''
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
+    # ─── STEP 1: PULL SPEC ────────────────────────────────────
+    pull-spec:
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: Starisian-Technologies/sparxstar-product-specification-registry/.github/workflows/fetch-specs.yml@v1.0.0
         with:
-          fetch-depth: 0
-          path: source
+            specs: 'dictionary'
+            agent-ref: main
+            contract-ref: 'v1.0.0'
+        secrets:
+            COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
 
-      - name: Check if spec changed
-        id: check
-        env:
-          BEFORE_SHA: ${{ github.event.before }}
-          AFTER_SHA: ${{ github.sha }}
-        run: |
-          cd source
-          # On branch creation, GitHub sends the all-zero SHA as "before" — there is
-          # no real parent to diff against, so treat it as "everything changed".
-          if [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
-            CHANGED="docs/dictionary-tech-spec.md"
-          else
-            CHANGED=$(git diff "$BEFORE_SHA" "$AFTER_SHA" --name-only -- docs/dictionary-tech-spec.md || echo "")
-          fi
-          if [ -n "$CHANGED" ]; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          fi
+    # ─── STEP 3A: PROPOSE SPEC UPDATE ─────────────────────────
+    # On merge to main, if docs/dictionary-tech-spec.md changed, opens a PR on
+    # the spec registry with the update. The registry reviews and approves —
+    # this repo proposes, the registry owns.
+    propose-spec:
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.CONTRACT_SYNC_CLIENT_ID != '' && secrets.CONTRACT_SYNC_PRIVATE_KEY != ''
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v5
+              with:
+                  fetch-depth: 0
+                  path: source
 
-      - name: Generate token
-        if: steps.check.outputs.changed == 'true'
-        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
-        id: token
-        with:
-          app-id: ${{ vars.CONTRACT_SYNC_CLIENT_ID }}
-          private-key: ${{ secrets.CONTRACT_SYNC_PRIVATE_KEY }}
-          owner: Starisian-Technologies
-      - name: Propose to registry
-        if: steps.check.outputs.changed == 'true'
-        env:
-          GH_TOKEN: ${{ steps.token.outputs.token }}
-          SPEC_KEY: dictionary
-        run: |
-          set -euo pipefail
-          REGISTRY="Starisian-Technologies/sparxstar-product-specification-registry"
-          BRANCH="propose/${SPEC_KEY}-${GITHUB_SHA:0:7}"
-          TARGET="specs/${SPEC_KEY}/${SPEC_KEY}-tech-spec.md"
-          git clone --depth 1 \
-            "https://x-access-token:${GH_TOKEN}@github.com/${REGISTRY}.git" \
-            registry
-          cd registry
-          git checkout -b "$BRANCH"
-          mkdir -p "$(dirname "$TARGET")"
-          cp "../source/docs/${SPEC_KEY}-tech-spec.md" "$TARGET"
-          git config user.name "sparxstar-contract-sync[bot]"
-          git config user.email "contract-sync@starisian.com"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No spec changes to propose."
-            exit 0
-          fi
-          git commit -m "propose: ${SPEC_KEY} spec from ${GITHUB_REPOSITORY}@${GITHUB_SHA:0:7}"
-          git push origin "$BRANCH"
-          gh pr create \
-            --repo "$REGISTRY" \
-            --base main \
-            --head "$BRANCH" \
-            --title "propose: ${SPEC_KEY} spec update" \
-            --body "Proposed by ${GITHUB_REPOSITORY}. Review before merging."
+            - name: Check if spec changed
+              id: check
+              env:
+                  BEFORE_SHA: ${{ github.event.before }}
+                  AFTER_SHA: ${{ github.sha }}
+              run: |
+                  cd source
+                  # On branch creation, GitHub sends the all-zero SHA as "before" — there is
+                  # no real parent to diff against, so treat it as "everything changed".
+                  if [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
+                    CHANGED="docs/dictionary-tech-spec.md"
+                  else
+                    CHANGED=$(git diff "$BEFORE_SHA" "$AFTER_SHA" --name-only -- docs/dictionary-tech-spec.md || echo "")
+                  fi
+                  if [ -n "$CHANGED" ]; then
+                    echo "changed=true" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "changed=false" >> "$GITHUB_OUTPUT"
+                  fi
+
+            - name: Generate token
+              if: steps.check.outputs.changed == 'true'
+              uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
+              id: token
+              with:
+                  app-id: ${{ vars.CONTRACT_SYNC_CLIENT_ID }}
+                  private-key: ${{ secrets.CONTRACT_SYNC_PRIVATE_KEY }}
+                  owner: Starisian-Technologies
+            - name: Propose to registry
+              if: steps.check.outputs.changed == 'true'
+              env:
+                  GH_TOKEN: ${{ steps.token.outputs.token }}
+                  SPEC_KEY: dictionary
+              run: |
+                  set -euo pipefail
+                  REGISTRY="Starisian-Technologies/sparxstar-product-specification-registry"
+                  BRANCH="propose/${SPEC_KEY}-${GITHUB_SHA:0:7}"
+                  TARGET="specs/${SPEC_KEY}/${SPEC_KEY}-tech-spec.md"
+                  git clone --depth 1 \
+                    "https://x-access-token:${GH_TOKEN}@github.com/${REGISTRY}.git" \
+                    registry
+                  cd registry
+                  git checkout -b "$BRANCH"
+                  mkdir -p "$(dirname "$TARGET")"
+                  cp "../source/docs/${SPEC_KEY}-tech-spec.md" "$TARGET"
+                  git config user.name "sparxstar-contract-sync[bot]"
+                  git config user.email "contract-sync@starisian.com"
+                  git add -A
+                  if git diff --cached --quiet; then
+                    echo "No spec changes to propose."
+                    exit 0
+                  fi
+                  git commit -m "propose: ${SPEC_KEY} spec from ${GITHUB_REPOSITORY}@${GITHUB_SHA:0:7}"
+                  git push origin "$BRANCH"
+                  gh pr create \
+                    --repo "$REGISTRY" \
+                    --base main \
+                    --head "$BRANCH" \
+                    --title "propose: ${SPEC_KEY} spec update" \
+                    --body "Proposed by ${GITHUB_REPOSITORY}. Review before merging."

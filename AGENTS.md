@@ -12,6 +12,7 @@ it from the ADR registry's Actions tab rather than inventing rules.
 See `ROLE.md` for this repo's boundary (what it owns / does not own).
 
 Platform repos (read these for full context when accessible):
+
 - Decisions: https://github.com/Starisian-Technologies/sparxstar-architecture-governance-registry
 - Specs: https://github.com/Starisian-Technologies/sparxstar-product-specification-registry
 - Standards: https://github.com/Starisian-Technologies/starisian-technologies-coding-standards
@@ -30,6 +31,7 @@ in code. This repo's tech spec lives at `docs/dictionary-tech-spec.md`.
 This is the authoritative lexical data store and REST API service for the entire 3iAtlas platform. It is a WordPress plugin with a React frontend. Every other 3iAtlas tool (WordPad, RLC, Sound to Symbol, Games) is a consumer of this plugin's REST API. This repo does not consume from them.
 
 **Three responsibilities:**
+
 1. Store and serve dictionary entries via WordPress CPTs and ACF fields
 2. Expose a public REST API consumed by all 3iAtlas tools
 3. Render a public-facing dictionary experience (Browse mode) and word games (Play mode) via a React PWA
@@ -54,6 +56,7 @@ AIWA Dictionary  ← you are here
 ```
 
 **What this means for code:**
+
 - The dictionary does NOT intake words. No community submission pathways for new entries.
 - The dictionary does NOT adjudicate or flag entries. No review queues, no quality routing.
 - Linguistic fields (headword, language, definitions, pronunciation, siblings, speaker community tags) are **locked after import**. WordPress admins cannot edit them directly.
@@ -62,6 +65,7 @@ AIWA Dictionary  ← you are here
 - `aiwa_entry_uuid` is minted by DVE. The dictionary preserves it. Never regenerate it. Never let WordPress mint a UUID for an approved entry.
 
 **Import v1 — WP-CLI batch, deliberate and rare:**
+
 ```bash
 wp aiwa-dictionary import --file=approved-entry-batch.json --dry-run   # validates, no write
 wp aiwa-dictionary import --file=approved-entry-batch.json --publish    # validates and writes
@@ -77,20 +81,20 @@ wp aiwa-dictionary import --file=approved-entry-batch.json --publish    # valida
 
 The dictionary maintains two independent language layers. They answer different questions.
 
-| Layer | Field | Question answered | Who uses it |
-|---|---|---|---|
-| **Primary Language Layer** | `starmus_tax_language` | Where does this word belong linguistically? | Games (strict mode), curriculum, formal learning |
+| Layer                       | Field                             | Question answered                                 | Who uses it                                      |
+| --------------------------- | --------------------------------- | ------------------------------------------------- | ------------------------------------------------ |
+| **Primary Language Layer**  | `starmus_tax_language`            | Where does this word belong linguistically?       | Games (strict mode), curriculum, formal learning |
 | **Speaker Community Layer** | `aiwa_speaker_community` taxonomy | Who uses or recognizes this word in lived speech? | Browse app (ecology mode), literacy, real-speech |
 
 **The rule: never silently mix.** A result set that combines primary-language matches with speaker-community matches without labeling them separately is a spec violation.
 
 **Search modes — always explicit:**
 
-| Mode | Param | Returns | Use for |
-|---|---|---|---|
-| `mode=strict` | `lang_source=mandinka` | Primary language matches only | Games, quizzes, formal lessons |
-| `mode=ecology` | `speaker_community=mandinka-speakers` | Primary language first, then speaker-community matches labeled | Browse, literacy, urban speech |
-| `mode=cross_language` | on `/lookup` | Cross-language sibling entries with relation type | Detail views, S2S, WordPad |
+| Mode                  | Param                                 | Returns                                                        | Use for                        |
+| --------------------- | ------------------------------------- | -------------------------------------------------------------- | ------------------------------ |
+| `mode=strict`         | `lang_source=mandinka`                | Primary language matches only                                  | Games, quizzes, formal lessons |
+| `mode=ecology`        | `speaker_community=mandinka-speakers` | Primary language first, then speaker-community matches labeled | Browse, literacy, urban speech |
+| `mode=cross_language` | on `/lookup`                          | Cross-language sibling entries with relation type              | Detail views, S2S, WordPad     |
 
 Default mode when omitted: `strict`. The game service must always use `strict`. It must never use `ecology`.
 
@@ -264,12 +268,15 @@ AGENTS.md                                   ← this file
 ## Current State — Phases 0 and 1 Complete
 
 ### Phase 0 — Bug Fixes ✅ Done
+
 - `starmus_tax_language` and `starmus_tax_dialect` both registered on `aiwa-cpt-dictionary`
 - `src/frontend/Sparxstar3IAtlasDictionaryForm.php` language taxonomy set on submission
 - `aiwa_sentence_ipa` SCF discrepancy documented — `src/includes/Sparxstar3IAtlasPostTypes.php` is authoritative, do not add to SCF JSON
 
 ### Phase 1 — REST API ✅ Done
+
 Endpoints live under `sparxstar/v1/dictionary`. 8 endpoints are registered in `Sparxstar3IAtlasDictionaryRestApi.php`; POST /spell is registered in `Sparxstar3IAtlasDictionarySpellChecker.php`:
+
 - GET /lookup
 - GET /search
 - GET /wordlist (with ETag)
@@ -289,23 +296,25 @@ Rate limiting extracted to `Sparxstar3IAtlasRateLimitTrait` — used by both Res
 Specification: `DICTIONARY-DIRECTION-v2.md` Sections 4 and 6 — with voting/corrections removed per `3IATLAS-SUITE-ARCHITECTURE-v1.0.md`. See **Spec Version History** section below for full context.
 
 **Completed:**
+
 - `tailwind.config.js`: AIWA brand colours (brand.pink `#E91E8C`, brand.purple `#7B3FA0`), POS colour map, surface colours, `darkMode: 'class'`. Old `primary` blue palette removed.
 - `src/css/sparxstar-3iatlas-dictionary-style.css`: Crimson Pro / Work Sans Google Font `@import` removed from the app bundle. This entry does not imply those fonts are still loaded elsewhere for the form bundle.
 - `src/core/Sparxstar3IAtlasDictionary.php`: `wp_localize_script` now passes `ajaxUrl`, `restUrl`, `isLoggedIn`, `userId` in addition to existing keys.
 - `src/js/app.jsx`: **Full rebuild** — the old patched file has been replaced. Key features delivered:
-  - Three-state responsive layout: mobile (< 1024 px) and desktop (≥ 1024 px). Mobile uses bottom-nav (Home / Explore / Saved / Recent) + bottom-sheet detail. Desktop uses a three-column layout (240 px sidebar, flexible word list, 420 px persistent detail panel).
-  - Source-language selector: fetched from REST `GET /languages`; persisted in `localStorage('aiwa-dict-source-lang')`. Renders as horizontal pills on mobile, vertical list in desktop sidebar.
-  - Filter pills: All / Noun / Verb / Phrase / Audio / Image — applied client-side.
-  - Word list row: deterministic avatar circle (26-colour map), title, POS pill (AIWA brand colours), IPA, translation, audio/image icons, heart (save) button, chevron.
-  - Detail view with four tabs: Overview / Examples N / Related / Origin. Desktop: persistent right panel. Mobile/tablet: animated bottom sheet.
-  - Word of the Day card: client-side deterministic (`Math.floor(Date.now() / 86400000) % count`). Displayed above word list on mobile home tab and in desktop empty-state panel.
-  - Favorites: `localStorage('aiwa-dict-favorites')`. Heart toggle on every row and detail header.
-  - History: `localStorage('aiwa-dict-history')` — last 50 viewed words. Shown in "Recent" nav tab.
-  - Dark mode: `localStorage('aiwa-dict-theme')`. `dark` class applied to root container; all components carry `dark:` Tailwind variants.
-  - Language filter: `localStorage('aiwa-dict-source-lang')`. Words fetched via GraphQL; filtered client-side using `languages { nodes { slug } }` included in the list query.
-  - Explore tab: language-card grid; selecting a language sets the source-language filter and switches to Home tab.
+    - Three-state responsive layout: mobile (< 1024 px) and desktop (≥ 1024 px). Mobile uses bottom-nav (Home / Explore / Saved / Recent) + bottom-sheet detail. Desktop uses a three-column layout (240 px sidebar, flexible word list, 420 px persistent detail panel).
+    - Source-language selector: fetched from REST `GET /languages`; persisted in `localStorage('aiwa-dict-source-lang')`. Renders as horizontal pills on mobile, vertical list in desktop sidebar.
+    - Filter pills: All / Noun / Verb / Phrase / Audio / Image — applied client-side.
+    - Word list row: deterministic avatar circle (26-colour map), title, POS pill (AIWA brand colours), IPA, translation, audio/image icons, heart (save) button, chevron.
+    - Detail view with four tabs: Overview / Examples N / Related / Origin. Desktop: persistent right panel. Mobile/tablet: animated bottom sheet.
+    - Word of the Day card: client-side deterministic (`Math.floor(Date.now() / 86400000) % count`). Displayed above word list on mobile home tab and in desktop empty-state panel.
+    - Favorites: `localStorage('aiwa-dict-favorites')`. Heart toggle on every row and detail header.
+    - History: `localStorage('aiwa-dict-history')` — last 50 viewed words. Shown in "Recent" nav tab.
+    - Dark mode: `localStorage('aiwa-dict-theme')`. `dark` class applied to root container; all components carry `dark:` Tailwind variants.
+    - Language filter: `localStorage('aiwa-dict-source-lang')`. Words fetched via GraphQL; filtered client-side using `languages { nodes { slug } }` included in the list query.
+    - Explore tab: language-card grid; selecting a language sets the source-language filter and switches to Home tab.
 
 **Not implemented (per AGENTS.md absolute rules):**
+
 - Vote UI (removed by design — see Absolute Rules)
 - Correction submission UI (removed by design)
 - Correction display in detail view (removed by design)
@@ -361,15 +370,15 @@ changes applied to the existing `app.jsx` (not a rebuild):
 
 ### Open Questions
 
-| ID | Status | Question | Blocking |
-|---|---|---|---|
-| OQ-V1 | ⏸ Open | AIWA logo asset path and tagline copy for the desktop sidebar footer | Sidebar footer final content |
-| ~~OQ-G1~~ | Retired label — corrected 2026-07-08 | This ID was redefined and reused for two different questions across this repo's own document history (original: Helios-token-source for `/progress/sync`; later: WP nonce auth, closed on a fabricated citation). Do not cite "OQ-G1" going forward. See `docs/dictionary-tech-spec.md` § "OQ-G1 — retired as a citation" for the two disambiguated facts: (1) WP nonce auth for the deprecated `/progress/sync` endpoint — resolved/stable; (2) anonymous/guest game-client token source — **closed 2026-08, was never actually open** (guest play is device-local by design, permanently, per `3IATLAS-IDENTITY-AND-GAME-SERVICES-DECISION-v1.0.md` §4 — no token is ever issued to guests). | — |
-| OQ-G3 | ⏸ Open | Animation asset for Letter Reveal — pottery vessel emoji (🏺) is placeholder; replace with AIWA-approved cultural visual | Letter Reveal polish |
-| OQ-G4 | ⏸ Open | DomainFlash "I knew it" — currently fires `aiwa_game_word_correct`; confirm if a separate hook is needed | myCred hook map |
-| OQ-G5 | ✅ Closed | Sync destination — 3iAtlas Game Service (RLC Node engine), authenticated by suite JWT from `sparxstar-identity` (RS256; apps verify with public key only) | — |
-| OQ-I3 | ⏸ Open | Account-claim flow: merging guest device progress into a new suite account | Identity Service spec (not the intake spec — `GAME-SERVICE-INTAKE-SPEC-v1.0` already exists and is implemented, Phase 2/3) |
-| OQ-I4 | ⏸ Open | Tier verification: who approves teacher (Lower Basic session-opening) accounts | Identity Service spec |
+| ID        | Status                               | Question                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Blocking                                                                                                                   |
+| --------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| OQ-V1     | ⏸ Open                               | AIWA logo asset path and tagline copy for the desktop sidebar footer                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Sidebar footer final content                                                                                               |
+| ~~OQ-G1~~ | Retired label — corrected 2026-07-08 | This ID was redefined and reused for two different questions across this repo's own document history (original: Helios-token-source for `/progress/sync`; later: WP nonce auth, closed on a fabricated citation). Do not cite "OQ-G1" going forward. See `docs/dictionary-tech-spec.md` § "OQ-G1 — retired as a citation" for the two disambiguated facts: (1) WP nonce auth for the deprecated `/progress/sync` endpoint — resolved/stable; (2) anonymous/guest game-client token source — **closed 2026-08, was never actually open** (guest play is device-local by design, permanently, per `3IATLAS-IDENTITY-AND-GAME-SERVICES-DECISION-v1.0.md` §4 — no token is ever issued to guests). | —                                                                                                                          |
+| OQ-G3     | ⏸ Open                               | Animation asset for Letter Reveal — pottery vessel emoji (🏺) is placeholder; replace with AIWA-approved cultural visual                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Letter Reveal polish                                                                                                       |
+| OQ-G4     | ⏸ Open                               | DomainFlash "I knew it" — currently fires `aiwa_game_word_correct`; confirm if a separate hook is needed                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | myCred hook map                                                                                                            |
+| OQ-G5     | ✅ Closed                            | Sync destination — 3iAtlas Game Service (RLC Node engine), authenticated by suite JWT from `sparxstar-identity` (RS256; apps verify with public key only)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | —                                                                                                                          |
+| OQ-I3     | ⏸ Open                               | Account-claim flow: merging guest device progress into a new suite account                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Identity Service spec (not the intake spec — `GAME-SERVICE-INTAKE-SPEC-v1.0` already exists and is implemented, Phase 2/3) |
+| OQ-I4     | ⏸ Open                               | Tier verification: who approves teacher (Lower Basic session-opening) accounts                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Identity Service spec                                                                                                      |
 
 ---
 
@@ -405,6 +414,7 @@ IndexedDB layer (`aiwa-games-db`) and progress sync belong to the games repo;
 its `docs/dictionary-games-tech-spec.md` is their specification.
 
 **Changes to existing files:**
+
 - `src/js/app.jsx`: the Play tab was added here in Phase 4 and removed again
   when the games moved out — no `GameShell` import, no Browse/Play tab bar, no
   Play entry in the mobile bottom nav. A link or launcher pointing at the
@@ -439,10 +449,10 @@ Both boot blockers below were resolved in PR #62. Recorded for historical contex
 
 ### What Copilot Built Against in Each Phase
 
-| Phase | Spec used | Status |
-|---|---|---|
-| Phase 0 (bug fixes) | `DICTIONARY-DIRECTION-v2.md` | Correct |
-| Phase 1 (REST API) | `DICTIONARY-DIRECTION-v2.md` | Mostly correct — endpoints align |
+| Phase                   | Spec used                                   | Status                                           |
+| ----------------------- | ------------------------------------------- | ------------------------------------------------ |
+| Phase 0 (bug fixes)     | `DICTIONARY-DIRECTION-v2.md`                | Correct                                          |
+| Phase 1 (REST API)      | `DICTIONARY-DIRECTION-v2.md`                | Mostly correct — endpoints align                 |
 | Phase 2 (React rebuild) | `DICTIONARY-DIRECTION-v2.md` Sections 4 & 6 | UI correct; voting/corrections correctly omitted |
 
 ### The v2 / Architecture Doc Conflict
@@ -468,6 +478,7 @@ For anything beyond Phase 2, the authoritative reference is **`3IATLAS-SUITE-ARC
 `AIWA-Dictionary-Direction-v3.md` is now committed in `.github/instructions/` and should be treated as active guidance for sprint sequencing and guardrails.
 
 For continuation work:
+
 - Treat documented boot blockers as bug fixes first (autoloader constants and form CSS enqueue path).
 - Keep intentional gaps (`syncNow()` no-op and Helios stubs) unchanged until a dedicated spec lands.
 
@@ -475,16 +486,17 @@ For continuation work:
 
 Four specs committed to `.github/instructions/` that define the dictionary's final architecture. Any code that contradicts these specs is a violation.
 
-| Spec | Status | Summary |
-|---|---|---|
-| `3IATLAS-DICTIONARY-ROLE-AND-PIPELINE-SPEC-v1.0.md` | Active | DVE upstream / dictionary downstream. Linguistically read-only after import. WP-CLI batch import. Entry lifecycle states. Edit lock rules. |
-| `3IATLAS-DICTIONARY-APPROVED-ENTRY-SPEC-v1.0.md` | Active | Approved Entry Package format. Required fields. UUID ownership (DVE mints, dictionary preserves). AIWA Level scale. Replacement and deprecation packages. |
+| Spec                                                  | Status | Summary                                                                                                                                                                                                                                                       |
+| ----------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `3IATLAS-DICTIONARY-ROLE-AND-PIPELINE-SPEC-v1.0.md`   | Active | DVE upstream / dictionary downstream. Linguistically read-only after import. WP-CLI batch import. Entry lifecycle states. Edit lock rules.                                                                                                                    |
+| `3IATLAS-DICTIONARY-APPROVED-ENTRY-SPEC-v1.0.md`      | Active | Approved Entry Package format. Required fields. UUID ownership (DVE mints, dictionary preserves). AIWA Level scale. Replacement and deprecation packages.                                                                                                     |
 | `3IATLAS-DICTIONARY-MULTILANGUAGE-MODEL-SPEC-v1.0.md` | Active | Primary Language Layer + Speaker Community Layer. Strict / ecology / cross-language search modes. No silent mixing. Controlled speaker community taxonomy. Cross-language relation types. Community usage status. JWT language claims (for identity service). |
-| `3IATLAS-DICTIONARY-ENRICHMENT-FIELDS-SPEC-v1.0.md` | Active | AIWA Level sovereign scale. CEFR/Oxford as reference mappings only. Concepticon and CLICS academic anchors. Rhyme entries field. Domain taxonomy expansion. Updated `/game-set` and `/wordlist` filter params. |
+| `3IATLAS-DICTIONARY-ENRICHMENT-FIELDS-SPEC-v1.0.md`   | Active | AIWA Level sovereign scale. CEFR/Oxford as reference mappings only. Concepticon and CLICS academic anchors. Rhyme entries field. Domain taxonomy expansion. Updated `/game-set` and `/wordlist` filter params.                                                |
 
 ### Phase 3 — Integration Tests ⏸ Pending
 
 Phase 3 covers cross-tool REST integration verification. The authoritative scope is in `3IATLAS-SUITE-ARCHITECTURE-v1.0.md`:
+
 - WordPad → `/lookup` and `/spell` endpoints
 - S2S → `/wordlist` with `lang_source`
 - RLC → offline `/wordlist` with `lang_source` filter and fallback

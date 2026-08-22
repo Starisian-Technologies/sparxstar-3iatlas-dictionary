@@ -1,4 +1,5 @@
 # SPARXSTAR Standards and CI Enforcement
+
 ## Reference 06 — Coding Standards, CI Rules, Data Modeling Policy, PostgreSQL Install Flow, Field Prefixes
 
 **Authority:** Coding Standards Handbook v1.0, Data Modeling Policy v1.0, PostgreSQL Install Flow v1.0, Platform Integrity Map v1.0
@@ -13,11 +14,11 @@ Apply to every layer of the stack. PHP, JavaScript, GraphQL, TUS, Edge. No excep
 
 Every system MUST declare its operating mode:
 
-| Mode | Enforcement |
-|---|---|
-| draft | Limits enforced. Failures logged. CI warns, does not block. |
-| development | Limits enforced. CI blocks on hard violations. |
-| production | All limits enforced at maximum sensitivity. CI blocks on all violations. |
+| Mode        | Enforcement                                                              |
+| ----------- | ------------------------------------------------------------------------ |
+| draft       | Limits enforced. Failures logged. CI warns, does not block.              |
+| development | Limits enforced. CI blocks on hard violations.                           |
+| production  | All limits enforced at maximum sensitivity. CI blocks on all violations. |
 
 ### Determinism Rule
 
@@ -26,6 +27,7 @@ Same input produces the same output with no hidden side effects. Applies to PHP 
 ### No Silent Failure
 
 Every failure must:
+
 - Return a defined error
 - Log internally with full context
 - Never fallback silently
@@ -34,14 +36,14 @@ The client receives a generic error. The server logs the full context. Stack tra
 
 ### Bounded Execution — Hard Caps
 
-| Limit | Value | Applies To |
-|---|---|---|
-| Max request CPU time | 2 seconds | All PHP requests, GraphQL resolvers |
-| Max request size | 5 MB | All inbound requests |
-| Max API response | 100 KB | All REST and GraphQL responses |
-| Max concurrent ops | 1 per user | Mutations, uploads, governed actions |
-| Max JS bundle | 150 KB gzipped | All JavaScript bundles |
-| Max CSS size | 50 KB | All stylesheet bundles |
+| Limit                | Value          | Applies To                           |
+| -------------------- | -------------- | ------------------------------------ |
+| Max request CPU time | 2 seconds      | All PHP requests, GraphQL resolvers  |
+| Max request size     | 5 MB           | All inbound requests                 |
+| Max API response     | 100 KB         | All REST and GraphQL responses       |
+| Max concurrent ops   | 1 per user     | Mutations, uploads, governed actions |
+| Max JS bundle        | 150 KB gzipped | All JavaScript bundles               |
+| Max CSS size         | 50 KB          | All stylesheet bundles               |
 
 ### Idempotency — Mandatory
 
@@ -94,28 +96,29 @@ Before any governed action:
 
 **Performance constraint:**
 
-| Metric | Limit |
-|---|---|
-| Sirus calls per request | 1 preferred / 2 hard cap |
-| Sirus response cache TTL | 30 seconds maximum |
-| Cross-user context reuse | Forbidden |
-| Long-lived authority caching | Forbidden |
+| Metric                       | Limit                    |
+| ---------------------------- | ------------------------ |
+| Sirus calls per request      | 1 preferred / 2 hard cap |
+| Sirus response cache TTL     | 30 seconds maximum       |
+| Cross-user context reuse     | Forbidden                |
+| Long-lived authority caching | Forbidden                |
 
 **FAIL conditions:**
+
 - Governed action exists without preceding Sirus call
 - Sirus output modified or overridden downstream
 - Local permission check without Sirus delegation
 
 ### Trust Levels
 
-| Layer | Trust Level | Rule |
-|---|---|---|
-| Client | Untrusted | Validate everything. Assume nothing. |
-| API layer | Validated | Validates all upstream input before acting. |
-| Sirus output | Authoritative | Must not be modified, merged, or overridden downstream. |
-| Cache (Redis) | Disposable | Never treat as source of truth. Always verify. |
-| DB (MariaDB) | Authoritative | Single source of truth. Never trusts upstream. |
-| Edge cache | Disposable | TTL-bounded. Invalidated on write. |
+| Layer         | Trust Level   | Rule                                                    |
+| ------------- | ------------- | ------------------------------------------------------- |
+| Client        | Untrusted     | Validate everything. Assume nothing.                    |
+| API layer     | Validated     | Validates all upstream input before acting.             |
+| Sirus output  | Authoritative | Must not be modified, merged, or overridden downstream. |
+| Cache (Redis) | Disposable    | Never treat as source of truth. Always verify.          |
+| DB (MariaDB)  | Authoritative | Single source of truth. Never trusts upstream.          |
+| Edge cache    | Disposable    | TTL-bounded. Invalidated on write.                      |
 
 ---
 
@@ -207,24 +210,24 @@ Jobs that exhaust their retry budget must NOT be silently dropped. They move to 
 
 ## Client-Side Storage Limits
 
-| Storage Type | Limit | Eviction Policy |
-|---|---|---|
-| IndexedDB | 20 MB maximum | LRU |
-| localStorage | 5 MB maximum | Explicit TTL |
-| sessionStorage | Session only | Cleared on session end |
+| Storage Type         | Limit             | Eviction Policy                   |
+| -------------------- | ----------------- | --------------------------------- |
+| IndexedDB            | 20 MB maximum     | LRU                               |
+| localStorage         | 5 MB maximum      | Explicit TTL                      |
+| sessionStorage       | Session only      | Cleared on session end            |
 | Service Worker cache | Defined per route | TTL or version-based invalidation |
 
 ---
 
 ## Abuse Escalation
 
-| Violation Pattern | Automated Response |
-|---|---|
-| Burst traffic > 10 req/sec | Throttle — 1 req/sec for 60 seconds |
-| Rate limit exceeded 1-3 times | Throttle — 5 minutes |
-| Rate limit exceeded 4-10 times | Temporary block — 5 to 30 minutes |
-| Rate limit exceeded > 10 times | Extended block — 24 hours minimum |
-| Header spoofing detected | Immediate block |
+| Violation Pattern              | Automated Response                  |
+| ------------------------------ | ----------------------------------- |
+| Burst traffic > 10 req/sec     | Throttle — 1 req/sec for 60 seconds |
+| Rate limit exceeded 1-3 times  | Throttle — 5 minutes                |
+| Rate limit exceeded 4-10 times | Temporary block — 5 to 30 minutes   |
+| Rate limit exceeded > 10 times | Extended block — 24 hours minimum   |
+| Header spoofing detected       | Immediate block                     |
 
 ---
 
@@ -232,13 +235,13 @@ Jobs that exhaust their retry budget must NOT be silently dropped. They move to 
 
 All schema meta keys carry a canonical domain prefix:
 
-| Prefix | Domain |
-|---|---|
-| `aiwa_` | AIWA content fields (governed) |
-| `sparxstar_` | Platform-level fields (governed) |
-| `film_`, `bio_` | Domain-specific content fields (governed) |
-| `_spx_` | Internal session/UUID fields (Sky layer, not Sieve-governed) |
-| `dheghom_` | Cache keys and runtime IDs |
+| Prefix          | Domain                                                       |
+| --------------- | ------------------------------------------------------------ |
+| `aiwa_`         | AIWA content fields (governed)                               |
+| `sparxstar_`    | Platform-level fields (governed)                             |
+| `film_`, `bio_` | Domain-specific content fields (governed)                    |
+| `_spx_`         | Internal session/UUID fields (Sky layer, not Sieve-governed) |
+| `dheghom_`      | Cache keys and runtime IDs                                   |
 
 Prefixes are classification markers, not access controls. Any plugin can write to a prefixed key. Architecture enforces protection, not naming convention.
 
@@ -253,6 +256,7 @@ Apply these rules in order. Stop at the first match.
 **1. Governance / Legal / Money → RELATIONAL (Required)**
 
 Use PostgreSQL relational tables when ANY of these apply:
+
 - Consent or permission records
 - Royalties, payments, or financial obligations
 - Ownership, attribution, or rights assignment
@@ -263,6 +267,7 @@ Use PostgreSQL relational tables when ANY of these apply:
 **2. Structured + Queryable (Not Enforced) → JSONB + GIN Index**
 
 Use JSONB when ALL THREE are true:
+
 - Data is structured and occasionally filtered
 - NOT used in joins
 - NOT governance-critical
@@ -272,6 +277,7 @@ Requirements: add GIN index, document expected query patterns in schema comments
 **3. Display / Informational → JSONB (No Index)**
 
 Use when ALL are true:
+
 - Never filtered in WHERE clause
 - Only read and rendered — never joined
 - No constraints needed
@@ -296,6 +302,7 @@ If data: repeats across multiple rows, requires own identity (UUID), or is refer
 Model exclusively in Neo4j — DERIVED_FROM, GOVERNED_BY, EQUIVALENT_TO, PART_OF, AUTHORIZED_BY, SUPERSEDED_BY. Do not replicate in PostgreSQL.
 
 **Decision Flow (stop at first YES):**
+
 1. Does it affect governance, money, or rights? → RELATIONAL
 2. Does it need joins or stable identity? → RELATIONAL
 3. Is it queried but not governance-critical? → JSONB + GIN INDEX
@@ -332,16 +339,17 @@ Mandatory sequence: **Roles → Schema → Privileges → Services**
 
 Never break that order.
 
-| Step | What | Who runs it |
-|---|---|---|
-| STEP 0 | Environment setup | DBA only |
-| STEP 1 | RBAC Roles (role identities, no grants) | postgres / superuser |
-| STEP 2 | Schema Load (tables, constraints, triggers, PostGIS) | migration_user via Flyway |
-| STEP 3 | RBAC Privileges (grants, revokes, default privileges) | postgres / superuser |
-| STEP 4 | Application Binding | DBA |
-| STEP 5 | Projection Layer (Debezium / Neo4j sync) | After Step 3 complete |
+| Step   | What                                                  | Who runs it               |
+| ------ | ----------------------------------------------------- | ------------------------- |
+| STEP 0 | Environment setup                                     | DBA only                  |
+| STEP 1 | RBAC Roles (role identities, no grants)               | postgres / superuser      |
+| STEP 2 | Schema Load (tables, constraints, triggers, PostGIS)  | migration_user via Flyway |
+| STEP 3 | RBAC Privileges (grants, revokes, default privileges) | postgres / superuser      |
+| STEP 4 | Application Binding                                   | DBA                       |
+| STEP 5 | Projection Layer (Debezium / Neo4j sync)              | After Step 3 complete     |
 
 **Never do:**
+
 - Run privileges before schema — tables do not exist yet, grants silently fail
 - Mix role definitions and privilege grants in one file
 - Run RBAC files through Flyway — Flyway runs as migration_user, role creation requires superuser
@@ -356,6 +364,7 @@ Never break that order.
 ## Repository Documentation Standard
 
 Every SPARXSTAR repository must maintain:
+
 - `.github/copilot-instructions.md` — architectural law for AI working in that codebase
 - README covering: what the repo is, what it owns, what it does not own, hard rules, dependencies
 - WordPress minimum version declared in README, composer.json, bootstrap files, and AGENTS.md
