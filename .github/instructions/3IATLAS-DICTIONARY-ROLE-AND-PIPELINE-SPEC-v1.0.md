@@ -132,24 +132,36 @@ Slug        = human-readable routing identity (derived from headword at import)
 
 ---
 
-## 7. Import Mechanism — Version 1
+## 7. Intake Mechanism — Version 1
 
-Publication is deliberate and rare. The dictionary does not accept real-time pushes from DVE in v1. The import pipeline is:
+Publication is deliberate and rare, and it is **manual by design**. There is no automated
+import path into the dictionary in v1, and building one is out of scope — the governance
+model requires a human to be accountable for every entry that becomes public.
 
-1. DVE exports an Approved Entry Package batch as structured JSON
-2. Dictionary operator runs a dry-run to validate the batch
-3. Validation report is reviewed before publishing
-4. Operator publishes the approved batch
+The intake pipeline is:
 
-```bash
-# Dry-run: validates fields, checks for duplicate UUIDs, reports issues — does not write
-wp aiwa-dictionary import --file=approved-entry-batch.json --dry-run
+1. DVE completes intake, review, normalization, and approval upstream
+2. An approved entry is reviewed a second time by a dictionary operator
+3. The operator enters or updates the record in WordPress, preserving the DVE-minted
+   `aiwa_entry_uuid` exactly
+4. The operator publishes the entry
 
-# Publish: validates and writes all entries to the dictionary
-wp aiwa-dictionary import --file=approved-entry-batch.json --publish
-```
+The Approved Entry Package format in
+`3IATLAS-DICTIONARY-APPROVED-ENTRY-SPEC-v1.0.md` defines **what a complete approved
+entry contains** — required fields, relation types, speaker-community terms, lifecycle
+states. It is the review checklist and the field contract. It is not a file format
+consumed by any automated importer, because no such importer exists.
 
-**Version 2 (deferred):** A service-to-service push endpoint (`POST /sparxstar/v1/dictionary/import`, service auth) will enable DVE to push approved entries into a staging queue, with a human publish step before entries go live. Do not build the automated push pipeline in v1. The governance model is not yet mature enough for fully automatic publishing.
+**No WP-CLI importer.** Earlier revisions of this spec documented
+`wp aiwa-dictionary import --file=… --dry-run|--publish`. That command was never
+implemented and must not be cited as though it were. `src/cli/` registers API-key
+management commands only.
+
+**Version 2 (deferred):** A service-to-service push endpoint
+(`POST /sparxstar/v1/dictionary/import`, service auth) delivering into a staging queue,
+with a human publish step before entries go live, remains a possible future. Do not build
+it in v1. The governance model is not yet mature enough for automatic publishing, and the
+manual boundary is the control that substitutes for it.
 
 ---
 

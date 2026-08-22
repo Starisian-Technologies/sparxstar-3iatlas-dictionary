@@ -5,21 +5,41 @@ _Audit date: 2026-08-21. Scope: `Ai-West-Africa/aiwa-mandinka-dictionary` (data)
 
 ## Headline
 
-**The data is ahead of the plugin, and none of the new enrichment reaches production today.**
+**The data is ahead of the plugin. Manual intake is the design; the field gap is the defect.**
 
 The Mandinka corpus now carries 56 columns of lexical and semantic enrichment. The
 WordPress plugin exposes 24 ACF fields, of which the public REST API serialises 15.
-There is **no importer in the plugin at all** — the `wp aiwa-dictionary import` command
-referenced in `AGENTS.md`, `docs/dictionary-tech-spec.md` §Seams, and both
-`.github/instructions/3IATLAS-DICTIONARY-*-SPEC-v1.0.md` files does not exist in code.
-`src/cli/Sparxstar3IAtlasDictionaryCliCommands.php` registers only API-key
-`generate` / `create` / `list` / `revoke`.
 
-So the honest status is: **0 of 9,134 Mandinka rows are currently loadable**, and even once
-an importer exists, **30 of the 56 columns have nowhere to land** — 20 of those 30 carry
-real data today.
+There is no importer, and that is deliberate: intake is manual by governance decision, so
+that a human is accountable for every entry that becomes public
+(`3IATLAS-DICTIONARY-ROLE-AND-PIPELINE-SPEC-v1.0.md` §7). The documentation did not say so —
+`AGENTS.md`, `docs/dictionary-tech-spec.md` §Seams, and both intake specs described a
+`wp aiwa-dictionary import` CLI that was never built, and `OQ-015` framed the gap as
+"importer production qualification is incomplete." **Those documents are corrected in this
+branch**; §5 lists what changed.
 
----
+That correction sharpens rather than dissolves the coverage finding. If entries arrive by a
+reviewer typing them in, then **a field that does not exist is data that cannot be entered by
+any route**. 30 of the 56 columns have no destination — 20 of them carrying real data — so
+that content is unreachable regardless of how much review capacity exists. Manual intake
+makes field coverage the binding constraint, not a nice-to-have.
+
+Two further consequences of the manual model, both new findings:
+
+- **No validation gate.** Nothing stops an operator saving an entry with a missing,
+  malformed, or duplicate `aiwa_entry_uuid`, or with `approval_status` / `approved_by` /
+  `approval_date` absent — the fields the Approved Entry Spec marks required. The control
+  the governance model relies on is a human's attention, with no mechanical backstop.
+- **Neither entry surface is designated, and one is broken.** WP admin and
+  `Sparxstar3IAtlasDictionaryForm` both write entries; nothing says which is sanctioned. The
+  frontend form never writes `aiwa_entry_uuid`; its example-sentence sub-keys don't match the
+  ACF repeater sub-fields the REST API reads; and it writes repeater rows with
+  `update_post_meta()` instead of ACF row storage, so `get_field()` doesn't return them.
+  **Sentences entered through that form are invisible to the API.**
+
+Corpus scale is worth stating plainly for planning, not as an argument against the boundary:
+at 9,134 Mandinka rows, of which 5,981 currently satisfy the required set excluding approval,
+manual entry sets the pace at which the corpus becomes product data.
 
 ## 1. What the data layer now holds
 
@@ -230,57 +250,93 @@ to become product data, and Mandinka itself isn't loadable yet.**
 
 ---
 
-## 5. Stale documentation found along the way
+## 5. Documentation corrected in this branch, and what is still stale
+
+### Corrected here — the phantom importer
+
+Five documents asserted an automated import path that does not exist. All are fixed on this
+branch to state that intake is manual by design:
+
+| File | Was | Now |
+|---|---|---|
+| `AGENTS.md` | "Import v1 — WP-CLI batch" with two `wp aiwa-dictionary import` commands; pipeline diagram reading `(import, store, lock, serve)` | "Intake v1 — manual, deliberate and rare"; diagram reads `manual operator review + entry` → `(store, lock, serve)` |
+| `ROLE.md` | locked fields "arriving here only via WP-CLI import" | "applied here by a dictionary operator… manual by design" |
+| `docs/dictionary-tech-spec.md` §Seams | "WP-CLI batch import only" | "manual operator entry only… a governance boundary, not a missing feature" |
+| `…ROLE-AND-PIPELINE-SPEC-v1.0.md` §7 | "Import Mechanism" + dry-run/publish commands | "Intake Mechanism" — four-step manual pipeline; explicit note that the CLI was never implemented |
+| `…APPROVED-ENTRY-SPEC-v1.0.md` | "the structured data unit that DVE delivers to the dictionary for import"; `--replace` command | the operator's review checklist and field contract; replacement applied as a manual edit |
+
+The Approved Entry Package spec is **corrected, not retired**. Its field tables, relation
+types (§4) and speaker-community vocabulary (§5) are referenced by
+`3IATLAS-DICTIONARY-MULTILANGUAGE-MODEL-SPEC-v1.0.md` and remain the definition of a
+complete approved entry. Only the delivery-mechanism claims changed.
+
+`OQ-015` is **retired and replaced**: the successor question is that manual intake has no
+validation gate. `OQ-009` is **reframed** — an operator-entry surface is required rather than
+prohibited, so the question is which one is sanctioned, and the frontend form's three defects
+are now recorded against it.
+
+### Still stale — the data-repo corpus statistics
+
+These are in `aiwa-mandinka-dictionary` and were not touched by this branch:
 
 - `dictionary/README.md` states CLEAN.csv is **14,539 rows × 57 columns**. It is
-  **9,134 × 56**. It also lists `=ai(...)` formula text as a known issue; that is fixed.
+  **9,134 × 56**. It also lists `=ai(...)` formula text as a known issue; that is fixed —
+  zero formula cells remain.
 - `MASTER_BUILD_REPORT.md` describes building `MASTER.csv` (12,532 × 31) from
   `NEW DICTIONARY.csv` and `Mandinka Dictionary file 2.csv`. None of those three files exist
   in the repo any more, and `dictionary/README.md` says explicitly "do not restore MASTER.csv."
 - `DATA_QUALITY_REPORT.md` (dated 2026-06-06) audits `NEW DICTIONARY.csv` at 29 columns /
   11,550 entries — a file that no longer exists, with a column list that no longer matches.
-- Plugin side: `AGENTS.md` and `docs/dictionary-tech-spec.md` document
-  `wp aiwa-dictionary import` as the DVE→Dictionary seam. It is unimplemented.
-  `OQ-015` correctly tracks this but frames it as "importer production qualification is
-  incomplete", which reads as *hardening an existing importer* rather than *writing one*.
 
----
+Anyone sizing the review effort off those numbers is sizing against the wrong corpus.
 
 ## 6. What to do, in order
 
-**P0 — unblocks everything**
+**Done on this branch**
 
-1. Get DVE to stamp `Approval Status` / `Approved By` / `Approval Date`. Nothing imports
-   until this exists, no matter what code gets written. This is an upstream/process item,
-   not an engineering one.
-2. Build `wp aiwa-dictionary import` against
-   `3IATLAS-DICTIONARY-APPROVED-ENTRY-SPEC-v1.0` (dry-run, publish, idempotent re-import,
-   UUID preservation, rollback). Re-word `OQ-015` to say the importer does not exist.
-3. Seed `aiwa_domain` from `reference/sil_semantic_domains.csv` (1,792 terms), so the
-   967 SemDom codes in the data resolve to terms.
+- Corrected the five documents that asserted a `wp aiwa-dictionary import` CLI; retired and
+  replaced `OQ-015`; reframed `OQ-009`. See §5.
 
-**P1 — stops data loss at import time**
+**P0 — makes the manual boundary safe to rely on**
 
-4. Add the eight spec-defined enrichment fields to `acf-json/sparxstar-dictionary-scf.json`
+1. **Designate the sanctioned operator-entry surface** (`OQ-009`). Either name WP admin and
+   deprecate `Sparxstar3IAtlasDictionaryForm`, or fix the form — UUID preservation, correct
+   ACF sub-field names, ACF-native writes — and document it as sanctioned. Until this is
+   settled, entries can be created through a path whose sentences never reach the API.
+2. **Add a save-time validation gate** (`OQ-015` successor). Refuse a save when
+   `aiwa_entry_uuid` is missing, malformed, or duplicated, or when `approval_status` /
+   `approved_by` / `approval_date` are absent. Manual accountability is the governance
+   control; this is the mechanical backstop that keeps a slip from becoming public data.
+3. **Get DVE to stamp approval metadata** on the corpus. `Approved By` and `Approval Date` are
+   0% filled across all 9,134 rows, so no row currently satisfies the required set — whether
+   entered by hand or otherwise.
+4. **Seed `aiwa_domain`** from the 1,792-node SemDom hierarchy, so the 967 domain codes in the
+   data resolve to terms an operator can select rather than free-text.
+
+**P1 — stops data loss at the point of entry**
+
+5. Add the eight spec-defined enrichment fields to `acf-json/sparxstar-dictionary-scf.json`
    (`aiwa_level`, `aiwa_cefr_approx`, `aiwa_oxford_tier`, `aiwa_concepticon_id`,
    `aiwa_clics_id`, `aiwa_rhyme_entries`, `aiwa_cross_language_siblings` +
    `_relation_type`, `aiwa_community_usage_status`) and register the
    `aiwa_speaker_community` taxonomy.
-5. Add fields for the WordNet block and `French Definition` — or make an explicit,
-   recorded decision that WordNet enrichment stays in the data layer and never ships.
-   Right now it is being lost by omission rather than by decision.
-6. Write the value mappings: POS abbreviation→ACF choice, CEFR→AIWA Level,
-   Oxford tier normalisation, `unreviewed`→`pending`.
+6. Add fields for the WordNet relation block and `French Definition` — or make an explicit,
+   recorded decision that WordNet enrichment stays in the data layer and never ships. Under
+   manual intake this is the sharpest call on the list: an operator cannot enter what has no
+   field, so omission here is a permanent decision made by default.
+7. Normalise the value encodings the operator will be transcribing from: POS
+   abbreviation→ACF choice, CEFR→AIWA Level, Oxford tier format,
+   `unreviewed`→`pending`.
 
 **P2 — data-layer hygiene**
 
-7. Fix `AIWA Level` in CLEAN.csv to carry AIWA-0…5, matching the Scaffold.
-8. Repair the ~12 OCR-bleed Part of Speech values.
-9. Refresh `dictionary/README.md`, `MASTER_BUILD_REPORT.md`, and `DATA_QUALITY_REPORT.md`
-   against the files that actually exist, or archive the two obsolete reports.
+8. Fix `AIWA Level` in CLEAN.csv to carry AIWA-0…5, matching the Scaffold.
+9. Repair the ~12 OCR-bleed Part of Speech values.
+10. Refresh `dictionary/README.md`, `MASTER_BUILD_REPORT.md`, and `DATA_QUALITY_REPORT.md`
+    against the files that actually exist, or archive the two obsolete reports.
 
 **P2 — languages**
 
-10. Run the rights ledger to conclusion for Bambara and Maninka (the two largest
-    word-level sets). Until a source graduates out of `internal-only/`, treat all 22
-    files as screening indexes only.
+11. Run the rights ledger to conclusion for Bambara and Maninka (the two largest word-level
+    sets). Until a source graduates out of `internal-only/`, treat all 22 files as screening
+    indexes only.

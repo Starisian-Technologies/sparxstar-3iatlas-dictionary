@@ -12,7 +12,7 @@
 ## Does not own
 
 - **New word intake, review, or normalization** — owned by DVE (Dictionary Validation Engine); see `.github/instructions/3IATLAS-DICTIONARY-ROLE-AND-PIPELINE-SPEC-v1.0.md`. By design there is no community submission or correction-proposal pathway here — the one exception is `Sparxstar3IAtlasDictionaryForm`, a legacy WP-authenticated frontend form that can still add/edit `aiwa-cpt-dictionary` entries for logged-in users (see Open items for the pending decision to deprecate or formally scope it). New work must not extend it or build new intake paths against it.
-- **Linguistic editing of locked fields** (headword, language, definitions, pronunciation, siblings, speaker community tags) — intended to be locked post-import so corrections originate upstream in DVE as a new Approved Entry Package, arriving here only via WP-CLI import. This lock is not currently enforced by any ACF/WordPress admin-UI restriction (see Open items) — it's a process/policy boundary today, not a technical one.
+- **Linguistic editing of locked fields** (headword, language, definitions, pronunciation, siblings, speaker community tags) — intended to be locked once entered, so corrections originate upstream in DVE as a new Approved Entry Package and are applied here by a dictionary operator. Intake is manual by design — there is no automated importer and none is planned for v1. This lock is not currently enforced by any ACF/WordPress admin-UI restriction (see Open items) — it's a process/policy boundary today, not a technical one.
 - **Identity and authentication for suite users** — owned by `sparxstar-identity` (RS256 JWT, Cloudflare Workers). New user-facing endpoints must not use `wp_nonce` or `is_user_logged_in()` (the legacy frontend form predates this rule — see Open items).
 - **Cross-tool progress persistence / Game Service intake** — owned by the 3iAtlas Game Service (RLC Node engine). `useProgressSync.syncNow()` is an intentional no-op pending `GAME-SERVICE-INTAKE-SPEC-v1.0`.
 - **Consumer tools' own caching or offline behavior** — WordPad, RLC, Sound to Symbol, and Games consume this repo's REST API; how they cache or present that data is their concern, not this repo's.
@@ -32,4 +32,21 @@
 
 ## Open items
 
-- `Sparxstar3IAtlasDictionaryForm` (`src/frontend/Sparxstar3IAtlasDictionaryForm.php`, instantiated for logged-in users in `src/core/Sparxstar3IAtlasDictionary.php`) is a WP-authenticated frontend form that adds/edits `aiwa-cpt-dictionary` entries directly — this predates and contradicts the "linguistically read-only, DVE-only intake" boundary above. It needs an explicit platform decision: deprecate it, or carve out and document its exception.
+- **Which surface is the sanctioned operator-entry surface?** Intake is manual by design, so
+  something must be the place operators type into. Two candidates exist and neither is
+  designated: the WordPress admin screens driven by the ACF/SCF field group, and
+  `Sparxstar3IAtlasDictionaryForm` (`src/frontend/Sparxstar3IAtlasDictionaryForm.php`,
+  instantiated for logged-in users in `src/core/Sparxstar3IAtlasDictionary.php`).
+
+  The frontend form is not currently fit for that role, on three counts:
+  it never writes `aiwa_entry_uuid`, so an entry created through it has no canonical
+  identifier; its example-sentence sub-keys (`aiwa_sentence`, `aiwa_s_translation`,
+  `aiwa_s_translation_english`, `aiwa_s_translation_french`) do not match the ACF repeater's
+  sub-field names (`aiwa_sentence_example`, `aiwa_sentence_phonetic`, `aiwa_sentence_english`,
+  `aiwa_sentence_french`) that the REST API reads; and it writes repeater data with
+  `update_post_meta()` rather than ACF's row storage, so `get_field()` does not return it.
+  Sentences entered through that form are invisible to the API.
+
+  Decide: designate WP admin as the operator surface and deprecate the frontend form, or fix
+  the form (UUID minting/preservation, correct sub-field names, ACF-native writes) and
+  document it as the sanctioned surface.

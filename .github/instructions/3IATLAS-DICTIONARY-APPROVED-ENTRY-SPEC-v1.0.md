@@ -10,15 +10,23 @@
 
 ## 1. Purpose
 
-This document defines the Approved Entry Package format — the structured data unit that DVE delivers to the dictionary for import. The dictionary accepts no other format as authoritative input.
+This document defines the Approved Entry Package format — the structured data unit that DVE
+produces for a lexical record that has cleared review. The dictionary accepts no other
+description of an approved entry as authoritative.
 
-An Approved Entry Package represents a lexical record that has passed all DVE review, normalization, and approval steps. The dictionary imports it as-is. It does not re-evaluate, re-normalize, or re-adjudicate the content.
+**How it reaches WordPress: manually.** There is no automated importer, by design (see
+`3IATLAS-DICTIONARY-ROLE-AND-PIPELINE-SPEC-v1.0.md` §7). A dictionary operator reviews the
+package and enters or updates the record in WordPress by hand, preserving the DVE-minted
+UUID. Read the field tables below as **the operator's checklist and the field contract** —
+what a complete entry must carry — not as a wire format for a program that reads files.
+
+An Approved Entry Package represents a lexical record that has passed all DVE review, normalization, and approval steps. The dictionary transcribes it as-is. It does not re-evaluate, re-normalize, or re-adjudicate the content — the operator's second review confirms faithful entry, not linguistic judgement.
 
 ---
 
 ## 2. Package Format
 
-An Approved Entry Package is a JSON object. A batch import file is an array of these objects.
+An Approved Entry Package is expressed as a JSON object, and a batch is an array of them. This is the interchange and record-keeping shape DVE produces; entry into WordPress is manual.
 
 ```json
 {
@@ -202,12 +210,14 @@ A replacement package corrects one or more linguistic fields on an existing appr
 }
 ```
 
-Import command for replacements:
-```bash
-wp aiwa-dictionary import --file=replacement-batch.json --publish --replace
-```
+Applying a replacement is a manual edit, like any other intake. The operator updates only
+the linguistic fields present in the replacement package; UUID, operational fields, and
+lifecycle status are preserved untouched. `replacement_reason` and
+`replacement_authorized_by` are recorded in the entry's internal notes so the audit trail
+survives in WordPress.
 
-The importer updates only the linguistic fields provided in the replacement package. UUID, operational fields, and lifecycle status are preserved.
+There is no `wp aiwa-dictionary import --replace` command. Earlier revisions of this spec
+showed one; it was never implemented.
 
 ---
 
