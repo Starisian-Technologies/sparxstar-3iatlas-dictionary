@@ -35,7 +35,7 @@
         ]
     },
     "scripts": {
-        "lint:php": "phpcs -q --runtime-set ignore_warnings_on_exit 1",
+        "lint:php": "phpcs -q",
         "lint:php:strict": "phpcs -q --standard=.phpcs-strict.xml.dist",
         "fix:php": "phpcbf",
         "analyze:php": "phpstan analyse -c phpstan.neon.dist --no-progress",
