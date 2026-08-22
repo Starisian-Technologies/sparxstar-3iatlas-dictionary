@@ -277,11 +277,11 @@ final class Sparxstar3IAtlasDictionary {
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title><?php echo esc_html( $title ); ?></title>
 <style>html,body{margin:0;padding:0;background:#F8F8F8}#sparxstar-dictionary-root{width:100%;min-height:100vh;min-height:100dvh}</style>
-<?php wp_print_styles( array( 'sparxstar-google-fonts', 'sparxstar-dictionary-style' ) ); ?>
+            <?php wp_print_styles( array( 'sparxstar-google-fonts', 'sparxstar-dictionary-style' ) ); ?>
 </head>
 <body>
 <div id="sparxstar-dictionary-root" style="width:100%;min-height:100vh;min-height:100dvh;"></div>
-<?php wp_print_scripts( array( 'sparxstar-dictionary-app' ) ); ?>
+            <?php wp_print_scripts( array( 'sparxstar-dictionary-app' ) ); ?>
 </body>
 </html>
             <?php
