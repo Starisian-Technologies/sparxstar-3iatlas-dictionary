@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented here.
 
+## [2.9.3](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/compare/v2.9.2...v2.9.3) (2026-08-22)
+
+
+### Bug Fixes
+
+* repair TypeError on WAV serve and redundant WP_Term isset ([#121](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/issues/121)) ([3e5bdf2](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/commit/3e5bdf26180ee3984ff36cacf2071f4a090c7348))
+
 ## [2.9.2](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/compare/v2.9.1...v2.9.2) (2026-08-22)
 
 
