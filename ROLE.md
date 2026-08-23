@@ -48,5 +48,5 @@
   Sentences entered through that form are invisible to the API.
 
   Decide: designate WP admin as the operator surface and deprecate the frontend form, or fix
-  the form (UUID minting/preservation, correct sub-field names, ACF-native writes) and
+  the form (UUID preservation from the Approved Entry Package, correct sub-field names, ACF-native writes) and
   document it as the sanctioned surface.
