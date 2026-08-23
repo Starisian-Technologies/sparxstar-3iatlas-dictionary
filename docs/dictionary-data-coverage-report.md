@@ -69,7 +69,7 @@ Partial:
 - WordNet: Synonyms 43.9%, Sense ID / Definition 41.6%, Hypernyms 35.2%, Hyponyms 23.3%,
   Antonyms 12.9%, Has Parts 6.3%, Part Of 6.5%
 
-Empty (0%) — 10 columns: `Definition`, `Change Location`, `Date QC Status Changed`,
+Empty (0%) — 11 columns: `Definition`, `Change Location`, `Date QC Status Changed`,
 `QC Status Changed By`, `Alternative Spelling`, `Ajami Form`, `Audio Verified`,
 `Pronunciation Source`, `Approved By`, `Approval Date`, `Alternative Form Of`.
 
