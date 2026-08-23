@@ -55,7 +55,7 @@ DVE (Digital Village Elder)
 Intake → spelling review → normalization → approval → package
         ↓
 AIWA Dictionary
-Import → validate → stage → publish
+Operator review → enter → validate → publish
 Store approved records, lock linguistic fields
         ↓
 3iAtlas Applications
@@ -184,7 +184,7 @@ Once entered, an entry has a lifecycle managed through operational fields, not l
 ## 9. Correction Types
 
 **Replacement Package**
-DVE has corrected one or more linguistic fields on a previously approved entry. The replacement package contains the same UUID and the corrected field values. The dictionary importer overwrites only the linguistic fields specified in the replacement. The UUID, lifecycle state, and operational fields are preserved.
+DVE has corrected one or more linguistic fields on a previously approved entry. The replacement package contains the same UUID and the corrected field values. The operator updates only the linguistic fields specified in the replacement. The UUID, lifecycle state, and operational fields are preserved.
 
 **Deprecation / Merge Package**
 DVE has determined that an entry is a duplicate, superseded, or should be consolidated. The package specifies the affected UUID, the new lifecycle state (`deprecated` or `merged`), and the canonical target UUID if merging. The entry's linguistic fields are frozen in their last approved state and remain resolvable for historical reference.
