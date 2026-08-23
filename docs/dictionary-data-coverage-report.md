@@ -81,7 +81,7 @@ remain in CLEAN.csv. Those two docs are stale on that point (see §5).
 
 ## 2. Column-by-column: does it have a home in the plugin?
 
-### Lands today (importer permitting) — 23 columns
+### Lands today (via manual operator entry) — 23 columns
 
 | CSV column | Destination |
 |---|---|
@@ -152,7 +152,7 @@ no French counterpart to `aiwa_extract`.
 
 ---
 
-## 3. Value-level mismatches that will break an import
+## 3. Value-level mismatches that will block manual entry
 
 These are not missing fields — they are fields where the data's encoding does not match
 what the plugin or the Approved Entry Spec accepts.

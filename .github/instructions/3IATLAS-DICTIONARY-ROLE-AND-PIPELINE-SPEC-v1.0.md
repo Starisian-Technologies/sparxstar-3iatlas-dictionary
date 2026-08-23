@@ -122,12 +122,12 @@ DVE governs truth. The dictionary distributes truth.
 - The WordPress post ID is local storage identity only. It is not a lexical identifier.
 - The URL slug is the human-readable routing identity.
 - The dictionary **never** generates or regenerates a UUID for an approved entry.
-- If a UUID is missing from an import batch, the entry must be rejected and returned to DVE.
+- If a UUID is missing from an Approved Entry Package, the entry must be rejected and returned to DVE.
 
 ```
 DVE UUID    = canonical lexical identity (immutable, cross-suite)
 WP post ID  = local storage identity (not portable)
-Slug        = human-readable routing identity (derived from headword at import)
+Slug        = human-readable routing identity (derived from normalized headword at entry)
 ```
 
 ---
