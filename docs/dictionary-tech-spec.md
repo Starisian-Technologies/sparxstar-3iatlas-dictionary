@@ -70,7 +70,7 @@ vocabulary — see `3IATLAS-DICTIONARY-MULTILANGUAGE-MODEL-SPEC-v1.0.md`),
 **ACF fields on `aiwa-cpt-dictionary`** — split against the repo-managed SCF
 export (`acf-json/sparxstar-dictionary-scf.json`), since several fields
 described in the upstream multilanguage-model spec are not yet exported here
-(linguistic fields that _are_ live are intended to be locked after import —
+(linguistic fields that _are_ live are intended to be locked once entered —
 see `OQ-011` below for enforcement status):
 
 **Currently exported (live in `acf-json/sparxstar-dictionary-scf.json`):**

@@ -27,7 +27,7 @@ These layers are independent. A word may have Wolof as its primary language whil
 Each entry has exactly one primary language — the language to which the entry belongs linguistically. This is the authoritative archival and educational classification.
 
 - Stored as: taxonomy `starmus_tax_language`, single term per entry
-- Set by: DVE, preserved immutably in the dictionary after import
+- Set by: DVE, preserved immutably in the dictionary once entered
 - Used by: game service (strict mode), curriculum alignment, wordlist filtering, formal language learning
 
 The primary language is the answer to: *where does this word belong linguistically?*

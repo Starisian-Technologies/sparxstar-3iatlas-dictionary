@@ -40,7 +40,7 @@ This is the authoritative lexical data store and REST API service for the entire
 
 **Authoritative spec:** `.github/instructions/3IATLAS-DICTIONARY-ROLE-AND-PIPELINE-SPEC-v1.0.md`
 
-The dictionary is a **downstream governed publication service**. It is **linguistically read-only** after import.
+The dictionary is a **downstream governed publication service**. It is **linguistically read-only** once an entry has been entered.
 
 ```
 Community / Speakers / Linguists / Elders
@@ -56,7 +56,7 @@ AIWA Dictionary  ← you are here
 **What this means for code:**
 - The dictionary does NOT intake words. No community submission pathways for new entries.
 - The dictionary does NOT adjudicate or flag entries. No review queues, no quality routing.
-- Linguistic fields (headword, language, definitions, pronunciation, siblings, speaker community tags) are **locked once entered**. WordPress admins cannot edit them directly.
+- Linguistic fields (headword, language, definitions, pronunciation, siblings, speaker community tags) are **locked once entered** — meaning WordPress admins must not edit them directly. This is a process boundary, not an enforced one: no ACF or admin-UI restriction currently prevents it (see `OQ-011` in `docs/dictionary-tech-spec.md`).
 - Operational fields (publish status, visibility, API eligibility, featured flag) are editable.
 - All corrections originate upstream in DVE as a new Approved Entry Package, entered manually by a dictionary operator.
 - `aiwa_entry_uuid` is minted by DVE. The dictionary preserves it. Never regenerate it. Never let WordPress mint a UUID for an approved entry.

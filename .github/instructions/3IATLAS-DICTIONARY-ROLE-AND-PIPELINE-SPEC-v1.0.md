@@ -10,7 +10,7 @@
 
 ## 1. Foundation Statement
 
-The AIWA Dictionary is the governed publication and distribution layer for approved lexical records. It does not collect, adjudicate, or approve words. DVE is the upstream authority for lexical intake, review, normalization, and approval. The dictionary preserves DVE-approved records, exposes them through controlled search and API services, and prevents direct edits to linguistic content after import.
+The AIWA Dictionary is the governed publication and distribution layer for approved lexical records. It does not collect, adjudicate, or approve words. DVE is the upstream authority for lexical intake, review, normalization, and approval. The dictionary preserves DVE-approved records, exposes them through controlled search and API services, and prevents direct edits to linguistic content once entered.
 
 ---
 
@@ -22,7 +22,7 @@ The AIWA Dictionary is the governed publication and distribution layer for appro
 - A search, browse, and game export service
 - A governed storefront for approved linguistic truth
 
-The dictionary is **linguistically read-only** after import. WordPress operational controls remain editable. Linguistic corrections must originate upstream in DVE.
+The dictionary is **linguistically read-only** once entered. WordPress operational controls remain editable. Linguistic corrections must originate upstream in DVE.
 
 ---
 
@@ -68,11 +68,11 @@ DVE governs truth. The dictionary distributes truth.
 
 ## 5. Linguistic Fields vs Operational Fields
 
-**Linguistic fields — locked after import. Edit prohibited in WordPress UI. Corrections require a new DVE-approved package.**
+**Linguistic fields — locked once entered. Edit prohibited in WordPress UI. Corrections require a new DVE-approved package.**
 
 | Field | Type | Minted By |
 |---|---|---|
-| `aiwa_entry_uuid` | UUID | DVE — immutable after import |
+| `aiwa_entry_uuid` | UUID | DVE — immutable once entered |
 | Normalized headword | Post title | DVE |
 | Slug | Post name | Derived from normalized headword at import |
 | Primary language | Taxonomy: `starmus_tax_language` | DVE |
@@ -171,7 +171,7 @@ Once imported, an entry has a lifecycle managed through operational fields, not 
 
 | State | Meaning |
 |---|---|
-| `active` | Published and served via API. Default state after import. |
+| `active` | Published and served via API. Default state once entered. |
 | `deprecated` | Superseded by a newer approved entry. UUID preserved. Not served in primary results. |
 | `merged` | Identified as duplicate. Merged into a canonical entry (referenced by merge target UUID). UUID preserved for historical continuity. |
 | `hidden` | Temporarily removed from API without correction. Operational decision. |
@@ -193,7 +193,7 @@ DVE has determined that an entry is a duplicate, superseded, or should be consol
 
 ## 10. Governance and Edit Lock Rules
 
-1. WordPress administrators may not edit linguistic fields after import via the standard ACF edit UI.
+1. WordPress administrators may not edit linguistic fields once entered via the standard ACF edit UI.
 2. All linguistic fields on the dictionary CPT must be rendered read-only in the WordPress admin after the entry is imported.
 3. The only paths to change a linguistic field are:
    - A DVE replacement package imported via WP-CLI
@@ -225,6 +225,6 @@ The dictionary does not:
 
 ## 12. Relationship to DVE
 
-DVE is the upstream lexical validation and onboarding pipeline. The dictionary does not accept raw community submissions directly as authoritative entries. The dictionary imports approved lexical records from DVE, preserves canonical identifiers, stores approved metadata, locks linguistic fields after import, and exposes the records through search, browse, game, workbook, and API services.
+DVE is the upstream lexical validation and onboarding pipeline. The dictionary does not accept raw community submissions directly as authoritative entries. The dictionary receives approved lexical records from DVE through manual operator entry, preserves canonical identifiers, stores approved metadata, locks linguistic fields once entered, and exposes the records through search, browse, game, workbook, and API services.
 
 The dictionary crew builds the approved dictionary service. The linguistic justice system lives upstream.

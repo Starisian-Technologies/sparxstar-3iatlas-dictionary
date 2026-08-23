@@ -184,7 +184,7 @@ what the plugin or the Approved Entry Spec accepts.
 6. **Approval fields are empty but required.** `3IATLAS-DICTIONARY-APPROVED-ENTRY-SPEC-v1.0`
    lists `approval_status` (must be `approved`), `approved_by`, and `approval_date` as
    required. CLEAN.csv has `Approval Status = unreviewed` on every row and `Approved By` /
-   `Approval Date` **0% filled**. Under the spec as written, **zero rows are importable**
+   `Approval Date` **0% filled**. Under the spec as written, **no row can be entered**
    until DVE stamps approval — this is the hard gate, ahead of every technical gap above.
 
 ### How much would actually survive
@@ -242,10 +242,11 @@ Four things make these **not** ready to ship:
 
 4. **The plugin has no multi-language content path anyway.** `starmus_tax_language` exists
    and `/languages` is in the OpenAPI contract, so the *browse* dimension is ready. But
-   with no importer, adding a second language is the same blocked task as adding the first.
+   but the same manual entry constraint applies, so adding a second language is the same
+    blocked task as adding the first.
 
 **So: the schema alignment work is real and valuable — it means a second language is an
-import job, not a modelling job. But no language other than Mandinka is currently cleared
+data-entry job, not a modelling job. But no language other than Mandinka is currently cleared
 to become product data, and Mandinka itself isn't loadable yet.**
 
 ---
