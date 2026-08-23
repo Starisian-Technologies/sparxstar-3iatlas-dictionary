@@ -74,7 +74,7 @@ DVE governs truth. The dictionary distributes truth.
 |---|---|---|
 | `aiwa_entry_uuid` | UUID | DVE — immutable once entered |
 | Normalized headword | Post title | DVE |
-| Slug | Post name | Derived from normalized headword at import |
+| Slug | Post name | Derived from normalized headword at entry |
 | Primary language | Taxonomy: `starmus_tax_language` | DVE |
 | Part of speech | Taxonomy: `starmus_part_of_speech` | DVE |
 | English gloss | ACF: `aiwa_translation_english` | DVE |
@@ -167,7 +167,7 @@ manual boundary is the control that substitutes for it.
 
 ## 8. Entry Lifecycle States
 
-Once imported, an entry has a lifecycle managed through operational fields, not linguistic fields.
+Once entered, an entry has a lifecycle managed through operational fields, not linguistic fields.
 
 | State | Meaning |
 |---|---|
@@ -194,13 +194,13 @@ DVE has determined that an entry is a duplicate, superseded, or should be consol
 ## 10. Governance and Edit Lock Rules
 
 1. WordPress administrators may not edit linguistic fields once entered via the standard ACF edit UI.
-2. All linguistic fields on the dictionary CPT must be rendered read-only in the WordPress admin after the entry is imported.
+2. All linguistic fields on the dictionary CPT must be rendered read-only in the WordPress admin once the entry has been entered.
 3. The only paths to change a linguistic field are:
-   - A DVE replacement package imported via WP-CLI
+   - A DVE replacement package applied by a dictionary operator (see §7 — there is no WP-CLI importer)
    - An emergency admin override with documented DVE authorization and an audit log entry
 4. Operational fields (visibility, lifecycle status, featured flag, API eligibility) may be edited directly by authorized dictionary administrators.
 5. The `aiwa_entry_uuid` field is never editable by any WordPress role under any circumstances.
-6. No plugin, WordPress admin action, or REST API endpoint may overwrite `aiwa_entry_uuid` after initial import.
+6. No plugin, WordPress admin action, or REST API endpoint may overwrite `aiwa_entry_uuid` after initial entry.
 
 ---
 

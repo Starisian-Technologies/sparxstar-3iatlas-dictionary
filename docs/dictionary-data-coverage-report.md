@@ -241,11 +241,11 @@ Four things make these **not** ready to ship:
    `Approval Date` — the same hard gate as Mandinka, times 22.
 
 4. **The plugin has no multi-language content path anyway.** `starmus_tax_language` exists
-   and `/languages` is in the OpenAPI contract, so the *browse* dimension is ready. But
-   but the same manual entry constraint applies, so adding a second language is the same
-    blocked task as adding the first.
+   and `/languages` is in the OpenAPI contract, so the *browse* dimension is ready. But the
+   same manual-entry constraint applies, so adding a second language is the same blocked
+   task as adding the first.
 
-**So: the schema alignment work is real and valuable — it means a second language is an
+**So: the schema alignment work is real and valuable — it means a second language is a
 data-entry job, not a modelling job. But no language other than Mandinka is currently cleared
 to become product data, and Mandinka itself isn't loadable yet.**
 
