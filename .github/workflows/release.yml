@@ -182,7 +182,7 @@ jobs:
                   version: '10.33.0'
 
             - name: Set up Node.js
-              uses: actions/setup-node@v5
+              uses: actions/setup-node@v7
               with:
                   # NOTE: this is the Node that *builds* the shipped assets, not
                   # an action runtime — the Node 20 runtime deprecation does not
