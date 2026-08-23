@@ -56,7 +56,7 @@ AIWA Dictionary  ← you are here
 **What this means for code:**
 - The dictionary does NOT intake words. No community submission pathways for new entries.
 - The dictionary does NOT adjudicate or flag entries. No review queues, no quality routing.
-- Linguistic fields (headword, language, definitions, pronunciation, siblings, speaker community tags) are **locked after import**. WordPress admins cannot edit them directly.
+- Linguistic fields (headword, language, definitions, pronunciation, siblings, speaker community tags) are **locked once entered**. WordPress admins cannot edit them directly.
 - Operational fields (publish status, visibility, API eligibility, featured flag) are editable.
 - All corrections originate upstream in DVE as a new Approved Entry Package, entered manually by a dictionary operator.
 - `aiwa_entry_uuid` is minted by DVE. The dictionary preserves it. Never regenerate it. Never let WordPress mint a UUID for an approved entry.
