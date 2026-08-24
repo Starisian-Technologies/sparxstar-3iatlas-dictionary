@@ -105,11 +105,23 @@ jobs:
                     echo "compare link above for what changed since v$CUR."
                     echo
                   } > .changelog-entry
-                  # Keep the two title lines at the top of CHANGELOG.md and
-                  # insert the new section directly beneath them.
-                  head -n 3 CHANGELOG.md > .changelog-new
-                  cat .changelog-entry >> .changelog-new
-                  tail -n +4 CHANGELOG.md >> .changelog-new
+                  # Insert directly above the newest existing release heading,
+                  # rather than after a fixed number of preamble lines — the
+                  # preamble is not guaranteed to be any particular length, and
+                  # guessing wrong would silently drop the history below it.
+                  if [ ! -s CHANGELOG.md ]; then
+                    echo "::error::CHANGELOG.md is missing or empty; refusing to rewrite it."
+                    exit 1
+                  fi
+                  FIRST_HEADING=$(grep -n -m1 '^## ' CHANGELOG.md | cut -d: -f1 || true)
+                  if [ -n "$FIRST_HEADING" ]; then
+                    head -n "$((FIRST_HEADING - 1))" CHANGELOG.md > .changelog-new
+                    cat .changelog-entry >> .changelog-new
+                    tail -n "+$FIRST_HEADING" CHANGELOG.md >> .changelog-new
+                  else
+                    # No release sections yet — the whole file is preamble.
+                    cat CHANGELOG.md .changelog-entry > .changelog-new
+                  fi
                   mv .changelog-new CHANGELOG.md
                   rm -f .changelog-entry
 

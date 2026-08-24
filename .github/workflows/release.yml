@@ -37,7 +37,7 @@ jobs:
         # input (or one that isn't a "v*" tag) — without this, VERSION
         # extraction below would silently produce a non-version string and
         # fail confusingly deep in the job instead of skipping cleanly here.
-        if: github.event_name == 'push' || startsWith(inputs.tag, 'v')
+        if: github.event_name == 'push' || (github.event_name != 'push' && startsWith(inputs.tag, 'v'))
         runs-on: ubuntu-latest
 
         steps:
