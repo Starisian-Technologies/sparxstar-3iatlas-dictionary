@@ -17,6 +17,16 @@ on:
                 description: 'Existing release tag to (re)build, e.g. v2.8.10'
                 required: true
                 type: string
+    # Invoked by manual-release.yml once it has committed the version bump and
+    # tagged it. Calling this directly is what makes the manual path produce a
+    # ZIP: the tag manual-release.yml creates uses the default GITHUB_TOKEN and
+    # therefore cannot trigger the tag-push trigger above.
+    workflow_call:
+        inputs:
+            tag:
+                description: 'Release tag to build, e.g. v2.9.9'
+                required: true
+                type: string
 
 permissions:
     contents: write
@@ -27,7 +37,7 @@ jobs:
         # input (or one that isn't a "v*" tag) — without this, VERSION
         # extraction below would silently produce a non-version string and
         # fail confusingly deep in the job instead of skipping cleanly here.
-        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && startsWith(inputs.tag, 'v'))
+        if: github.event_name == 'push' || (github.event_name != 'push' && startsWith(inputs.tag, 'v'))
         runs-on: ubuntu-latest
 
         steps:
@@ -40,7 +50,7 @@ jobs:
             # clean semver tag before it can reach later steps at all.
             # (CWE-78 command injection / CWE-610 externally-controlled ref.)
             - name: Validate tag input
-              if: github.event_name == 'workflow_dispatch'
+              if: github.event_name != 'push'
               env:
                   TAG_INPUT: ${{ inputs.tag }}
               run: |
@@ -61,7 +71,7 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v7
               with:
-                  ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag) || github.ref }}
+                  ref: ${{ github.event_name != 'push' && format('refs/tags/{0}', inputs.tag) || github.ref }}
                   fetch-depth: 0
 
             # Step 2: Set up Git for local operations only
@@ -77,7 +87,7 @@ jobs:
             - name: Get the version from the tag
               id: get_version
               env:
-                  TAG_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+                  TAG_INPUT: ${{ github.event_name != 'push' && inputs.tag || github.ref_name }}
               run: |
                   echo "TAG=$TAG_INPUT" >> $GITHUB_ENV
                   echo "VERSION=${TAG_INPUT#v}" >> $GITHUB_ENV
@@ -107,7 +117,9 @@ jobs:
                      [ "$CONST_VERSION" != "${{ env.VERSION }}" ]; then
                     echo "::error::Version mismatch. Tag v${{ env.VERSION }} does not match the committed"
                     echo "::error::version in package.json / the plugin header / SPARX_3IATLAS_VERSION."
-                    echo "::error::Cut releases by merging the release-please PR, not by tagging main directly."
+                    echo "::error::Do not tag main by hand. Either merge the release-please PR, or"
+                    echo "::error::run Actions -> \"Manual Release\" with the version you want — it commits"
+                    echo "::error::the bump first, then tags it, so the tag and the tree always agree."
                     exit 1
                   fi
 

@@ -1,0 +1,174 @@
+# Manual Release — cut a release at a version you choose.
+#
+# This is the supported path for releases that are not driven by Conventional
+# Commits. release-please only opens a Release PR when it sees a releasable
+# commit (feat:/fix:), so a tree of dependency bumps, docs and CI work can sit
+# on main indefinitely with no way to ship it. Tagging main by hand does not
+# work either: release.yml builds the *tag's* tree and refuses to publish when
+# the committed version does not match the tag, which is what happened to
+# v2.8.13 and again to v2.9.8.
+#
+# So this workflow does the two things in the order that makes them consistent:
+# it commits the version bump first, then tags that commit, then builds it.
+#
+#     Actions -> "Manual Release" -> Run workflow -> version: 2.9.9
+#
+# release-please keeps working alongside this; .release-please-manifest.json is
+# bumped here too, so its next Release PR starts from the version just shipped.
+
+name: Manual Release
+
+on:
+    workflow_dispatch:
+        inputs:
+            version:
+                description: 'Version to release, without the v prefix, e.g. 2.9.9'
+                required: true
+                type: string
+
+permissions:
+    contents: write
+
+# This workflow pushes to main and creates a tag, so two runs started close
+# together would race — the second failing its push as non-fast-forward after
+# possibly already bumping files. Queue them instead. cancel-in-progress stays
+# false on purpose: a run interrupted between its commit and its tag would
+# leave main bumped with no tag matching it, which is the exact inconsistency
+# this workflow exists to prevent.
+concurrency:
+    group: manual-release
+    cancel-in-progress: false
+
+jobs:
+    prepare:
+        name: Bump and tag
+        runs-on: ubuntu-latest
+        outputs:
+            tag: ${{ steps.bump.outputs.tag }}
+        steps:
+            # Validate before the value reaches any shell or git ref. The input
+            # is controllable by anyone with dispatch access, so it goes through
+            # env: rather than being spliced into a run: body, and anything that
+            # is not clean semver is rejected here (CWE-78 / CWE-610).
+            - name: Validate version input
+              env:
+                  VERSION_INPUT: ${{ inputs.version }}
+              run: |
+                  # Strict semver core: no v prefix, no leading zeros, no
+                  # prerelease suffix. Prereleases are excluded deliberately —
+                  # the ordering check below uses `sort -V`, which does not
+                  # implement semver prerelease precedence and reports
+                  # 1.0.0-alpha as *higher* than 1.0.0. Allowing them would let
+                  # a downgrade pass the "must be higher" guard. Supporting one
+                  # needs a real semver comparator, not sort -V.
+                  if ! [[ "$VERSION_INPUT" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+                    echo "::error::Invalid version '$VERSION_INPUT'. Use stable semver with no v prefix, e.g. 2.9.9."
+                    exit 1
+                  fi
+
+            - name: Checkout main
+              uses: actions/checkout@v7
+              with:
+                  ref: main
+                  fetch-depth: 0
+
+            - name: Bump version, commit and tag
+              id: bump
+              env:
+                  NEW: ${{ inputs.version }}
+              run: |
+                  set -euo pipefail
+                  CUR=$(jq -r '.version' package.json)
+
+                  # Released versions are immutable: only ever move forward, and
+                  # never reuse a tag that already exists.
+                  if [ "$CUR" = "$NEW" ]; then
+                    echo "::error::Version $NEW is already the committed version."
+                    exit 1
+                  fi
+                  if [ "$(printf '%s\n%s\n' "$CUR" "$NEW" | sort -V | tail -1)" != "$NEW" ]; then
+                    echo "::error::Version $NEW is lower than the current version $CUR."
+                    exit 1
+                  fi
+                  if git rev-parse -q --verify "refs/tags/v$NEW" >/dev/null 2>&1; then
+                    echo "::error::Tag v$NEW already exists. Released version numbers are immutable — pick a higher one."
+                    exit 1
+                  fi
+
+                  # All four markers move together. These are the same four
+                  # release.yml checks, so a mismatch here fails now with a
+                  # clear message rather than deep inside the build.
+                  jq --arg v "$NEW" '.version = $v' package.json > .tmp && mv .tmp package.json
+                  jq --arg v "$NEW" '.["."] = $v' .release-please-manifest.json > .tmp && mv .tmp .release-please-manifest.json
+                  perl -0pi -e "s/(x-release-please-start-version.*?\*\s*Version:\s*)[0-9][^\s]*/\${1}$NEW/s" sparxstar-3iatlas-dictionary.php
+                  perl -pi -e "s/(define\( 'SPARX_3IATLAS_VERSION', ')[^']*(')/\${1}$NEW\${2}/" sparxstar-3iatlas-dictionary.php
+
+                  PKG=$(jq -r '.version' package.json)
+                  PLUG=$(grep -m1 -oP '^\s*\*\s*Version:\s*\K[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?' sparxstar-3iatlas-dictionary.php)
+                  CONST=$(grep -m1 -oP "define\( 'SPARX_3IATLAS_VERSION', '\K[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?" sparxstar-3iatlas-dictionary.php)
+                  MAN=$(jq -r '.["."]' .release-please-manifest.json)
+                  echo "package.json=$PKG plugin header=$PLUG constant=$CONST manifest=$MAN"
+                  if [ "$PKG" != "$NEW" ] || [ "$PLUG" != "$NEW" ] || [ "$CONST" != "$NEW" ] || [ "$MAN" != "$NEW" ]; then
+                    echo "::error::Version bump did not apply cleanly to all four markers. Nothing has been committed."
+                    exit 1
+                  fi
+
+                  DATE=$(date -u +%Y-%m-%d)
+                  {
+                    echo
+                    echo "## [$NEW](https://github.com/${GITHUB_REPOSITORY}/compare/v$CUR...v$NEW) ($DATE)"
+                    echo
+                    echo "Manual release cut with the Manual Release workflow. See the commits in the"
+                    echo "compare link above for what changed since v$CUR."
+                    echo
+                  } > .changelog-entry
+                  # Insert directly above the newest existing release heading,
+                  # rather than after a fixed number of preamble lines — the
+                  # preamble is not guaranteed to be any particular length, and
+                  # guessing wrong would silently drop the history below it.
+                  if [ ! -s CHANGELOG.md ]; then
+                    echo "::error::CHANGELOG.md is missing or empty; refusing to rewrite it."
+                    exit 1
+                  fi
+                  FIRST_HEADING=$(grep -n -m1 '^## ' CHANGELOG.md | cut -d: -f1 || true)
+                  if [ -n "$FIRST_HEADING" ]; then
+                    head -n "$((FIRST_HEADING - 1))" CHANGELOG.md > .changelog-new
+                    cat .changelog-entry >> .changelog-new
+                    tail -n "+$FIRST_HEADING" CHANGELOG.md >> .changelog-new
+                  else
+                    # No release sections yet — the whole file is preamble.
+                    cat CHANGELOG.md .changelog-entry > .changelog-new
+                  fi
+                  mv .changelog-new CHANGELOG.md
+                  rm -f .changelog-entry
+
+                  git config user.name "github-actions[bot]"
+                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                  git add package.json .release-please-manifest.json sparxstar-3iatlas-dictionary.php CHANGELOG.md
+                  git commit -m "chore(main): release $NEW"
+
+                  # Commit first, then tag that commit, so the tag's tree always
+                  # carries the version the tag claims.
+                  git tag "v$NEW"
+
+                  # --atomic so the branch and the tag land together or not at
+                  # all. As two pushes, a failure on the second would leave main
+                  # bumped with no tag pointing at it — the version/tag split
+                  # this workflow exists to prevent, reintroduced by the
+                  # workflow itself.
+                  git push --atomic origin HEAD:main "refs/tags/v$NEW"
+
+                  echo "tag=v$NEW" >> "$GITHUB_OUTPUT"
+                  echo "Released v$NEW from $(git rev-parse --short HEAD)."
+
+    # Called directly rather than left to the tag push: tags created with the
+    # default GITHUB_TOKEN cannot trigger another workflow, which is why
+    # v2.8.13, v2.9.0, v2.9.1 and v2.9.2 all published without a ZIP.
+    release:
+        name: Build and publish
+        needs: prepare
+        permissions:
+            contents: write
+        uses: ./.github/workflows/release.yml
+        with:
+            tag: ${{ needs.prepare.outputs.tag }}
