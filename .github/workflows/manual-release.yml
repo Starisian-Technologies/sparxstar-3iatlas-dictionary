@@ -44,8 +44,8 @@ jobs:
               env:
                   VERSION_INPUT: ${{ inputs.version }}
               run: |
-                  if ! [[ "$VERSION_INPUT" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
-                    echo "::error::Invalid version '$VERSION_INPUT'. Use bare semver with no v prefix, e.g. 2.9.9."
+                  if ! [[ "$VERSION_INPUT" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+                    echo "::error::Invalid version '$VERSION_INPUT'. Use stable semver with no v prefix, e.g. 2.9.9."
                     exit 1
                   fi
 
