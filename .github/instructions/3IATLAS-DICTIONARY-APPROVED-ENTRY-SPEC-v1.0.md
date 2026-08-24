@@ -10,15 +10,23 @@
 
 ## 1. Purpose
 
-This document defines the Approved Entry Package format — the structured data unit that DVE delivers to the dictionary for import. The dictionary accepts no other format as authoritative input.
+This document defines the Approved Entry Package format — the structured data unit that DVE
+produces for a lexical record that has cleared review. The dictionary accepts no other
+description of an approved entry as authoritative.
 
-An Approved Entry Package represents a lexical record that has passed all DVE review, normalization, and approval steps. The dictionary imports it as-is. It does not re-evaluate, re-normalize, or re-adjudicate the content.
+**How it reaches WordPress: manually.** There is no automated importer, by design (see
+`3IATLAS-DICTIONARY-ROLE-AND-PIPELINE-SPEC-v1.0.md` §7). A dictionary operator reviews the
+package and enters or updates the record in WordPress by hand, preserving the DVE-minted
+UUID. Read the field tables below as **the operator's checklist and the field contract** —
+what a complete entry must carry — not as a wire format for a program that reads files.
+
+An Approved Entry Package represents a lexical record that has passed all DVE review, normalization, and approval steps. The dictionary transcribes it as-is. It does not re-evaluate, re-normalize, or re-adjudicate the content — the operator's second review confirms faithful entry, not linguistic judgement.
 
 ---
 
 ## 2. Package Format
 
-An Approved Entry Package is a JSON object. A batch import file is an array of these objects.
+An Approved Entry Package is expressed as a JSON object, and a batch is an array of them. This is the interchange and record-keeping shape DVE produces; entry into WordPress is manual.
 
 ```json
 {
@@ -78,11 +86,11 @@ An Approved Entry Package is a JSON object. A batch import file is an array of t
 
 ## 3. Required vs Optional Fields
 
-**Required — batch is rejected if any entry is missing these:**
+**Required — an entry missing any of these must not be saved:**
 
 | Field | Reason |
 |---|---|
-| `aiwa_entry_uuid` | Canonical identifier. Without it the entry cannot be safely imported. |
+| `aiwa_entry_uuid` | Canonical identifier. Without it the entry cannot be safely recorded. |
 | `headword` | The word itself. |
 | `primary_language` | Which language the word belongs to. Required for every downstream filter. |
 | `part_of_speech` | Required for game filtering and search. |
@@ -170,12 +178,16 @@ AIWA Level is the primary public-facing educational grading field. It reflects t
 
 ---
 
-## 7. Import Validation Rules
+## 7. Entry Validation Rules
 
-The WP-CLI importer must enforce these rules before writing any record:
+These rules must hold before a record is saved. There is no importer to enforce them
+(see `3IATLAS-DICTIONARY-ROLE-AND-PIPELINE-SPEC-v1.0.md` §7), so today they are the
+operator's checklist, applied by the human doing the entry. They are also the
+specification for the save-time validation gate tracked as `OQ-015` — once that exists,
+the sanctioned entry surface enforces them mechanically instead of relying on attention.
 
 1. `aiwa_entry_uuid` must be present and must be a valid UUID format.
-2. `aiwa_entry_uuid` must not already exist in the dictionary unless the import is an explicit replacement (flag: `--replace`).
+2. `aiwa_entry_uuid` must not already exist in the dictionary unless the entry is an explicit replacement (see §8).
 3. `primary_language` must be a registered taxonomy term in `starmus_tax_language`.
 4. `part_of_speech` must be a registered taxonomy term in `starmus_part_of_speech`.
 5. `approval_status` must be `approved` or `provisional`. Any other value rejects the entry.
@@ -185,7 +197,7 @@ The WP-CLI importer must enforce these rules before writing any record:
 9. `aiwa_level` if present must be one of: `AIWA-0`, `AIWA-1`, `AIWA-2`, `AIWA-3`, `AIWA-4`, `AIWA-5`.
 10. `cefr_approx` if present must be one of: `A1`, `A2`, `B1`, `B2`, `C1`, `C2`.
 11. `oxford_tier` if present must be one of: `oxford_3000`, `oxford_5000`.
-12. Cross-language sibling UUIDs must exist in the dictionary. Unknown UUIDs are flagged in the validation report and the sibling link is skipped (not a blocking error — the entry is still imported).
+12. Cross-language sibling UUIDs must exist in the dictionary. Unknown UUIDs are recorded in the entry's internal notes and the sibling link is skipped (not a blocking error — the entry is still saved).
 
 ---
 
@@ -202,12 +214,14 @@ A replacement package corrects one or more linguistic fields on an existing appr
 }
 ```
 
-Import command for replacements:
-```bash
-wp aiwa-dictionary import --file=replacement-batch.json --publish --replace
-```
+Applying a replacement is a manual edit, like any other intake. The operator updates only
+the linguistic fields present in the replacement package; UUID, operational fields, and
+lifecycle status are preserved untouched. `replacement_reason` and
+`replacement_authorized_by` are recorded in the entry's internal notes so the audit trail
+survives in WordPress.
 
-The importer updates only the linguistic fields provided in the replacement package. UUID, operational fields, and lifecycle status are preserved.
+There is no `wp aiwa-dictionary import --replace` command. Earlier revisions of this spec
+showed one; it was never implemented.
 
 ---
 

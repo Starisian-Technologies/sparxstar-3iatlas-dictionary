@@ -40,15 +40,15 @@ This is the authoritative lexical data store and REST API service for the entire
 
 **Authoritative spec:** `.github/instructions/3IATLAS-DICTIONARY-ROLE-AND-PIPELINE-SPEC-v1.0.md`
 
-The dictionary is a **downstream governed publication service**. It is **linguistically read-only** after import.
+The dictionary is a **downstream governed publication service**. It is **linguistically read-only** once an entry has been entered.
 
 ```
 Community / Speakers / Linguists / Elders
         ↓
 DVE (intake, review, normalization, approval)
-        ↓
+        ↓   manual operator review + entry
 AIWA Dictionary  ← you are here
-(import, store, lock, serve)
+(store, lock, serve)
         ↓
 3iAtlas Apps (games, workbooks, browse, API consumers)
 ```
@@ -56,16 +56,21 @@ AIWA Dictionary  ← you are here
 **What this means for code:**
 - The dictionary does NOT intake words. No community submission pathways for new entries.
 - The dictionary does NOT adjudicate or flag entries. No review queues, no quality routing.
-- Linguistic fields (headword, language, definitions, pronunciation, siblings, speaker community tags) are **locked after import**. WordPress admins cannot edit them directly.
+- Linguistic fields (headword, language, definitions, pronunciation, siblings, speaker community tags) are **locked once entered** — meaning WordPress admins must not edit them directly. This is a process boundary, not an enforced one: no ACF or admin-UI restriction currently prevents it (see `OQ-011` in `docs/dictionary-tech-spec.md`).
 - Operational fields (publish status, visibility, API eligibility, featured flag) are editable.
-- All corrections originate upstream in DVE as a new Approved Entry Package, imported via WP-CLI.
+- All corrections originate upstream in DVE as a new Approved Entry Package, entered manually by a dictionary operator.
 - `aiwa_entry_uuid` is minted by DVE. The dictionary preserves it. Never regenerate it. Never let WordPress mint a UUID for an approved entry.
 
-**Import v1 — WP-CLI batch, deliberate and rare:**
-```bash
-wp aiwa-dictionary import --file=approved-entry-batch.json --dry-run   # validates, no write
-wp aiwa-dictionary import --file=approved-entry-batch.json --publish    # validates and writes
-```
+**Intake v1 — manual, deliberate and rare:**
+
+There is **no importer, and that is the design**. Approved entries reach WordPress because a
+dictionary operator reviews the Approved Entry Package and enters the record by hand,
+preserving the DVE-minted `aiwa_entry_uuid`. A human is accountable for every entry that
+goes public; that accountability is the control, and it is why no automated path exists.
+
+Do not write one, and do not cite `wp aiwa-dictionary import` — that command appeared in
+earlier drafts of the specs but was never implemented. `src/cli/` registers API-key
+management only (`generate`, `create`, `list`, `revoke`).
 
 **Entry lifecycle states:** `active`, `deprecated`, `merged`, `hidden`, `withdrawn` — never delete a UUID once published.
 
@@ -477,8 +482,8 @@ Four specs committed to `.github/instructions/` that define the dictionary's fin
 
 | Spec | Status | Summary |
 |---|---|---|
-| `3IATLAS-DICTIONARY-ROLE-AND-PIPELINE-SPEC-v1.0.md` | Active | DVE upstream / dictionary downstream. Linguistically read-only after import. WP-CLI batch import. Entry lifecycle states. Edit lock rules. |
-| `3IATLAS-DICTIONARY-APPROVED-ENTRY-SPEC-v1.0.md` | Active | Approved Entry Package format. Required fields. UUID ownership (DVE mints, dictionary preserves). AIWA Level scale. Replacement and deprecation packages. |
+| `3IATLAS-DICTIONARY-ROLE-AND-PIPELINE-SPEC-v1.0.md` | Active | DVE upstream / dictionary downstream. Linguistically read-only once entered. Manual operator intake — no automated importer, by design. Entry lifecycle states. Edit lock rules. |
+| `3IATLAS-DICTIONARY-APPROVED-ENTRY-SPEC-v1.0.md` | Active | Approved Entry Package format — the operator's review checklist and field contract, not a wire format. Required fields. UUID ownership (DVE mints, dictionary preserves). AIWA Level scale. Replacement and deprecation packages. |
 | `3IATLAS-DICTIONARY-MULTILANGUAGE-MODEL-SPEC-v1.0.md` | Active | Primary Language Layer + Speaker Community Layer. Strict / ecology / cross-language search modes. No silent mixing. Controlled speaker community taxonomy. Cross-language relation types. Community usage status. JWT language claims (for identity service). |
 | `3IATLAS-DICTIONARY-ENRICHMENT-FIELDS-SPEC-v1.0.md` | Active | AIWA Level sovereign scale. CEFR/Oxford as reference mappings only. Concepticon and CLICS academic anchors. Rhyme entries field. Domain taxonomy expansion. Updated `/game-set` and `/wordlist` filter params. |
 

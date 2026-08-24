@@ -10,7 +10,7 @@
 
 ## 1. Foundation Statement
 
-The AIWA Dictionary is the governed publication and distribution layer for approved lexical records. It does not collect, adjudicate, or approve words. DVE is the upstream authority for lexical intake, review, normalization, and approval. The dictionary preserves DVE-approved records, exposes them through controlled search and API services, and prevents direct edits to linguistic content after import.
+The AIWA Dictionary is the governed publication and distribution layer for approved lexical records. It does not collect, adjudicate, or approve words. DVE is the upstream authority for lexical intake, review, normalization, and approval. The dictionary preserves DVE-approved records, exposes them through controlled search and API services, and prevents direct edits to linguistic content once entered.
 
 ---
 
@@ -22,7 +22,7 @@ The AIWA Dictionary is the governed publication and distribution layer for appro
 - A search, browse, and game export service
 - A governed storefront for approved linguistic truth
 
-The dictionary is **linguistically read-only** after import. WordPress operational controls remain editable. Linguistic corrections must originate upstream in DVE.
+The dictionary is **linguistically read-only** once entered. WordPress operational controls remain editable. Linguistic corrections must originate upstream in DVE.
 
 ---
 
@@ -55,7 +55,7 @@ DVE (Digital Village Elder)
 Intake → spelling review → normalization → approval → package
         ↓
 AIWA Dictionary
-Import → validate → stage → publish
+Operator review → enter → validate → publish
 Store approved records, lock linguistic fields
         ↓
 3iAtlas Applications
@@ -68,13 +68,13 @@ DVE governs truth. The dictionary distributes truth.
 
 ## 5. Linguistic Fields vs Operational Fields
 
-**Linguistic fields — locked after import. Edit prohibited in WordPress UI. Corrections require a new DVE-approved package.**
+**Linguistic fields — locked once entered. Edit prohibited in WordPress UI. Corrections require a new DVE-approved package.**
 
 | Field | Type | Minted By |
 |---|---|---|
-| `aiwa_entry_uuid` | UUID | DVE — immutable after import |
+| `aiwa_entry_uuid` | UUID | DVE — immutable once entered |
 | Normalized headword | Post title | DVE |
-| Slug | Post name | Derived from normalized headword at import |
+| Slug | Post name | Derived from normalized headword at entry |
 | Primary language | Taxonomy: `starmus_tax_language` | DVE |
 | Part of speech | Taxonomy: `starmus_part_of_speech` | DVE |
 | English gloss | ACF: `aiwa_translation_english` | DVE |
@@ -122,44 +122,56 @@ DVE governs truth. The dictionary distributes truth.
 - The WordPress post ID is local storage identity only. It is not a lexical identifier.
 - The URL slug is the human-readable routing identity.
 - The dictionary **never** generates or regenerates a UUID for an approved entry.
-- If a UUID is missing from an import batch, the entry must be rejected and returned to DVE.
+- If a UUID is missing from an Approved Entry Package, the entry must be rejected and returned to DVE.
 
 ```
 DVE UUID    = canonical lexical identity (immutable, cross-suite)
 WP post ID  = local storage identity (not portable)
-Slug        = human-readable routing identity (derived from headword at import)
+Slug        = human-readable routing identity (derived from normalized headword at entry)
 ```
 
 ---
 
-## 7. Import Mechanism — Version 1
+## 7. Intake Mechanism — Version 1
 
-Publication is deliberate and rare. The dictionary does not accept real-time pushes from DVE in v1. The import pipeline is:
+Publication is deliberate and rare, and it is **manual by design**. There is no automated
+import path into the dictionary in v1, and building one is out of scope — the governance
+model requires a human to be accountable for every entry that becomes public.
 
-1. DVE exports an Approved Entry Package batch as structured JSON
-2. Dictionary operator runs a dry-run to validate the batch
-3. Validation report is reviewed before publishing
-4. Operator publishes the approved batch
+The intake pipeline is:
 
-```bash
-# Dry-run: validates fields, checks for duplicate UUIDs, reports issues — does not write
-wp aiwa-dictionary import --file=approved-entry-batch.json --dry-run
+1. DVE completes intake, review, normalization, and approval upstream
+2. An approved entry is reviewed a second time by a dictionary operator
+3. The operator enters or updates the record in WordPress, preserving the DVE-minted
+   `aiwa_entry_uuid` exactly
+4. The operator publishes the entry
 
-# Publish: validates and writes all entries to the dictionary
-wp aiwa-dictionary import --file=approved-entry-batch.json --publish
-```
+The Approved Entry Package format in
+`3IATLAS-DICTIONARY-APPROVED-ENTRY-SPEC-v1.0.md` defines **what a complete approved
+entry contains** — required fields, relation types, speaker-community terms, lifecycle
+states. It is the review checklist and the field contract. It is not a file format
+consumed by any automated importer, because no such importer exists.
 
-**Version 2 (deferred):** A service-to-service push endpoint (`POST /sparxstar/v1/dictionary/import`, service auth) will enable DVE to push approved entries into a staging queue, with a human publish step before entries go live. Do not build the automated push pipeline in v1. The governance model is not yet mature enough for fully automatic publishing.
+**No WP-CLI importer.** Earlier revisions of this spec documented
+`wp aiwa-dictionary import --file=… --dry-run|--publish`. That command was never
+implemented and must not be cited as though it were. `src/cli/` registers API-key
+management commands only.
+
+**Version 2 (deferred):** A service-to-service push endpoint
+(`POST /sparxstar/v1/dictionary/import`, service auth) delivering into a staging queue,
+with a human publish step before entries go live, remains a possible future. Do not build
+it in v1. The governance model is not yet mature enough for automatic publishing, and the
+manual boundary is the control that substitutes for it.
 
 ---
 
 ## 8. Entry Lifecycle States
 
-Once imported, an entry has a lifecycle managed through operational fields, not linguistic fields.
+Once entered, an entry has a lifecycle managed through operational fields, not linguistic fields.
 
 | State | Meaning |
 |---|---|
-| `active` | Published and served via API. Default state after import. |
+| `active` | Published and served via API. Default state once entered. |
 | `deprecated` | Superseded by a newer approved entry. UUID preserved. Not served in primary results. |
 | `merged` | Identified as duplicate. Merged into a canonical entry (referenced by merge target UUID). UUID preserved for historical continuity. |
 | `hidden` | Temporarily removed from API without correction. Operational decision. |
@@ -172,7 +184,7 @@ Once imported, an entry has a lifecycle managed through operational fields, not 
 ## 9. Correction Types
 
 **Replacement Package**
-DVE has corrected one or more linguistic fields on a previously approved entry. The replacement package contains the same UUID and the corrected field values. The dictionary importer overwrites only the linguistic fields specified in the replacement. The UUID, lifecycle state, and operational fields are preserved.
+DVE has corrected one or more linguistic fields on a previously approved entry. The replacement package contains the same UUID and the corrected field values. The operator updates only the linguistic fields specified in the replacement. The UUID, lifecycle state, and operational fields are preserved.
 
 **Deprecation / Merge Package**
 DVE has determined that an entry is a duplicate, superseded, or should be consolidated. The package specifies the affected UUID, the new lifecycle state (`deprecated` or `merged`), and the canonical target UUID if merging. The entry's linguistic fields are frozen in their last approved state and remain resolvable for historical reference.
@@ -181,14 +193,14 @@ DVE has determined that an entry is a duplicate, superseded, or should be consol
 
 ## 10. Governance and Edit Lock Rules
 
-1. WordPress administrators may not edit linguistic fields after import via the standard ACF edit UI.
-2. All linguistic fields on the dictionary CPT must be rendered read-only in the WordPress admin after the entry is imported.
+1. WordPress administrators may not edit linguistic fields once entered via the standard ACF edit UI.
+2. All linguistic fields on the dictionary CPT must be rendered read-only in the WordPress admin once the entry has been entered.
 3. The only paths to change a linguistic field are:
-   - A DVE replacement package imported via WP-CLI
+   - A DVE replacement package applied by a dictionary operator (see §7 — there is no WP-CLI importer)
    - An emergency admin override with documented DVE authorization and an audit log entry
 4. Operational fields (visibility, lifecycle status, featured flag, API eligibility) may be edited directly by authorized dictionary administrators.
 5. The `aiwa_entry_uuid` field is never editable by any WordPress role under any circumstances.
-6. No plugin, WordPress admin action, or REST API endpoint may overwrite `aiwa_entry_uuid` after initial import.
+6. No plugin, WordPress admin action, or REST API endpoint may overwrite `aiwa_entry_uuid` after initial entry.
 
 ---
 
@@ -213,6 +225,6 @@ The dictionary does not:
 
 ## 12. Relationship to DVE
 
-DVE is the upstream lexical validation and onboarding pipeline. The dictionary does not accept raw community submissions directly as authoritative entries. The dictionary imports approved lexical records from DVE, preserves canonical identifiers, stores approved metadata, locks linguistic fields after import, and exposes the records through search, browse, game, workbook, and API services.
+DVE is the upstream lexical validation and onboarding pipeline. The dictionary does not accept raw community submissions directly as authoritative entries. The dictionary receives approved lexical records from DVE through manual operator entry, preserves canonical identifiers, stores approved metadata, locks linguistic fields once entered, and exposes the records through search, browse, game, workbook, and API services.
 
 The dictionary crew builds the approved dictionary service. The linguistic justice system lives upstream.
