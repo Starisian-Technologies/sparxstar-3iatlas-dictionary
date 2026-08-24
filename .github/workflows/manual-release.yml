@@ -29,6 +29,10 @@ on:
 permissions:
     contents: write
 
+concurrency:
+    group: manual-release
+    cancel-in-progress: false
+
 jobs:
     prepare:
         name: Bump and tag
