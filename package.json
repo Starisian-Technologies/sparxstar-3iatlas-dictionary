@@ -39,7 +39,7 @@
     },
     "homepage": "https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary#readme",
     "dependencies": {
-        "@apollo/client": "^3.14.1",
+        "@apollo/client": "^4.2.12",
         "graphql": "^16.14.2",
         "jsdoc-babel": "^0.5.0",
         "lucide-react": "^0.300.0",
