@@ -182,10 +182,19 @@ what the plugin or the Approved Entry Spec accepts.
    imported as terms before any domain-filtered browse or `/game-set?domain=` call works.
 
 6. **Approval fields are empty but required.** `3IATLAS-DICTIONARY-APPROVED-ENTRY-SPEC-v1.0`
-   lists `approval_status` (must be `approved`), `approved_by`, and `approval_date` as
-   required. CLEAN.csv has `Approval Status = unreviewed` on every row and `Approved By` /
-   `Approval Date` **0% filled**. Under the spec as written, **no row can be entered**
-   until DVE stamps approval — this is the hard gate, ahead of every technical gap above.
+   lists `approval_status`, `approved_by`, and `approval_date` as required. CLEAN.csv has
+   `Approval Status = unreviewed` on every row and `Approved By` / `Approval Date`
+   **0% filled**, so **no row can be entered** until DVE stamps approval — the hard gate,
+   ahead of every technical gap above.
+
+   Note that the spec is ambiguous about the permitted values and should be reconciled
+   before the validation gate is built against it: the required-fields table (§3) says
+   `approval_status` "Must be `approved`", while validation rule 5 (§7) accepts
+   `approved` **or** `provisional`. The gate cannot enforce both readings. The
+   distinction is real — a `provisional` entry is staged but not served via the API —
+   so the likely intent is that either value may be *entered* and only `approved` is
+   *published*. That needs confirming, not assuming. Either way `unreviewed` is not a
+   permitted value, so the blocker above holds under both readings.
 
 ### How much would actually survive
 
