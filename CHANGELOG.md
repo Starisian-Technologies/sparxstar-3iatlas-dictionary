@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented here.
 
+## [2.10.1](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/compare/v2.10.0...v2.10.1) (2026-08-25)
+
+
+### Bug Fixes
+
+* **ci:** propose spec to the canonical registry path, not a flat orphan path ([#147](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/issues/147)) ([d934a45](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/commit/d934a453fd23e7e9e92866ba31451538769f2bbf))
+
 ## [2.10.0](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/compare/v2.9.3...v2.10.0) (2026-08-24)
 
 
