@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented here.
 
+## [2.10.0](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/compare/v2.9.3...v2.10.0) (2026-08-24)
+
+
+### Features
+
+* support manual releases as a first-class path ([#145](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/issues/145)) ([b080cc3](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/commit/b080cc3c648e9c079198330135d7e58d6e7841d5))
+
 ## [2.9.3](https://github.com/Starisian-Technologies/sparxstar-3iatlas-dictionary/compare/v2.9.2...v2.9.3) (2026-08-22)
 
 
