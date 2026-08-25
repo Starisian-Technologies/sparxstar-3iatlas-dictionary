@@ -75,17 +75,26 @@ jobs:
               env:
                   GH_TOKEN: ${{ steps.token.outputs.token }}
                   SPEC_KEY: dictionary
+                  # Canonical registry path from MANIFEST.json INCLUDES the domain
+                  # directory. A flat specs/<key>/ target creates an orphan file
+                  # instead of updating the canonical spec.
+                  SPEC_DOMAIN: "3iAtlas"
               run: |
                   set -euo pipefail
                   REGISTRY="Starisian-Technologies/sparxstar-product-specification-registry"
                   BRANCH="propose/${SPEC_KEY}-${GITHUB_SHA:0:7}"
-                  TARGET="specs/${SPEC_KEY}/${SPEC_KEY}-tech-spec.md"
+                  TARGET="specs/${SPEC_DOMAIN}/${SPEC_KEY}/${SPEC_KEY}-tech-spec.md"
                   git clone --depth 1 \
                     "https://x-access-token:${GH_TOKEN}@github.com/${REGISTRY}.git" \
                     registry
                   cd registry
+
+                  if [ ! -f "$TARGET" ]; then
+                    echo "::error::Canonical spec path $TARGET not found in registry. Check MANIFEST.json."
+                    exit 1
+                  fi
+
                   git checkout -b "$BRANCH"
-                  mkdir -p "$(dirname "$TARGET")"
                   cp "../source/docs/${SPEC_KEY}-tech-spec.md" "$TARGET"
                   git config user.name "sparxstar-contract-sync[bot]"
                   git config user.email "contract-sync@starisian.com"
