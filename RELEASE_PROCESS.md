@@ -1,11 +1,10 @@
 # Release Process
 
-There are two supported ways to cut a release. Both end in the same place: a
+There are three supported ways to cut a release. Both end in the same place: a
 commit whose version markers match the tag, a `vX.Y.Z` tag on that commit, and
 `release.yml` building it into a ZIP with checksums attached to the release.
 
-Never edit a version by hand, and never `git tag` `main` yourself. Both paths
-below exist so you don't have to.
+Never edit a version marker by hand — every path below sets them for you.
 
 ## Path A — Manual Release (pick the version yourself)
 
@@ -54,16 +53,24 @@ changelog derived from the commits.
    package per `.distignore`), generates checksums, and attaches everything
    to the release.
 
-### Why tagging `main` by hand does not work
+## Path C — tag `main` directly
 
-`release.yml` builds the **tag's** tree. If you tag `main` before the version
-bump is committed, the tagged tree still carries the old version, the
-consistency check in step 4 fails, and the release publishes with no ZIP.
+```
+git tag v2.9.9 && git push origin v2.9.9
+```
 
-This has happened twice: `v2.8.13` and `v2.9.8` were both tagged by hand and
-both published empty. Neither could be repaired afterwards — the fix has to be
-in the tag's tree, and moving a published tag is not an option. Use Path A
-instead; it exists precisely so this stops happening.
+This works. `release.yml` treats the tag as the source of truth and rewrites
+every version marker from it before building, so the ZIP is always stamped with
+the version on the tag. It used to refuse instead, which is why `v2.8.13` and
+`v2.9.8` published empty; that check is gone.
+
+The one thing it does **not** do is commit anything back, because `main` may be
+protected. So the version markers on `main` still say whatever they said, and
+release-please's manifest is unchanged. That is only cosmetic for the artifact —
+the ZIP is correct either way — but it means `main` no longer tells you what
+shipped.
+
+Path A does the same job and keeps `main` honest, so prefer it when you can.
 
 ## Do not delete a release tag
 

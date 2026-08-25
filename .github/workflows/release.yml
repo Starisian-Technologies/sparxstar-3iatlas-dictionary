@@ -92,36 +92,49 @@ jobs:
                   echo "TAG=$TAG_INPUT" >> $GITHUB_ENV
                   echo "VERSION=${TAG_INPUT#v}" >> $GITHUB_ENV
 
-            # Step 4: Verify the committed version matches the tag.
-            # release-please.yml is the single source of truth for version bumps —
-            # it commits package.json, the plugin header, and CHANGELOG.md to main
-            # *before* this tag ever gets created, then creates the tag itself on
-            # merge. This step only confirms that happened; it must never rewrite
-            # versions again — a prior version of this step silently sed-rewrote
-            # files on every release without committing the change back, which is
-            # exactly how package.json (1.0.5) and the plugin header (0.6.7) drifted
-            # out of sync with each other before this was ever caught.
-            - name: Verify version consistency
+            # Step 4: Set the version from the tag.
+            #
+            # The tag is the source of truth. Every marker is rewritten from it
+            # here rather than checked against committed values, so tagging main
+            # directly works — you do not have to land a version bump
+            # first. This is what v2.8.13 and v2.9.8 needed and did not have:
+            # both were tagged by hand, both failed the old consistency check,
+            # and both published with no ZIP.
+            #
+            # The drift this replaces came from a version of this step that
+            # rewrote only *some* files, leaving package.json and the plugin
+            # header disagreeing with each other on main. Deriving all of them
+            # from one value makes that impossible inside the artifact: they
+            # cannot disagree, because they all come from the tag. The check
+            # below confirms the rewrite actually landed rather than assuming
+            # sed matched.
+            #
+            # Only the build tree is touched — nothing is committed back, so a
+            # protected main is never pushed to. Manual Release commits the
+            # bump for you and is still the tidier path, because it also keeps
+            # main and release-please's manifest in step.
+            - name: Set version from tag
               run: |
-                  PKG_VERSION=$(jq -r '.version' package.json)
-                  PLUGIN_VERSION=$(grep -m1 -oP '^\s*\*\s*Version:\s*\K[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?' sparxstar-3iatlas-dictionary.php)
-                  CONST_VERSION=$(grep -m1 -oP "define\( 'SPARX_3IATLAS_VERSION', '\K[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?" sparxstar-3iatlas-dictionary.php)
+                  set -euo pipefail
+                  VERSION="${{ env.VERSION }}"
 
-                  echo "Tag version:          ${{ env.VERSION }}"
-                  echo "package.json:         $PKG_VERSION"
-                  echo "Plugin header:        $PLUGIN_VERSION"
-                  echo "SPARX_3IATLAS_VERSION: $CONST_VERSION"
+                  sed -i -E 's/("version":[[:space:]]*").*(")/\1'"$VERSION"'\2/' package.json
+                  sed -i -E "s/^([[:space:]]*\*[[:space:]]*Version:[[:space:]]*).*/\1$VERSION/" sparxstar-3iatlas-dictionary.php
+                  sed -i "s/define( 'SPARX_3IATLAS_VERSION', '[^']*' );/define( 'SPARX_3IATLAS_VERSION', '$VERSION' );/" sparxstar-3iatlas-dictionary.php
+                  find src/ -type f -name "*.php" -print0 | xargs -0 -r sed -i -E "s/@version[[:space:]]+[0-9.]+/@version $VERSION/g"
 
-                  if [ "$PKG_VERSION" != "${{ env.VERSION }}" ] || \
-                     [ "$PLUGIN_VERSION" != "${{ env.VERSION }}" ] || \
-                     [ "$CONST_VERSION" != "${{ env.VERSION }}" ]; then
-                    echo "::error::Version mismatch. Tag v${{ env.VERSION }} does not match the committed"
-                    echo "::error::version in package.json / the plugin header / SPARX_3IATLAS_VERSION."
-                    echo "::error::Do not tag main by hand. Either merge the release-please PR, or"
-                    echo "::error::run Actions -> \"Manual Release\" with the version you want — it commits"
-                    echo "::error::the bump first, then tags it, so the tag and the tree always agree."
+                  PKG=$(jq -r '.version' package.json)
+                  PLUG=$(grep -m1 -oP '^\s*\*\s*Version:\s*\K[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?' sparxstar-3iatlas-dictionary.php)
+                  CONST=$(grep -m1 -oP "define\( 'SPARX_3IATLAS_VERSION', '\K[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?" sparxstar-3iatlas-dictionary.php)
+                  echo "Tag $VERSION -> package.json=$PKG plugin header=$PLUG constant=$CONST"
+
+                  if [ "$PKG" != "$VERSION" ] || [ "$PLUG" != "$VERSION" ] || [ "$CONST" != "$VERSION" ]; then
+                    echo "::error::Version rewrite did not apply to every marker. The file layout has"
+                    echo "::error::probably changed and the sed patterns above need updating."
                     exit 1
                   fi
+                  jq -e . package.json > /dev/null
+                  php -l sparxstar-3iatlas-dictionary.php
 
             # Step 6: Verify plugin entrypoint exists.
             - name: Verify plugin entrypoint
