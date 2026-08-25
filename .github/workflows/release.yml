@@ -92,20 +92,11 @@ jobs:
                   echo "TAG=$TAG_INPUT" >> $GITHUB_ENV
                   echo "VERSION=${TAG_INPUT#v}" >> $GITHUB_ENV
 
-            # Step 4: Verify the committed version matches the tag.
-            # release-please.yml is the single source of truth for version bumps —
-            # it commits package.json, the plugin header, and CHANGELOG.md to main
-            # *before* this tag ever gets created, then creates the tag itself on
-            # merge. This step only confirms that happened; it must never rewrite
-            # versions again — a prior version of this step silently sed-rewrote
-            # files on every release without committing the change back, which is
-            # exactly how package.json (1.0.5) and the plugin header (0.6.7) drifted
-            # out of sync with each other before this was ever caught.
-            # Step 5: Set the version from the tag.
+            # Step 4: Set the version from the tag.
             #
             # The tag is the source of truth. Every marker is rewritten from it
-            # here rather than checked against the committed values, so tagging
-            # main directly works — you do not have to land a version bump
+            # here rather than checked against committed values, so tagging main
+            # directly works — you do not have to land a version bump
             # first. This is what v2.8.13 and v2.9.8 needed and did not have:
             # both were tagged by hand, both failed the old consistency check,
             # and both published with no ZIP.
