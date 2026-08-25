@@ -128,7 +128,7 @@ jobs:
                   VERSION="${{ env.VERSION }}"
 
                   sed -i -E 's/("version":[[:space:]]*").*(")/\1'"$VERSION"'\2/' package.json
-                  sed -i -E "s/^(\s*\*\s*Version:\s*).*/\1$VERSION/" sparxstar-3iatlas-dictionary.php
+                  sed -i -E "s/^([[:space:]]*\*[[:space:]]*Version:[[:space:]]*).*/\1$VERSION/" sparxstar-3iatlas-dictionary.php
                   sed -i "s/define( 'SPARX_3IATLAS_VERSION', '[^']*' );/define( 'SPARX_3IATLAS_VERSION', '$VERSION' );/" sparxstar-3iatlas-dictionary.php
                   find src/ -type f -name "*.php" -print0 | xargs -0 -r sed -i -E "s/@version[[:space:]]+[0-9.]+/@version $VERSION/g"
 
