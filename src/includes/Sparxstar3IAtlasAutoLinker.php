@@ -105,29 +105,48 @@ class Sparxstar3IAtlasAutoLinker {
             return $terms;
         }
 
-        // Fetch IDs only for speed
-        $args = array(
-            'post_type'              => 'aiwa-cpt-dictionary',
-            'posts_per_page'         => -1,
-            'post_status'            => 'publish',
-            'fields'                 => 'ids',
-            'no_found_rows'          => true,
-            'update_post_meta_cache' => false,
-            'update_post_term_cache' => false,
-        );
+        // Fetch IDs only for speed, in bounded pages.
+        //
+        // This used to pass posts_per_page => -1, which loads every published
+        // entry in a single unbounded query — fine on a small dictionary, a
+        // memory and timeout risk as it grows, and rejected outright by
+        // WordPressVIPMinimum.Performance.NoPaging. Walking pages keeps the
+        // complete term list while capping what any one query returns.
+        //
+        // 100 is written as a literal rather than a constant because the sniff
+        // reads the value off the array and cannot resolve one.
+        $data = array();
+        $paged = 1;
 
-        $query = new WP_Query( $args );
-        $data  = array();
+        do {
+            $query = new WP_Query(
+                array(
+                    'post_type'              => 'aiwa-cpt-dictionary',
+                    'posts_per_page'         => 100,
+                    'paged'                  => $paged,
+                    'post_status'            => 'publish',
+                    'fields'                 => 'ids',
+                    'no_found_rows'          => true,
+                    'update_post_meta_cache' => false,
+                    'update_post_term_cache' => false,
+                )
+            );
 
-        if ( $query->have_posts() ) {
-            foreach ( $query->posts as $post_id ) {
+            $batch = $query->posts;
+
+            foreach ( $batch as $post_id ) {
                 $title = get_the_title( $post_id );
-                // Only link words > 3 chars to reduce noise ("The", "And")
+                // Only link words > 3 chars to reduce noise ("The", "And").
                 if ( strlen( $title ) > 3 ) {
                     $data[ $title ] = get_permalink( $post_id );
                 }
             }
-        }
+
+            ++$paged;
+
+            // no_found_rows means there is no total to compare against, so a
+            // short page is what tells us the last one has been read.
+        } while ( count( $batch ) === 100 );
 
         // Sort by length (Longest first) to ensure "Hospitality Management" 
         // matches before "Hospitality"
