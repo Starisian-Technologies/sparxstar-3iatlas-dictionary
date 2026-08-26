@@ -77,6 +77,9 @@ class Sparxstar3IAtlasSystemCredentialCliCommands {
             \WP_CLI::error( sprintf( 'A credential with id "%s" already exists. Use `rotate` to replace its secret.', $credential_id ) );
         }
 
+        // 32 bytes = 256 bits of entropy. bin2hex is a bijective encoding, so the
+        // 64-character output carries exactly those 256 bits — representation does not
+        // dilute entropy. (32 hex *characters* would be 128 bits; 32 *bytes* is not.)
         $secret  = bin2hex( random_bytes( 32 ) );
         $records = SystemCredentialAuth::all();
 
@@ -183,8 +186,9 @@ class Sparxstar3IAtlasSystemCredentialCliCommands {
         }
 
         $records = SystemCredentialAuth::all();
-        $secret  = bin2hex( random_bytes( 32 ) );
-        $found   = false;
+        // 256 bits of entropy, as in generate() above.
+        $secret = bin2hex( random_bytes( 32 ) );
+        $found  = false;
 
         foreach ( $records as $index => $record ) {
             if ( ! is_array( $record ) || (string) ( $record['credential_id'] ?? '' ) !== $credential_id ) {
