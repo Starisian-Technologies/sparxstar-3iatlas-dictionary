@@ -195,7 +195,17 @@ jobs:
                   echo "PHPCS: ${ERRORS} error(s), ${WARNINGS} warning(s)."
 
                   if [ "$ERRORS" -gt 0 ]; then
-                    echo "::error::PHPCS reported ${ERRORS} error(s); see the report above."
+                    # Re-run showing errors only. "See the report above" means
+                    # scrolling ~300 warning lines to find the one line that
+                    # actually failed the build; this prints just the errors,
+                    # with file and line.
+                    echo "::group::PHPCS errors only"
+                    vendor/bin/phpcs -q --warning-severity=0 || true
+                    echo "::endgroup::"
+                    jq -r '.files | to_entries[] | .key as $f | .value.messages[]
+                           | select(.type == "ERROR")
+                           | "::error file=\($f),line=\(.line)::\(.message) (\(.source))"' "$REPORT"
+                    echo "::error::PHPCS reported ${ERRORS} error(s) — listed above."
                     exit 1
                   fi
             - name: PHPStan
