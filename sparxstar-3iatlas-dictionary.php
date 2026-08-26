@@ -106,6 +106,12 @@ function sparxIAtlas_activate_plugin() {
     if ( class_exists( Sparxstar3IAtlasPostTypes::class ) ) {
         $pt = new Sparxstar3IAtlasPostTypes();
     }
+
+    // The §1.2 budget table is deliberately NOT created here. It is the subject of an
+    // unresolved governance conflict (ADR brief D-10: AGENTS.md forbids custom tables
+    // absolutely), so merging this plugin must not create one as a side effect. It is
+    // provisioned when an operator first creates a system credential — a deliberate,
+    // post-ruling action — via `wp sparxstar-dict system generate`.
     // Flag a one-shot flush so the standalone app route (registered on init) is
     // picked up on the next request without requiring a manual permalink save.
     // The actual flush runs on the next init (after all rewrite rules exist),
@@ -120,6 +126,15 @@ function sparxIAtlas_activate_plugin() {
  */
 function sparxIAtlas_deactivate_plugin() {
     flush_rewrite_rules();
+
+    // Budget rows are left in place: they are live security accounting, and a
+    // deactivate/reactivate cycle must not hand a credential a fresh budget.
+    if ( class_exists( \Starisian\Sparxstar\IAtlas\api\auth\UniqueEntryBudget::class ) ) {
+        $purge_timestamp = wp_next_scheduled( \Starisian\Sparxstar\IAtlas\api\auth\UniqueEntryBudget::PURGE_HOOK );
+        if ( false !== $purge_timestamp ) {
+            wp_unschedule_event( $purge_timestamp, \Starisian\Sparxstar\IAtlas\api\auth\UniqueEntryBudget::PURGE_HOOK );
+        }
+    }
 }
 
 /**

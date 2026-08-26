@@ -64,7 +64,7 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
     }
 
     /**
-     * Register the public spell-checking endpoint.
+     * Register the spell-checking endpoint.
      */
     public function register_rest_routes(): void {
         register_rest_route(
@@ -73,9 +73,37 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
             array(
                 'methods'             => 'POST',
                 'callback'            => array( $this, 'handle_spell' ),
-                'permission_callback' => '__return_true',
+                'permission_callback' => array( $this, 'permission_spell' ),
             )
         );
+    }
+
+    /**
+     * Permission callback for the spell endpoint.
+     *
+     * This route lives in the Dictionary namespace and answers, for any word, whether
+     * the corpus contains it — plus near-miss headword suggestions. That is corpus
+     * membership probing, so at target state it cannot stay anonymous: spec §1 says
+     * the API "serves only approved SYSTEMS", and §8 states flatly that no anonymous
+     * surface exists at the API. Before cutover it stays open under the §1 migration
+     * exception, because the deployed app calls it.
+     *
+     * @param \WP_REST_Request $request Incoming REST request.
+     * @return true|\WP_Error True when permitted; WP_Error otherwise.
+     */
+    public function permission_spell( \WP_REST_Request $request ): bool|\WP_Error {
+        if ( ! \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryProtection::is_cutover_complete() ) {
+            return true;
+        }
+
+        $result = ( new \Starisian\Sparxstar\IAtlas\api\auth\DictionaryAuthResolver() )->resolve( $request );
+
+        if ( is_wp_error( $result ) ) {
+            return $result;
+        }
+
+        $request->set_param( '_auth_context', $result );
+        return true;
     }
 
     /**

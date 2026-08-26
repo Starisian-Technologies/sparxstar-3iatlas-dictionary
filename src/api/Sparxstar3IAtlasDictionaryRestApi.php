@@ -13,7 +13,10 @@ declare(strict_types=1);
 namespace Starisian\Sparxstar\IAtlas\api;
 
 use Starisian\Sparxstar\IAtlas\api\auth\ApiKeyAuth;
+use Starisian\Sparxstar\IAtlas\api\auth\AuthContext;
 use Starisian\Sparxstar\IAtlas\api\auth\DictionaryAuthResolver;
+use Starisian\Sparxstar\IAtlas\api\auth\SystemCredentialAuth;
+use Starisian\Sparxstar\IAtlas\api\auth\UniqueEntryBudget;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit( 1 );
@@ -22,6 +25,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Sparxstar3IAtlasDictionaryRestApi {
 
     use Sparxstar3IAtlasRateLimitTrait;
+
+    /**
+     * Whether the current response must not be stored by any shared cache.
+     *
+     * Set when a system credential is serving entries. Spec §2 rules edge caching of
+     * dictionary responses OFF, because "caching authenticated responses without a
+     * proven cache-key design risks cross-credential replay" — and a shared cache would
+     * also serve entries without charging the §1.2 budget.
+     *
+     * @var bool
+     */
+    private bool $suppress_shared_cache = false;
 
     public const REST_NAMESPACE = 'sparxstar/v1/dictionary';
     private const CPT           = 'aiwa-cpt-dictionary';
@@ -115,16 +130,39 @@ final class Sparxstar3IAtlasDictionaryRestApi {
     }
 
     /**
-     * Permission callback: API key ONLY.
+     * Permission callback: consuming systems only — never an ephemeral page token.
      *
-     * Calls ApiKeyAuth directly rather than through the composite resolver — the
+     * At target state this means a system credential (spec §1.1). Before cutover an
+     * `X-Api-Key` is still accepted under the migration exception, even though §1.1
+     * condemns it architecturally.
+     *
+     * Calls each verifier directly rather than through the composite resolver — the
      * resolver prefers a valid page token, which would cause /wordlist to return 403
-     * even when a valid API key is also present in the request.
+     * even when a valid consumer credential is also present in the request.
      *
      * @param \WP_REST_Request $request The incoming request.
      * @return true|\WP_Error
      */
     public function permission_consumer_only( \WP_REST_Request $request ): bool|\WP_Error {
+        // A system credential is the target-state form and is accepted in either state.
+        if ( SystemCredentialAuth::is_presented( $request ) ) {
+            $result = ( new SystemCredentialAuth() )->resolve( $request );
+            if ( is_wp_error( $result ) ) {
+                return $result;
+            }
+            $request->set_param( '_auth_context', $result );
+            return true;
+        }
+
+        // At target state nothing else is a credential here (spec §1.1, §1.4 step 4).
+        if ( Sparxstar3IAtlasDictionaryProtection::is_cutover_complete() ) {
+            return new \WP_Error(
+                'system_credential_required',
+                __( 'This endpoint serves approved systems only. Provide a system credential via the Authorization header.', 'sparxstar-3iatlas-dictionary' ),
+                array( 'status' => 401 )
+            );
+        }
+
         $has_api_key = '' !== trim( (string) $request->get_header( 'X-Api-Key' ) );
 
         if ( $has_api_key ) {
@@ -297,7 +335,10 @@ final class Sparxstar3IAtlasDictionaryRestApi {
     private function cached_response( array $data, int $max_age = 3600 ): \WP_REST_Response {
         $data['meta'] = $data['meta'] ?? array();
         $response     = new \WP_REST_Response( $data, 200 );
-        $response->header( 'Cache-Control', 'private, max-age=' . $max_age );
+        $response->header(
+            'Cache-Control',
+            $this->suppress_shared_cache ? 'private, no-store' : 'private, max-age=' . $max_age
+        );
         $response->header( 'X-RateLimit-Remaining', (string) $this->get_rate_limit_remaining() );
         return $response;
     }
@@ -332,6 +373,197 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         }
 
         return '';
+    }
+
+    /**
+     * Read a bounded integer parameter under the cap regime for the current state.
+     *
+     * Spec §2 requires "no `per_page` override beyond the cap", and §9 step 2 requires
+     * over-cap requests to 4xx. But those are RESPONSE-CONTRACT changes, and spec §1.4
+     * forbids changing what a deployed client experiences before the cutover verifies —
+     * `/game-set` in particular is consumed by the games app, whose source is not in
+     * this repository, so its request shapes cannot be evidenced here.
+     *
+     * So the caps are tiered exactly like §1.3's surfaces:
+     *
+     * - BEFORE cutover: legacy semantics, byte for byte — clamp silently to the legacy
+     *   cap, coerce as absint() did. Any request that the target regime WOULD refuse is
+     *   logged instead, so the ADR's cutover criteria can be met with observed data
+     *   about who is over-cap rather than a guess (same discipline as the §1.1 tripwire).
+     * - AT cutover: the spec regime — refuse over-cap with 400 rather than clamping,
+     *   because a silent clamp answers "what is the cap?" for free (ADR brief D-2).
+     *
+     * @param \WP_REST_Request    $request The incoming request.
+     * @param string              $param   Parameter name.
+     * @param array<string,int>   $caps    Keys: default, max, legacy_default, legacy_max.
+     * @return int|\WP_Error The accepted value, or WP_Error 400 at target state.
+     */
+    private function capped_param( \WP_REST_Request $request, string $param, array $caps ): int|\WP_Error {
+        $raw       = $request->get_param( $param );
+        $at_target = Sparxstar3IAtlasDictionaryProtection::is_cutover_complete();
+
+        $max     = $at_target ? (int) $caps['max'] : (int) $caps['legacy_max'];
+        $default = $at_target ? (int) $caps['default'] : (int) $caps['legacy_default'];
+
+        if ( null === $raw || '' === $raw ) {
+            return min( $default, $max );
+        }
+
+        if ( ! $at_target ) {
+            // Legacy behaviour, preserved deliberately. absint() is used here precisely
+            // because that is what the pre-spec code did: absint( -1 ) is 1, so
+            // `per_page=-1` clamps to one result rather than meaning "unlimited". That
+            // is not a leak (it returns fewer rows, not more), and the target regime
+            // below refuses it outright.
+            $legacy = min( $max, max( 1, absint( $raw ) ) );
+
+            if ( is_numeric( $raw ) && (int) $raw > (int) $caps['max'] ) {
+                Sparxstar3IAtlasDictionaryProtection::log_security_event(
+                    'info',
+                    'over_cap_request_observed_pre_cutover',
+                    array(
+                        'route'      => $request->get_route(),
+                        'param'      => $param,
+                        'requested'  => (int) $raw,
+                        'target_cap' => (int) $caps['max'],
+                        'served'     => $legacy,
+                    )
+                );
+            }
+
+            return $legacy;
+        }
+
+        // Not absint(): absint( -1 ) is 1, which would silently reinterpret
+        // `per_page=-1` — WordPress's idiom for "unlimited" — as a request for one
+        // result. An unbounded-list attempt must be refused (spec §1.5), not coerced.
+        if ( ! is_numeric( $raw ) ) {
+            return new \WP_Error(
+                'invalid_param',
+                sprintf(
+                    /* translators: %s: request parameter name. */
+                    __( '%s must be a positive integer.', 'sparxstar-3iatlas-dictionary' ),
+                    $param
+                ),
+                array( 'status' => 400 )
+            );
+        }
+
+        $value = (int) $raw;
+
+        if ( $value < 1 ) {
+            return new \WP_Error(
+                'invalid_param',
+                sprintf(
+                    /* translators: %s: request parameter name. */
+                    __( '%s must be a positive integer.', 'sparxstar-3iatlas-dictionary' ),
+                    $param
+                ),
+                array( 'status' => 400 )
+            );
+        }
+
+        if ( $value > $max ) {
+            return new \WP_Error(
+                'over_cap',
+                sprintf(
+                    /* translators: 1: request parameter name, 2: maximum permitted value. */
+                    __( '%1$s may not exceed %2$d.', 'sparxstar-3iatlas-dictionary' ),
+                    $param,
+                    $max
+                ),
+                array( 'status' => 400 )
+            );
+        }
+
+        return $value;
+    }
+
+    /**
+     * Build the result-count portion of a response's meta, per the current state.
+     *
+     * Spec §2 wants counts "rounded or omitted" because "an exact corpus count is a
+     * scraper's progress bar". Like the caps above, that is a response-contract change,
+     * so the exact legacy `total` is kept until cutover and the rounded `total_approx`
+     * replaces it after (§1.4).
+     *
+     * @param int $exact The true result count.
+     * @return array<string,int|string> Meta fragment carrying the count.
+     */
+    private function meta_count( int $exact ): array {
+        if ( Sparxstar3IAtlasDictionaryProtection::is_cutover_complete() ) {
+            return array( 'total_approx' => Sparxstar3IAtlasDictionaryProtection::approximate_count( $exact ) );
+        }
+
+        return array( 'total' => $exact );
+    }
+
+    /**
+     * Charge distinct entries served against the calling system's rolling budget.
+     *
+     * Spec §1.2: per-system ceilings are "expressed primarily as ROLLING UNIQUE-ENTRY
+     * BUDGETS", so "even a fully compromised consumer system cannot bulk-harvest the
+     * corpus under its own credential". Only system credentials are charged; the
+     * browser-app credentials carry their own request quotas and are retired at cutover.
+     *
+     * @param \WP_REST_Request $request  The incoming request.
+     * @param array<int,int>   $post_ids Entry post IDs served by this response.
+     * @return \WP_Error|null WP_Error 429 when the budget is exhausted, otherwise null.
+     */
+    private function charge_entry_budget( \WP_REST_Request $request, array $post_ids ): ?\WP_Error {
+        $context = $request->get_param( '_auth_context' );
+
+        if ( ! $context instanceof AuthContext ) {
+            return null;
+        }
+
+        if ( SystemCredentialAuth::CREDENTIAL_TYPE !== $context->credential_type ) {
+            return null;
+        }
+
+        // A system credential's entry responses are never shared-cacheable (spec §2).
+        $this->suppress_shared_cache = true;
+
+        $credential_id = (string) ( $context->key_id ?? '' );
+
+        if ( '' === $credential_id ) {
+            return null;
+        }
+
+        $served = UniqueEntryBudget::record( $credential_id, $post_ids );
+
+        if ( $served < 0 ) {
+            // Accounting is unavailable. Before cutover that is tolerated so a missing
+            // table cannot take the site down; at target state the budget is a security
+            // control, and an unenforceable control fails closed.
+            if ( ! Sparxstar3IAtlasDictionaryProtection::is_cutover_complete() ) {
+                return null;
+            }
+
+            return new \WP_Error(
+                'budget_unavailable',
+                __( 'Entry budget accounting is unavailable.', 'sparxstar-3iatlas-dictionary' ),
+                array( 'status' => 503 )
+            );
+        }
+
+        $record  = SystemCredentialAuth::find_by_id( $credential_id );
+        $ceiling = UniqueEntryBudget::ceiling_for( $credential_id, is_array( $record ) ? $record : array() );
+
+        if ( $ceiling > 0 && $served > $ceiling ) {
+            UniqueEntryBudget::alarm_exhausted( $credential_id, $served, $ceiling );
+
+            return new \WP_Error(
+                'entry_budget_exhausted',
+                __( 'This system has reached its unique-entry budget for the current window.', 'sparxstar-3iatlas-dictionary' ),
+                array(
+                    'status'  => 429,
+                    'headers' => array( 'Retry-After' => (string) UniqueEntryBudget::window_seconds() ),
+                )
+            );
+        }
+
+        return null;
     }
 
     private function build_entry( int $post_id, bool $include_audio = true ): array {
@@ -440,6 +672,11 @@ final class Sparxstar3IAtlasDictionaryRestApi {
 
         $include_audio = filter_var( $request->get_param( 'include_audio' ) ?? false, FILTER_VALIDATE_BOOLEAN );
 
+        $budget_error = $this->charge_entry_budget( $request, array( (int) $post->ID ) );
+        if ( null !== $budget_error ) {
+            return $budget_error;
+        }
+
         return $this->cached_response(
             array(
                 'success' => true,
@@ -457,8 +694,20 @@ final class Sparxstar3IAtlasDictionaryRestApi {
 
         $q        = sanitize_text_field( (string) ( $request->get_param( 'q' ) ?? '' ) );
         $lang     = sanitize_text_field( (string) ( $request->get_param( 'lang_source' ) ?? '' ) );
-        $per_page = min( 100, max( 1, absint( $request->get_param( 'per_page' ) ?? 20 ) ) );
-        $page     = max( 1, absint( $request->get_param( 'page' ) ?? 1 ) );
+        $per_page = $this->capped_param(
+            $request,
+            'per_page',
+            array(
+                'default'        => Sparxstar3IAtlasDictionaryProtection::SEARCH_RESULTS_MAX,
+                'max'            => Sparxstar3IAtlasDictionaryProtection::SEARCH_RESULTS_MAX,
+                'legacy_default' => 20,
+                'legacy_max'     => 100,
+            )
+        );
+        if ( is_wp_error( $per_page ) ) {
+            return $per_page;
+        }
+        $page = max( 1, absint( $request->get_param( 'page' ) ?? 1 ) );
 
         if ( wp_strlen( $q ) < 2 ) {
             return new \WP_Error( 'query_too_short', 'q must be at least 2 characters.', array( 'status' => 400 ) );
@@ -501,14 +750,21 @@ final class Sparxstar3IAtlasDictionaryRestApi {
             );
         }
 
+        $budget_error = $this->charge_entry_budget( $request, wp_list_pluck( $query->posts, 'ID' ) );
+        if ( null !== $budget_error ) {
+            return $budget_error;
+        }
+
         return $this->cached_response(
             array(
                 'success' => true,
                 'data'    => array( 'results' => $items ),
-                'meta'    => array(
-                    'total'    => (int) $query->found_posts,
-                    'page'     => $page,
-                    'per_page' => $per_page,
+                'meta'    => array_merge(
+                    $this->meta_count( (int) $query->found_posts ),
+                    array(
+                        'page'     => $page,
+                        'per_page' => $per_page,
+                    )
                 ),
             )
         );
@@ -521,7 +777,19 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         }
 
         $lang          = sanitize_text_field( (string) ( $request->get_param( 'lang_source' ) ?? '' ) );
-        $per_page      = min( 2000, max( 1, absint( $request->get_param( 'per_page' ) ?? 1000 ) ) );
+        $per_page = $this->capped_param(
+            $request,
+            'per_page',
+            array(
+                'default'        => Sparxstar3IAtlasDictionaryProtection::LIST_PAGE_MAX,
+                'max'            => Sparxstar3IAtlasDictionaryProtection::LIST_PAGE_MAX,
+                'legacy_default' => 1000,
+                'legacy_max'     => 2000,
+            )
+        );
+        if ( is_wp_error( $per_page ) ) {
+            return $per_page;
+        }
         $page          = max( 1, absint( $request->get_param( 'page' ) ?? 1 ) );
         $include_audio = filter_var( $request->get_param( 'include_audio' ) ?? false, FILTER_VALIDATE_BOOLEAN );
 
@@ -589,13 +857,20 @@ final class Sparxstar3IAtlasDictionaryRestApi {
             $words[] = $word;
         }
 
+        $budget_error = $this->charge_entry_budget( $request, $post_ids );
+        if ( null !== $budget_error ) {
+            return $budget_error;
+        }
+
         $payload = array(
             'success' => true,
             'data'    => array( 'words' => $words ),
-            'meta'    => array(
-                'total'    => (int) $query->found_posts,
-                'page'     => $page,
-                'per_page' => $per_page,
+            'meta'    => array_merge(
+                $this->meta_count( (int) $query->found_posts ),
+                array(
+                    'page'     => $page,
+                    'per_page' => $per_page,
+                )
             ),
         );
 
@@ -753,7 +1028,19 @@ final class Sparxstar3IAtlasDictionaryRestApi {
 
         $lang          = sanitize_text_field( (string) ( $request->get_param( 'lang_source' ) ?? '' ) );
         $domain        = sanitize_text_field( (string) ( $request->get_param( 'domain' ) ?? '' ) );
-        $limit         = min( 50, max( 1, absint( $request->get_param( 'limit' ) ?? 20 ) ) );
+        $limit = $this->capped_param(
+            $request,
+            'limit',
+            array(
+                'default'        => 20,
+                'max'            => Sparxstar3IAtlasDictionaryProtection::GAME_SET_MAX,
+                'legacy_default' => 20,
+                'legacy_max'     => Sparxstar3IAtlasDictionaryProtection::GAME_SET_MAX,
+            )
+        );
+        if ( is_wp_error( $limit ) ) {
+            return $limit;
+        }
         $include_audio = filter_var( $request->get_param( 'include_audio' ), FILTER_VALIDATE_BOOLEAN );
 
         if ( '' === $lang ) {
@@ -881,7 +1168,8 @@ final class Sparxstar3IAtlasDictionaryRestApi {
                 )
             );
 
-        $words = array();
+        $words      = array();
+        $served_ids = array();
         foreach ( $posts as $post ) {
             if ( ! $post instanceof \WP_Post ) {
                 continue;
@@ -927,13 +1215,21 @@ final class Sparxstar3IAtlasDictionaryRestApi {
                 $word['audio_url'] = is_array( $audio ) ? ( $audio['url'] ?? null ) : ( $audio ?: null );
             }
 
-            $words[] = $word;
+            $words[]      = $word;
+            $served_ids[] = (int) $post->ID;
+        }
+
+        $budget_error = $this->charge_entry_budget( $request, $served_ids );
+        if ( null !== $budget_error ) {
+            return $budget_error;
         }
 
         $payload = array(
             'success' => true,
             'data'    => array( 'words' => $words ),
             'meta'    => array(
+                // A game set is caller-sized and already capped, so its own length is
+                // not an enumeration signal the way a corpus-wide count is.
                 'total'         => count( $words ),
                 'lang_source'   => $lang,
                 'domain'        => $domain,
@@ -964,16 +1260,28 @@ final class Sparxstar3IAtlasDictionaryRestApi {
             return $this->rate_limit_error();
         }
 
-        $today     = gmdate( 'Y-m-d' );
-        $cache_key = 'sparx_3iatlas_dict_wod_' . $today;
+        $today = gmdate( 'Y-m-d' );
+        // Key is versioned (v2) because the cached shape now carries the entry id
+        // alongside the entry, so a cache hit can still be charged against the
+        // caller's unique-entry budget. A v1 payload would have no id to charge.
+        $cache_key = 'sparx_3iatlas_dict_wod_v2_' . $today;
         $cached    = get_transient( $cache_key );
 
-        if ( false !== $cached ) {
+        if ( is_array( $cached ) && isset( $cached['entry'], $cached['entry_id'] ) ) {
+            // The budget is charged on the CACHE HIT as well as the miss. Charging only
+            // on a miss would let a caller read the corpus through warm cache entries at
+            // zero budget cost, which would make the §1.2 ceiling unenforceable on
+            // exactly the path that carries most traffic.
+            $budget_error = $this->charge_entry_budget( $request, array( (int) $cached['entry_id'] ) );
+            if ( null !== $budget_error ) {
+                return $budget_error;
+            }
+
             return $this->cached_response(
                 array(
                     'success' => true,
                     'data'    => array(
-                        'word' => $cached,
+                        'word' => $cached['entry'],
                         'date' => $today,
                     ),
                 ),
@@ -1004,8 +1312,20 @@ final class Sparxstar3IAtlasDictionaryRestApi {
             return new \WP_Error( 'not_found', 'Could not select word of the day.', array( 'status' => 404 ) );
         }
 
+        $budget_error = $this->charge_entry_budget( $request, array( (int) $posts[0]->ID ) );
+        if ( null !== $budget_error ) {
+            return $budget_error;
+        }
+
         $entry = $this->build_entry( $posts[0]->ID );
-        set_transient( $cache_key, $entry, 3600 );
+        set_transient(
+            $cache_key,
+            array(
+                'entry'    => $entry,
+                'entry_id' => (int) $posts[0]->ID,
+            ),
+            3600
+        );
 
         return $this->cached_response(
             array(

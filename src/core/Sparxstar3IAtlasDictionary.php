@@ -402,6 +402,12 @@ final class Sparxstar3IAtlasDictionary {
     private function sparxIAtlas_load_dependencies(): void {
         try {
             // Instantiate Post Types on init (handled by class constructor hook)
+            // Asset Protection Spec §1.3 — registered before the post type so the
+            // register_post_type_args filter is in place when init fires.
+            if ( class_exists( \Starisian\Sparxstar\IAtlas\includes\Sparxstar3IAtlasSurfaceLockdown::class ) ) {
+                ( new \Starisian\Sparxstar\IAtlas\includes\Sparxstar3IAtlasSurfaceLockdown() )->register_hooks();
+            }
+
             if ( class_exists( Sparxstar3IAtlasPostTypes::class ) ) {
                 new Sparxstar3IAtlasPostTypes();
             }
@@ -437,6 +443,16 @@ final class Sparxstar3IAtlasDictionary {
                 ( new \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryCors() )->register_hooks();
             }
 
+            // Browser-origin tripwire (spec §1.1) — observes, never blocks.
+            if ( class_exists( \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryTripwire::class ) ) {
+                ( new \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryTripwire() )->register_hooks();
+            }
+
+            // Rolling unique-entry budget maintenance (spec §1.2).
+            if ( class_exists( \Starisian\Sparxstar\IAtlas\api\auth\UniqueEntryBudget::class ) ) {
+                \Starisian\Sparxstar\IAtlas\api\auth\UniqueEntryBudget::register_hooks();
+            }
+
             // Instantiate Auto Linker
             if ( class_exists( Sparxstar3IAtlasAutoLinker::class ) ) {
                 new Sparxstar3IAtlasAutoLinker();
@@ -446,6 +462,13 @@ final class Sparxstar3IAtlasDictionary {
             if ( defined( 'WP_CLI' ) && WP_CLI && class_exists( '\WP_CLI' ) && class_exists( \Starisian\Sparxstar\IAtlas\cli\Sparxstar3IAtlasDictionaryCliCommands::class ) ) {
                 $cli_handler = new \Starisian\Sparxstar\IAtlas\cli\Sparxstar3IAtlasDictionaryCliCommands();
                 \WP_CLI::add_command( 'sparxstar-dict key', $cli_handler );
+
+                if ( class_exists( \Starisian\Sparxstar\IAtlas\cli\Sparxstar3IAtlasSystemCredentialCliCommands::class ) ) {
+                    \WP_CLI::add_command(
+                        'sparxstar-dict system',
+                        new \Starisian\Sparxstar\IAtlas\cli\Sparxstar3IAtlasSystemCredentialCliCommands()
+                    );
+                }
             }
         } catch ( \Throwable $throwable ) {
             if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {

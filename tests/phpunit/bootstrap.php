@@ -227,6 +227,50 @@ if ( ! function_exists( 'register_post_type' ) ) {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Additional stubs for the asset-protection classes. Added separately from the
+// block above so the existing stubs keep their exact behaviour: several auth
+// tests assert precise quota remainders, which a stateful transient store
+// would perturb, so get_transient/set_transient are deliberately left alone.
+// ---------------------------------------------------------------------------
+
+if ( ! function_exists( 'do_action' ) ) {
+    function do_action( string $tag, mixed ...$args ): void {}
+}
+if ( ! function_exists( 'wp_json_encode' ) ) {
+    function wp_json_encode( mixed $data, int $flags = 0, int $depth = 512 ): string|false {
+        return json_encode( $data, $flags, $depth );
+    }
+}
+if ( ! function_exists( 'absint' ) ) {
+    function absint( mixed $value ): int {
+        return abs( (int) $value );
+    }
+}
+if ( ! function_exists( 'sanitize_key' ) ) {
+    function sanitize_key( string $key ): string {
+        return preg_replace( '/[^a-z0-9_\-]/', '', strtolower( $key ) ) ?? '';
+    }
+}
+if ( ! function_exists( 'sanitize_text_field' ) ) {
+    function sanitize_text_field( string $value ): string {
+        return trim( strip_tags( $value ) );
+    }
+}
+if ( ! function_exists( 'delete_transient' ) ) {
+    function delete_transient( string $key ): bool {
+        return true;
+    }
+}
+if ( ! function_exists( 'wp_list_pluck' ) ) {
+    function wp_list_pluck( array $list, string $field ): array {
+        return array_map(
+            static fn( $item ) => is_object( $item ) ? ( $item->$field ?? null ) : ( $item[ $field ] ?? null ),
+            $list
+        );
+    }
+}
+
 // Initialise the options store used by stubs.
 if ( ! isset( $GLOBALS['__wp_options_store'] ) ) {
     $GLOBALS['__wp_options_store'] = [];
