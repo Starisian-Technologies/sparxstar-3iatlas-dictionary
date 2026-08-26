@@ -29,12 +29,9 @@ on:
 permissions:
     contents: write
 
-# This workflow pushes to main and creates a tag, so two runs started close
-# together would race — the second failing its push as non-fast-forward after
-# possibly already bumping files. Queue them instead. cancel-in-progress stays
-# false on purpose: a run interrupted between its commit and its tag would
-# leave main bumped with no tag matching it, which is the exact inconsistency
-# this workflow exists to prevent.
+# Two runs started close together would both try to tag; queue them instead.
+# cancel-in-progress stays false so a run is never interrupted between creating
+# its tag and building it, which would leave a tag with no release.
 concurrency:
     group: manual-release
     cancel-in-progress: false
@@ -72,7 +69,16 @@ jobs:
                   ref: main
                   fetch-depth: 0
 
-            - name: Bump version, commit and tag
+            # Only the tag is created. main is protected — it requires
+            # verified signatures, which the Actions token cannot produce, and
+            # it gates on CodeQL finishing. A push here is rejected with GH013
+            # no matter what it contains, which is what killed the first
+            # attempt at 2.10.6.
+            #
+            # Nothing is lost by not committing: release.yml rewrites every
+            # version marker from the tag before it builds, so the ZIP is
+            # stamped correctly regardless of what main currently says.
+            - name: Tag the current main
               id: bump
               env:
                   NEW: ${{ inputs.version }}
@@ -80,14 +86,10 @@ jobs:
                   set -euo pipefail
                   CUR=$(jq -r '.version' package.json)
 
-                  # Released versions are immutable: only ever move forward, and
+                  # Released versions are immutable: only move forward, and
                   # never reuse a tag that already exists.
-                  if [ "$CUR" = "$NEW" ]; then
-                    echo "::error::Version $NEW is already the committed version."
-                    exit 1
-                  fi
-                  if [ "$(printf '%s\n%s\n' "$CUR" "$NEW" | sort -V | tail -1)" != "$NEW" ]; then
-                    echo "::error::Version $NEW is lower than the current version $CUR."
+                  if [ "$(printf '%s\n%s\n' "$CUR" "$NEW" | sort -V | tail -1)" != "$NEW" ] && [ "$CUR" != "$NEW" ]; then
+                    echo "::error::Version $NEW is lower than the version currently on main ($CUR)."
                     exit 1
                   fi
                   if git rev-parse -q --verify "refs/tags/v$NEW" >/dev/null 2>&1; then
@@ -95,71 +97,13 @@ jobs:
                     exit 1
                   fi
 
-                  # All four markers move together. These are the same four
-                  # release.yml checks, so a mismatch here fails now with a
-                  # clear message rather than deep inside the build.
-                  jq --arg v "$NEW" '.version = $v' package.json > .tmp && mv .tmp package.json
-                  jq --arg v "$NEW" '.["."] = $v' .release-please-manifest.json > .tmp && mv .tmp .release-please-manifest.json
-                  perl -0pi -e "s/(x-release-please-start-version.*?\*\s*Version:\s*)[0-9][^\s]*/\${1}$NEW/s" sparxstar-3iatlas-dictionary.php
-                  perl -pi -e "s/(define\( 'SPARX_3IATLAS_VERSION', ')[^']*(')/\${1}$NEW\${2}/" sparxstar-3iatlas-dictionary.php
-
-                  PKG=$(jq -r '.version' package.json)
-                  PLUG=$(grep -m1 -oP '^\s*\*\s*Version:\s*\K[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?' sparxstar-3iatlas-dictionary.php)
-                  CONST=$(grep -m1 -oP "define\( 'SPARX_3IATLAS_VERSION', '\K[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?" sparxstar-3iatlas-dictionary.php)
-                  MAN=$(jq -r '.["."]' .release-please-manifest.json)
-                  echo "package.json=$PKG plugin header=$PLUG constant=$CONST manifest=$MAN"
-                  if [ "$PKG" != "$NEW" ] || [ "$PLUG" != "$NEW" ] || [ "$CONST" != "$NEW" ] || [ "$MAN" != "$NEW" ]; then
-                    echo "::error::Version bump did not apply cleanly to all four markers. Nothing has been committed."
-                    exit 1
-                  fi
-
-                  DATE=$(date -u +%Y-%m-%d)
-                  {
-                    echo
-                    echo "## [$NEW](https://github.com/${GITHUB_REPOSITORY}/compare/v$CUR...v$NEW) ($DATE)"
-                    echo
-                    echo "Manual release cut with the Manual Release workflow. See the commits in the"
-                    echo "compare link above for what changed since v$CUR."
-                    echo
-                  } > .changelog-entry
-                  # Insert directly above the newest existing release heading,
-                  # rather than after a fixed number of preamble lines — the
-                  # preamble is not guaranteed to be any particular length, and
-                  # guessing wrong would silently drop the history below it.
-                  if [ ! -s CHANGELOG.md ]; then
-                    echo "::error::CHANGELOG.md is missing or empty; refusing to rewrite it."
-                    exit 1
-                  fi
-                  FIRST_HEADING=$(grep -n -m1 '^## ' CHANGELOG.md | cut -d: -f1 || true)
-                  if [ -n "$FIRST_HEADING" ]; then
-                    head -n "$((FIRST_HEADING - 1))" CHANGELOG.md > .changelog-new
-                    cat .changelog-entry >> .changelog-new
-                    tail -n "+$FIRST_HEADING" CHANGELOG.md >> .changelog-new
-                  else
-                    # No release sections yet — the whole file is preamble.
-                    cat CHANGELOG.md .changelog-entry > .changelog-new
-                  fi
-                  mv .changelog-new CHANGELOG.md
-                  rm -f .changelog-entry
-
                   git config user.name "github-actions[bot]"
                   git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-                  git add package.json .release-please-manifest.json sparxstar-3iatlas-dictionary.php CHANGELOG.md
-                  git commit -m "chore(main): release $NEW"
-
-                  # Commit first, then tag that commit, so the tag's tree always
-                  # carries the version the tag claims.
                   git tag "v$NEW"
-
-                  # --atomic so the branch and the tag land together or not at
-                  # all. As two pushes, a failure on the second would leave main
-                  # bumped with no tag pointing at it — the version/tag split
-                  # this workflow exists to prevent, reintroduced by the
-                  # workflow itself.
-                  git push --atomic origin HEAD:main "refs/tags/v$NEW"
+                  git push origin "refs/tags/v$NEW"
 
                   echo "tag=v$NEW" >> "$GITHUB_OUTPUT"
-                  echo "Released v$NEW from $(git rev-parse --short HEAD)."
+                  echo "Tagged v$NEW at $(git rev-parse --short HEAD). release.yml will stamp the build from the tag."
 
     # Called directly rather than left to the tag push: tags created with the
     # default GITHUB_TOKEN cannot trigger another workflow, which is why
