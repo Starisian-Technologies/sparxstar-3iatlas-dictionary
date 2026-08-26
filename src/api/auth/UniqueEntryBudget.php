@@ -113,7 +113,7 @@ final class UniqueEntryBudget {
     /**
      * Distinct-entry ceiling for a given credential.
      *
-     * @param string             $credential_id The credential identifier.
+     * @param string              $credential_id The credential identifier.
      * @param array<string,mixed> $credential   The stored credential record.
      * @return int Ceiling for this credential; 0 or less means unlimited.
      */
@@ -179,8 +179,8 @@ final class UniqueEntryBudget {
      * The alternative — count, decide, then record — is the read-then-write race the
      * spec rules out.
      *
-     * @param string          $credential_id The credential identifier.
-     * @param array<int,int>  $entry_ids     Post IDs served by this request.
+     * @param string         $credential_id The credential identifier.
+     * @param array<int,int> $entry_ids     Post IDs served by this request.
      * @return int Distinct entries served under this credential within the window,
      *             or -1 when accounting is unavailable.
      */
@@ -197,8 +197,8 @@ final class UniqueEntryBudget {
         $table     = self::table_name();
 
         if ( ! empty( $entry_ids ) ) {
-            $rows         = array();
-            $values       = array();
+            $rows   = array();
+            $values = array();
             foreach ( $entry_ids as $entry_id ) {
                 $rows[]   = '(%s, %d, %d)';
                 $values[] = $credential_id;

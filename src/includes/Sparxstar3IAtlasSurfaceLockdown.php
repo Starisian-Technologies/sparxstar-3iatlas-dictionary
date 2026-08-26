@@ -89,10 +89,10 @@ final class Sparxstar3IAtlasSurfaceLockdown {
 
         // Tier 2 — closed at cutover only.
         if ( Sparxstar3IAtlasDictionaryProtection::is_cutover_complete() ) {
-            $args['public']              = false;
-            $args['publicly_queryable']  = false;
-            $args['show_in_graphql']     = false;
-            $args['rewrite']             = false;
+            $args['public']             = false;
+            $args['publicly_queryable'] = false;
+            $args['show_in_graphql']    = false;
+            $args['rewrite']            = false;
         }
 
         return $args;
@@ -130,11 +130,19 @@ final class Sparxstar3IAtlasSurfaceLockdown {
      * Covers both `/feed/?post_type=aiwa-cpt-dictionary` and any feed query that has
      * been widened to include the post type.
      *
+     * Scoped to the main query. The leak vector §1.3 names is the feed request itself,
+     * which is always the main query; a secondary WP_Query inside a feed template is
+     * the theme's own call and is not silently rewritten from here.
+     *
      * @param \WP_Query $query The query being prepared.
      * @return void
      */
     public function block_feed_queries( $query ): void {
-        if ( ! $query instanceof \WP_Query || is_admin() || ! $query->is_feed() ) {
+        if ( ! $query instanceof \WP_Query || is_admin() ) {
+            return;
+        }
+
+        if ( ! $query->is_main_query() || ! $query->is_feed() ) {
             return;
         }
 
