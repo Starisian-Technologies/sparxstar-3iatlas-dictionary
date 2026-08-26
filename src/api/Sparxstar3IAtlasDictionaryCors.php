@@ -151,7 +151,11 @@ final class Sparxstar3IAtlasDictionaryCors {
         }
 
         $route = $request->get_route();
-        return str_starts_with( $route, self::ROUTE_PREFIX );
+
+        // Boundary-checked, not a bare prefix match: a bare prefix would also match
+        // `/sparxstar/v1/dictionary-evil` and emit CORS headers for it. Same fix, and
+        // the same reasoning, as the nginx route regex's `(?:/|$)`.
+        return self::ROUTE_PREFIX === $route || str_starts_with( $route, self::ROUTE_PREFIX . '/' );
     }
 
     /**

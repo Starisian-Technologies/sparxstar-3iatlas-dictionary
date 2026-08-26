@@ -80,6 +80,14 @@ class Sparxstar3IAtlasSystemCredentialCliCommands {
         // 32 bytes = 256 bits of entropy. bin2hex is a bijective encoding, so the
         // 64-character output carries exactly those 256 bits — representation does not
         // dilute entropy. (32 hex *characters* would be 128 bits; 32 *bytes* is not.)
+        // Provision the §1.2 budget store here rather than at plugin activation: it is
+        // the subject of ADR brief D-10, so it is created only when an operator
+        // deliberately provisions a consuming system, never as a merge side effect.
+        if ( ! UniqueEntryBudget::is_installed() ) {
+            UniqueEntryBudget::install();
+            \WP_CLI::log( 'Provisioned the unique-entry budget store (spec §1.2).' );
+        }
+
         $secret  = bin2hex( random_bytes( 32 ) );
         $records = SystemCredentialAuth::all();
 

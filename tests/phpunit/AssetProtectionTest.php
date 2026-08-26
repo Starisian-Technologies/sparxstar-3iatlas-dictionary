@@ -26,10 +26,12 @@ require_once __DIR__ . '/../../src/api/auth/SystemCredentialAuth.php';
 require_once __DIR__ . '/../../src/api/auth/DictionaryAuthResolver.php';
 require_once __DIR__ . '/../../src/api/Sparxstar3IAtlasRateLimitTrait.php';
 require_once __DIR__ . '/../../src/api/Sparxstar3IAtlasDictionaryRestApi.php';
+require_once __DIR__ . '/../../src/api/Sparxstar3IAtlasDictionaryTripwire.php';
 
 use PHPUnit\Framework\TestCase;
 use Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryProtection as Protection;
 use Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryRestApi;
+use Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryTripwire;
 use Starisian\Sparxstar\IAtlas\api\auth\DictionaryAuthResolver;
 use Starisian\Sparxstar\IAtlas\api\auth\SystemCredentialAuth;
 use Starisian\Sparxstar\IAtlas\api\auth\UniqueEntryBudget;
@@ -89,74 +91,172 @@ final class AssetProtectionTest extends TestCase {
 
     /**
      * Invoke the REST controller's private capped_param().
+     *
+     * @param array<string,int> $caps Keys: default, max, legacy_default, legacy_max.
      */
-    private function capped_param( \WP_REST_Request $request, string $param, int $default, int $max ): mixed {
+    private function capped_param( \WP_REST_Request $request, string $param, array $caps ): mixed {
         $api    = new Sparxstar3IAtlasDictionaryRestApi();
         $method = ( new \ReflectionClass( $api ) )->getMethod( 'capped_param' );
         $method->setAccessible( true );
-        return $method->invoke( $api, $request, $param, $default, $max );
+        return $method->invoke( $api, $request, $param, $caps );
+    }
+
+    /**
+     * Invoke the REST controller's private meta_count().
+     *
+     * @return array<string,int|string>
+     */
+    private function meta_count( int $exact ): array {
+        $api    = new Sparxstar3IAtlasDictionaryRestApi();
+        $method = ( new \ReflectionClass( $api ) )->getMethod( 'meta_count' );
+        $method->setAccessible( true );
+        return $method->invoke( $api, $exact );
+    }
+
+    /**
+     * The wordlist cap profile: legacy 2000/1000, target 100.
+     *
+     * @return array<string,int>
+     */
+    private function wordlist_caps(): array {
+        return array(
+            'default'        => Protection::LIST_PAGE_MAX,
+            'max'            => Protection::LIST_PAGE_MAX,
+            'legacy_default' => 1000,
+            'legacy_max'     => 2000,
+        );
+    }
+
+    /**
+     * Arm the cutover so target-state behaviour applies.
+     */
+    private function arm_cutover(): void {
+        update_option( Protection::CUTOVER_OPTION, true );
     }
 
     // -------------------------------------------------------------------------
-    // Spec §9 step 2 — over-cap requests and unbounded list attempts must 4xx.
+    // Spec §9 step 2 — over-cap requests and unbounded list attempts must 4xx,
+    // but only from the cutover onward (§1.4). Before it, the legacy response
+    // contract is preserved byte for byte so no deployed client breaks.
     // -------------------------------------------------------------------------
 
-    public function test_over_cap_per_page_is_refused_with_400(): void {
+    public function test_over_cap_per_page_is_refused_with_400_at_target_state(): void {
+        $this->arm_cutover();
+
         $request = $this->request();
         $request->set_param( 'per_page', 500 );
 
-        $result = $this->capped_param( $request, 'per_page', 20, Protection::LIST_PAGE_MAX );
+        $result = $this->capped_param( $request, 'per_page', $this->wordlist_caps() );
 
         $this->assertInstanceOf( \WP_Error::class, $result, 'An over-cap per_page must be refused.' );
         $this->assertSame( 'over_cap', $result->get_error_code() );
         $this->assertSame( 400, $this->status_of( $result ) );
     }
 
-    public function test_unbounded_list_attempt_is_refused_with_400(): void {
+    public function test_unbounded_list_attempt_is_refused_with_400_at_target_state(): void {
+        $this->arm_cutover();
+
         // The pre-spec /wordlist accepted per_page up to 2000. That is the unbounded
-        // list attempt §1.5 prohibits; it must now 4xx rather than be clamped.
+        // list attempt §1.5 prohibits; at target state it must 4xx, not be clamped.
         $request = $this->request();
         $request->set_param( 'per_page', 2000 );
 
-        $result = $this->capped_param( $request, 'per_page', 100, Protection::LIST_PAGE_MAX );
+        $result = $this->capped_param( $request, 'per_page', $this->wordlist_caps() );
 
         $this->assertInstanceOf( \WP_Error::class, $result );
         $this->assertSame( 400, $this->status_of( $result ) );
     }
 
-    public function test_over_cap_is_refused_not_silently_clamped(): void {
+    public function test_over_cap_is_refused_not_silently_clamped_at_target_state(): void {
         // ADR brief D-2: a silent clamp answers "what is the cap?" for free.
+        $this->arm_cutover();
+
         $request = $this->request();
         $request->set_param( 'per_page', Protection::LIST_PAGE_MAX + 1 );
 
-        $result = $this->capped_param( $request, 'per_page', 20, Protection::LIST_PAGE_MAX );
+        $result = $this->capped_param( $request, 'per_page', $this->wordlist_caps() );
 
         $this->assertNotSame( Protection::LIST_PAGE_MAX, $result );
         $this->assertInstanceOf( \WP_Error::class, $result );
     }
 
-    public function test_within_cap_value_is_accepted(): void {
-        $request = $this->request();
-        $request->set_param( 'per_page', 10 );
+    public function test_negative_and_zero_are_refused_with_400_at_target_state(): void {
+        $this->arm_cutover();
 
-        $this->assertSame( 10, $this->capped_param( $request, 'per_page', 20, Protection::LIST_PAGE_MAX ) );
-    }
-
-    public function test_absent_param_falls_back_to_default_bounded_by_cap(): void {
-        $this->assertSame( 20, $this->capped_param( $this->request(), 'per_page', 20, Protection::LIST_PAGE_MAX ) );
-        $this->assertSame( 5, $this->capped_param( $this->request(), 'per_page', 50, 5 ) );
-    }
-
-    public function test_zero_and_negative_params_are_refused_with_400(): void {
-        foreach ( [ 0, -1 ] as $value ) {
+        foreach ( array( 0, -1 ) as $value ) {
             $request = $this->request();
             $request->set_param( 'per_page', $value );
 
-            $result = $this->capped_param( $request, 'per_page', 20, Protection::LIST_PAGE_MAX );
+            $result = $this->capped_param( $request, 'per_page', $this->wordlist_caps() );
 
             $this->assertInstanceOf( \WP_Error::class, $result, "Value {$value} must be refused." );
             $this->assertSame( 400, $this->status_of( $result ) );
         }
+    }
+
+    public function test_non_numeric_is_refused_with_400_at_target_state(): void {
+        $this->arm_cutover();
+
+        $request = $this->request();
+        $request->set_param( 'per_page', 'all' );
+
+        $result = $this->capped_param( $request, 'per_page', $this->wordlist_caps() );
+
+        $this->assertInstanceOf( \WP_Error::class, $result );
+        $this->assertSame( 400, $this->status_of( $result ) );
+    }
+
+    // --- Before cutover: the legacy contract, unchanged. This is what keeps the
+    // --- promise that no deployed client breaks on merge (§1.4).
+
+    public function test_legacy_cap_is_honoured_before_cutover(): void {
+        // A consumer asking for 1000 got 1000 before this PR and must still get it.
+        $request = $this->request();
+        $request->set_param( 'per_page', 1000 );
+
+        $this->assertSame( 1000, $this->capped_param( $request, 'per_page', $this->wordlist_caps() ) );
+    }
+
+    public function test_legacy_default_is_honoured_before_cutover(): void {
+        $this->assertSame( 1000, $this->capped_param( $this->request(), 'per_page', $this->wordlist_caps() ) );
+    }
+
+    public function test_over_legacy_cap_clamps_rather_than_refusing_before_cutover(): void {
+        $request = $this->request();
+        $request->set_param( 'per_page', 5000 );
+
+        // Legacy behaviour clamped to 2000; it must not start returning 4xx.
+        $this->assertSame( 2000, $this->capped_param( $request, 'per_page', $this->wordlist_caps() ) );
+    }
+
+    public function test_legacy_absint_coercion_is_preserved_before_cutover(): void {
+        // absint( -1 ) is 1. That was the pre-spec behaviour and it is not a leak
+        // (fewer rows, not more), so it is preserved until the cutover refuses it.
+        $request = $this->request();
+        $request->set_param( 'per_page', -1 );
+
+        $this->assertSame( 1, $this->capped_param( $request, 'per_page', $this->wordlist_caps() ) );
+    }
+
+    public function test_target_default_applies_after_cutover(): void {
+        $this->arm_cutover();
+
+        $this->assertSame(
+            Protection::LIST_PAGE_MAX,
+            $this->capped_param( $this->request(), 'per_page', $this->wordlist_caps() )
+        );
+    }
+
+    public function test_within_cap_value_is_accepted_in_either_state(): void {
+        $request = $this->request();
+        $request->set_param( 'per_page', 10 );
+        $this->assertSame( 10, $this->capped_param( $request, 'per_page', $this->wordlist_caps() ) );
+
+        $this->arm_cutover();
+
+        $request2 = $this->request();
+        $request2->set_param( 'per_page', 10 );
+        $this->assertSame( 10, $this->capped_param( $request2, 'per_page', $this->wordlist_caps() ) );
     }
 
     public function test_search_cap_matches_the_spec_stated_twenty(): void {
@@ -171,6 +271,20 @@ final class AssetProtectionTest extends TestCase {
     public function test_large_counts_are_not_reported_exactly(): void {
         $this->assertNotSame( 4175, Protection::approximate_count( 4175 ) );
         $this->assertSame( '1000+', Protection::approximate_count( 4175 ) );
+    }
+
+    public function test_meta_reports_exact_total_before_cutover(): void {
+        // The legacy response contract: consumers reading meta.total keep working.
+        $this->assertSame( array( 'total' => 4175 ), $this->meta_count( 4175 ) );
+    }
+
+    public function test_meta_suppresses_the_count_after_cutover(): void {
+        $this->arm_cutover();
+
+        $meta = $this->meta_count( 4175 );
+
+        $this->assertArrayNotHasKey( 'total', $meta );
+        $this->assertSame( '1000+', $meta['total_approx'] );
     }
 
     public function test_mid_range_counts_are_rounded_down_to_a_bucket(): void {
@@ -401,5 +515,55 @@ final class AssetProtectionTest extends TestCase {
         // silently reporting a zero count that would read as "budget not used".
         $this->assertFalse( UniqueEntryBudget::is_installed() );
         $this->assertSame( -1, UniqueEntryBudget::record( 'esu-sky', [ 1, 2, 3 ] ) );
+    }
+
+    // -------------------------------------------------------------------------
+    // Route boundary — the matcher must mirror the nginx `(?:/|$)` regex.
+    // -------------------------------------------------------------------------
+
+    public function test_route_matcher_respects_the_namespace_boundary(): void {
+        $method = ( new \ReflectionClass( Sparxstar3IAtlasDictionaryTripwire::class ) )
+            ->getMethod( 'is_dictionary_route' );
+        $method->setAccessible( true );
+
+        $this->assertTrue( $method->invoke( null, '/sparxstar/v1/dictionary' ) );
+        $this->assertTrue( $method->invoke( null, '/sparxstar/v1/dictionary/lookup' ) );
+
+        // A bare prefix match would accept these; the boundary check must not.
+        $this->assertFalse( $method->invoke( null, '/sparxstar/v1/dictionary-evil' ) );
+        $this->assertFalse( $method->invoke( null, '/sparxstar/v1/dictionaryx' ) );
+        $this->assertFalse( $method->invoke( null, '/wp/v2/posts' ) );
+    }
+
+    // -------------------------------------------------------------------------
+    // Cutover evidence (ADR brief D-3) must be durable, not cache-backed.
+    // -------------------------------------------------------------------------
+
+    public function test_observation_history_is_option_backed_and_starts_empty(): void {
+        $this->assertSame( array(), Sparxstar3IAtlasDictionaryTripwire::observation_history() );
+        $this->assertSame( 0, Sparxstar3IAtlasDictionaryTripwire::observations_for( '2026-08-26' ) );
+    }
+
+    public function test_observations_survive_a_transient_flush(): void {
+        // Simulates an object-cache flush: transients are gone, the evidence is not.
+        // A transient-backed counter would report zero here and manufacture a
+        // zero-observation day, satisfying the cutover criterion falsely.
+        update_option(
+            'sparxstar_dict_tripwire_observations',
+            array(
+                '2026-08-25' => 4,
+                '2026-08-26' => 7,
+            )
+        );
+
+        $this->assertSame( 7, Sparxstar3IAtlasDictionaryTripwire::observations_for( '2026-08-26' ) );
+        $this->assertSame( 4, Sparxstar3IAtlasDictionaryTripwire::observations_for( '2026-08-25' ) );
+        $this->assertSame(
+            array(
+                '2026-08-25' => 4,
+                '2026-08-26' => 7,
+            ),
+            Sparxstar3IAtlasDictionaryTripwire::observation_history()
+        );
     }
 }

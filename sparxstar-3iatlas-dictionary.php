@@ -107,11 +107,11 @@ function sparxIAtlas_activate_plugin() {
         $pt = new Sparxstar3IAtlasPostTypes();
     }
 
-    // Asset Protection Spec §1.2 — the rolling unique-entry budget store. Its unique
-    // index is what makes insert-if-absent counting atomic rather than a race.
-    if ( class_exists( \Starisian\Sparxstar\IAtlas\api\auth\UniqueEntryBudget::class ) ) {
-        \Starisian\Sparxstar\IAtlas\api\auth\UniqueEntryBudget::install();
-    }
+    // The §1.2 budget table is deliberately NOT created here. It is the subject of an
+    // unresolved governance conflict (ADR brief D-10: AGENTS.md forbids custom tables
+    // absolutely), so merging this plugin must not create one as a side effect. It is
+    // provisioned when an operator first creates a system credential — a deliberate,
+    // post-ruling action — via `wp sparxstar-dict system generate`.
     // Flag a one-shot flush so the standalone app route (registered on init) is
     // picked up on the next request without requiring a manual permalink save.
     // The actual flush runs on the next init (after all rewrite rules exist),

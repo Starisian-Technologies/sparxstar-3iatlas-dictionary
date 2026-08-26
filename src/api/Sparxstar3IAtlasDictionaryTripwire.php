@@ -51,11 +51,25 @@ final class Sparxstar3IAtlasDictionaryTripwire {
     private const ROUTE_PREFIX = '/sparxstar/v1/dictionary';
 
     /**
-     * Transient prefix for the monitor-only observation counter.
+     * Option holding the monitor-only observation counts, keyed by UTC date.
+     *
+     * Deliberately an OPTION and not a transient. The ADR's cutover criterion (brief
+     * D-3) is a run of consecutive days with zero observed browser-origin traffic, so
+     * this is the one dataset the whole enforcement flip rests on. A transient on an
+     * object-cache-backed site can evaporate on a cache flush, which would silently
+     * MANUFACTURE a zero-observation day and let a cache restart satisfy the criterion.
+     * An option row survives that.
      *
      * @var string
      */
-    private const OBSERVATION_PREFIX = 'sparxstar_dict_tripwire_obs_';
+    private const OBSERVATION_OPTION = 'sparxstar_dict_tripwire_observations';
+
+    /**
+     * Days of observation history retained.
+     *
+     * @var int
+     */
+    private const OBSERVATION_RETENTION_DAYS = 30;
 
     /**
      * Register the tripwire.
@@ -83,7 +97,7 @@ final class Sparxstar3IAtlasDictionaryTripwire {
             return $result;
         }
 
-        if ( ! str_starts_with( (string) $request->get_route(), self::ROUTE_PREFIX ) ) {
+        if ( ! self::is_dictionary_route( (string) $request->get_route() ) ) {
             return $result;
         }
 
@@ -138,6 +152,24 @@ final class Sparxstar3IAtlasDictionaryTripwire {
     }
 
     /**
+     * Whether a REST route is inside the Dictionary namespace, respecting its boundary.
+     *
+     * A bare prefix match would also match `/sparxstar/v1/dictionary-evil`, which is the
+     * prefix-bypass the nginx round settled with `(?:/|$)`. This keeps the PHP matcher
+     * semantically identical to the regex spec §1.1 says it mirrors.
+     *
+     * @param string $route The REST route.
+     * @return bool True when the route is the namespace root or a child of it.
+     */
+    private static function is_dictionary_route( string $route ): bool {
+        if ( self::ROUTE_PREFIX === $route ) {
+            return true;
+        }
+
+        return str_starts_with( $route, self::ROUTE_PREFIX . '/' );
+    }
+
+    /**
      * Whether the request carries a credential that verifies against the registry.
      *
      * The credential value itself is never retained or logged by this check.
@@ -166,9 +198,23 @@ final class Sparxstar3IAtlasDictionaryTripwire {
      * @return void
      */
     private function record_observation(): void {
-        $key   = self::OBSERVATION_PREFIX . gmdate( 'Y-m-d' );
-        $count = (int) get_transient( $key );
-        set_transient( $key, $count + 1, 2 * DAY_IN_SECONDS );
+        $today  = gmdate( 'Y-m-d' );
+        $counts = get_option( self::OBSERVATION_OPTION, array() );
+
+        if ( ! is_array( $counts ) ) {
+            $counts = array();
+        }
+
+        $counts[ $today ] = ( isset( $counts[ $today ] ) ? (int) $counts[ $today ] : 0 ) + 1;
+
+        // Keep a bounded window of history. Trimming by key order is safe because the
+        // keys are ISO dates, which sort chronologically as strings.
+        if ( count( $counts ) > self::OBSERVATION_RETENTION_DAYS ) {
+            ksort( $counts );
+            $counts = array_slice( $counts, -self::OBSERVATION_RETENTION_DAYS, null, true );
+        }
+
+        update_option( self::OBSERVATION_OPTION, $counts, false );
     }
 
     /**
@@ -178,7 +224,34 @@ final class Sparxstar3IAtlasDictionaryTripwire {
      * @return int Observations recorded that day.
      */
     public static function observations_for( string $day = '' ): int {
-        $day = '' !== $day ? $day : gmdate( 'Y-m-d' );
-        return (int) get_transient( self::OBSERVATION_PREFIX . $day );
+        $day    = '' !== $day ? $day : gmdate( 'Y-m-d' );
+        $counts = get_option( self::OBSERVATION_OPTION, array() );
+
+        if ( ! is_array( $counts ) || ! isset( $counts[ $day ] ) ) {
+            return 0;
+        }
+
+        return (int) $counts[ $day ];
+    }
+
+    /**
+     * All retained observation counts, keyed by UTC date.
+     *
+     * This is the evidence the ADR's cutover criterion (brief D-3) is assessed against:
+     * a day absent from this map is a day with no recorded browser-origin traffic.
+     *
+     * @return array<string,int> Date => observation count, chronologically ordered.
+     */
+    public static function observation_history(): array {
+        $counts = get_option( self::OBSERVATION_OPTION, array() );
+
+        if ( ! is_array( $counts ) ) {
+            return array();
+        }
+
+        $counts = array_map( 'intval', $counts );
+        ksort( $counts );
+
+        return $counts;
     }
 }

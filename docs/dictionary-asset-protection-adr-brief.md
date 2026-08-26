@@ -22,6 +22,20 @@ to the §1 migration exception** (current behaviour), and the flag is the single
 ADR's cutover milestone flips. Nothing in the plugin changes what a player experiences
 until an owner sets that flag.
 
+That includes the **response contract**, which an earlier revision of this brief wrongly
+treated as exempt. The §2 caps, the over-cap `400`, and count suppression are all changes a
+deployed client can observe, so they are tiered on the same flag: before cutover the legacy
+caps, the legacy `absint()` coercion, and the exact `meta.total` are preserved byte for
+byte; at cutover the spec regime applies. Requests that the target regime *would* refuse
+are logged in the meantime, so the ADR gets observed data on who is over-cap instead of a
+guess — the same discipline as the §1.1 tripwire.
+
+This matters because it cannot be closed by evidence. The in-repo app provably never sends
+`per_page` and never reads `meta.total` (it calls only `/page-token`, `/pronounce`,
+`/languages`, `/word-of-day`). But **the games app's source is not in this repository**
+(`AGENTS.md`: "source has since moved out of this repo"), and `/game-set` is its endpoint,
+so its request shapes cannot be evidenced here. Gating is the only honest answer.
+
 Surfaces that no shipped client consumes are a different case. Closing those is not a
 behaviour change and is not gated — see §4 below for exactly which, and the evidence that
 nothing consumes them.
@@ -39,13 +53,14 @@ input, not a decision.
 | D-2 | **Pagination mechanics and caps** | §2, §9.1 | Search ≤ 20 (spec-stated). List page size ≤ 100. Over-cap `per_page` → `400`, never a silent clamp — a silent clamp teaches a scraper the cap for free. |
 | D-3 | **Cutover milestone and its verification criteria** | §1.4, §9.1 | Criterion: 7 consecutive days of monitor-only tripwire data showing zero browser-origin requests on the dictionary route, ESU serving 100% of games traffic. This is the gate every other enforcement step waits on. |
 | D-4 | **Approved-systems list**, each system's rate ceiling and onward-exposure budget | §1.2, §1.6, §9.1 | ESU (Sky) at cutover. Payload pipeline if adopted. WordPad backend when it exists. No others without an ADR amendment. |
-| D-5 | **Rolling unique-entry budget** per credential — window length and ceiling | §1.2 | 24h rolling window. ESU ceiling = its real daily word need × 3 headroom. The corpus is ~4,175 live entries, so any ceiling above ~1,400/day makes a three-day full walk feasible — set it well below that. |
+| D-5 | **Rolling unique-entry budget** per credential — window length and ceiling | §1.2 | 24h rolling window. ESU ceiling = its real daily word need × 3 headroom. Express the ceiling as a **fraction of the live corpus per language**, not a fixed number: any ceiling above roughly a third of a language's entry count makes a three-day full walk of that language feasible. See §7 — the repo's own corpus figures disagree and the ADR must settle the real one before this can be numeric. |
 | D-6 | **Interim vs target credential form** and the migration trigger | §1.2, §9.1 | Ship interim (static per-system secrets, `Authorization: Bearer`, hashed at rest). Trigger for target form: the identity node's client-credentials endpoint going live. |
 | D-7 | Target-form token verification: `aud: dictionary`, clock skew, JWKS cache TTL | §1.2, §9.1 | Deferred with D-6. Belongs to the identity node's half of the contract. |
 | D-8 | **Licensing posture** (with counsel) | §7, §9.1 | Engineering has no recommendation. §7.1 constrains it: no measure may reduce community access below its pre-measure level. |
 | D-9 | **Numeric rate limits and their measurement points** | §2, §9.1 | Plugin is authoritative (§2). Cloudflare/nginx numbers belong to `system-core`, not this repo. |
 | D-10 | Governance conflict: **custom database tables** | §1.2, §5 | See §5 of this brief. Needs an explicit ruling. |
 | D-11 | **Single permalinks vs. the autolinker** — a §7.1 access conflict | §1.3, §7.1 | See §4a of this brief. Escalated, not decided. |
+| D-12 | **Block editor for dictionary entries** — `show_in_rest => false` means editors get the classic editor | §1.3 | Needs confirmation from the editorial team, not a ruling from engineering. See §4b. |
 
 ---
 
@@ -95,7 +110,9 @@ not estimates.
 
 Two §1.3 surfaces are **gated rather than closed now**, both because live access depends on
 them: the WPGraphQL full-index path (§3.1 above) and single entry permalinks (§4a below).
-Both are wired to the same cutover flag as the credential enforcement.
+The §2 response-contract changes (caps, over-cap `400`, count suppression) are gated for the
+same reason, per §1 above. All are wired to the same cutover flag as the credential
+enforcement.
 
 ---
 
@@ -120,6 +137,28 @@ of the ADR rather than shipping it as a side effect. **Whatever the ADR decides,
 autolinker needs a destination before the cutover flips** — either app deep-linking, or a
 deliberate ruling that autolinks become non-links. Treat that as a cutover prerequisite,
 not a follow-up.
+
+### 4b. An editorial trade-off that needs confirming, not deciding (D-12)
+
+§1.3 permits either "no public `show_in_rest`, or capability-gated". The implementation
+switches it off, which is the complete option: it also removes the CPT from
+`/wp/v2/search`, which a per-route capability gate would leave open.
+
+The cost is that **dictionary entries fall back to the classic editor**, since the block
+editor requires `show_in_rest`. An earlier revision of this brief argued that cost was
+negligible because `post_content` is a generated search index rather than authored prose.
+**That argument was wrong and is withdrawn.** The sync that would generate it,
+`Sparxstar3IAtlasDictionaryCore::sparxIAtlas_sync_dictionary_search_index()`, guards on the
+post type `aiwa_cpt_dictionary` (underscores) while the registered type is
+`aiwa-cpt-dictionary` (hyphens), so it never runs — `post_content` is whatever an editor
+typed. (The same mismatch disables the alphabet-taxonomy hook on line 78. Both are
+pre-existing defects, unrelated to this PR and deliberately not fixed in it; they are
+recorded here so they are not lost.)
+
+So this is a real change for editors, and whether it is acceptable is a question for the
+people who enter entries. If they do use the block editor, the fallback is to keep
+`show_in_rest => true` and capability-gate the `wp/v2` routes instead, accepting that
+`/wp/v2/search` then needs its own handling.
 
 ## 5. Governance conflict requiring an explicit ruling (D-10)
 
@@ -150,6 +189,12 @@ one direction that matters for a security control. The table will need reverting
 rules the other way. **The rule is not amended by this brief; only
 the ADR can amend it.**
 
+Because of that, **merging this PR does not create the table.** It is no longer provisioned
+at plugin activation; it is created only when an operator deliberately runs
+`wp sparxstar-dict system generate` to onboard a consuming system — an action that belongs
+after the ruling, not before it. Until then the accounting reports itself unavailable and,
+before cutover, tolerates that rather than failing requests.
+
 ---
 
 ## 6. What the accompanying implementation does and does not deliver
@@ -178,6 +223,23 @@ this repository entirely:
 | §7 legal package | Counsel, not engineering (§9 step 8). |
 
 ---
+
+## 6a. Corpus size is unsettled, and D-5 depends on it
+
+The repository states three different figures, none of them sourced:
+
+| Claim | Where |
+|---|---|
+| "~4,175" live entries | `Sparxstar3IAtlasDictionaryCore` line 148 |
+| "all 12,000+ words" | `Sparxstar3IAtlasDictionaryCore` line 134, same file |
+| "11,550 entries" | `docs/dictionary-data-coverage-report.md` |
+
+A budget ceiling sized against the wrong figure is either useless (too high to bound a walk)
+or an outage (too low for legitimate use), and a ceiling sized for today's corpus silently
+becomes wrong as the corpus grows. Hence D-5's recommendation is now expressed as a fraction
+of the live per-language count rather than an absolute. **The ADR needs the real figure, and
+whether it is per-language or across all languages**, before that fraction can be made
+numeric.
 
 ## 7. Sign-off required
 
