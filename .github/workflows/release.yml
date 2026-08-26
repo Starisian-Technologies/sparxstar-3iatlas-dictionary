@@ -121,7 +121,12 @@ jobs:
                   sed -i -E 's/("version":[[:space:]]*").*(")/\1'"$VERSION"'\2/' package.json
                   sed -i -E "s/^([[:space:]]*\*[[:space:]]*Version:[[:space:]]*).*/\1$VERSION/" sparxstar-3iatlas-dictionary.php
                   sed -i "s/define( 'SPARX_3IATLAS_VERSION', '[^']*' );/define( 'SPARX_3IATLAS_VERSION', '$VERSION' );/" sparxstar-3iatlas-dictionary.php
-                  find src/ -type f -name "*.php" -print0 | xargs -0 -r sed -i -E "s/@version[[:space:]]+[0-9.]+/@version $VERSION/g"
+                  # Capture the spacing and put it back. These docblocks are
+                  # column-aligned — src/includes/Sparxstar3IAtlasAutoLinker.php
+                  # has "@version   0.8.9" — and collapsing that to a single
+                  # space breaks the alignment, which PHPCS reports as an error
+                  # and which fails this very job a few steps later.
+                  find src/ -type f -name "*.php" -print0 | xargs -0 -r sed -i -E "s/(@version[[:space:]]+)[0-9.]+/\1$VERSION/g"
 
                   PKG=$(jq -r '.version' package.json)
                   PLUG=$(grep -m1 -oP '^\s*\*\s*Version:\s*\K[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?' sparxstar-3iatlas-dictionary.php)
