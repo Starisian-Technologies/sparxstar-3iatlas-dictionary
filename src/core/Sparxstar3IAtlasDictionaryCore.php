@@ -147,6 +147,16 @@ final class Sparxstar3IAtlasDictionaryCore {
         // index (breaking the A–Z bar and search for later letters). Keep this at
         // or above the live entry count (~4,175) with headroom for growth.
         if ( isset( $info->fieldName ) && 'dictionaries' === $info->fieldName ) {
+            // Asset Protection Spec §1.5: "No full-dump or unbounded-list endpoint
+            // exists on the API. Ever." This raise IS that endpoint in practice — it
+            // exists so the browser can pull the whole corpus in one query — so it is
+            // withdrawn at the M2M cutover (§1.4 step 4), not before. Withdrawing it
+            // earlier would break the deployed app, which the migration exception in
+            // §1 exists to prevent.
+            if ( \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryProtection::is_cutover_complete() ) {
+                return (int) $amount;
+            }
+
             // Filterable ceiling so operators can tune the payload-vs-completeness
             // tradeoff as the corpus grows, without a code change. max() so we
             // only ever raise the limit — never lower a higher one set by another

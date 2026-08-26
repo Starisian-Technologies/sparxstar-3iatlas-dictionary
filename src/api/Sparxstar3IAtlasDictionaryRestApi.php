@@ -13,7 +13,10 @@ declare(strict_types=1);
 namespace Starisian\Sparxstar\IAtlas\api;
 
 use Starisian\Sparxstar\IAtlas\api\auth\ApiKeyAuth;
+use Starisian\Sparxstar\IAtlas\api\auth\AuthContext;
 use Starisian\Sparxstar\IAtlas\api\auth\DictionaryAuthResolver;
+use Starisian\Sparxstar\IAtlas\api\auth\SystemCredentialAuth;
+use Starisian\Sparxstar\IAtlas\api\auth\UniqueEntryBudget;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit( 1 );
@@ -115,16 +118,39 @@ final class Sparxstar3IAtlasDictionaryRestApi {
     }
 
     /**
-     * Permission callback: API key ONLY.
+     * Permission callback: consuming systems only — never an ephemeral page token.
      *
-     * Calls ApiKeyAuth directly rather than through the composite resolver — the
+     * At target state this means a system credential (spec §1.1). Before cutover an
+     * `X-Api-Key` is still accepted under the migration exception, even though §1.1
+     * condemns it architecturally.
+     *
+     * Calls each verifier directly rather than through the composite resolver — the
      * resolver prefers a valid page token, which would cause /wordlist to return 403
-     * even when a valid API key is also present in the request.
+     * even when a valid consumer credential is also present in the request.
      *
      * @param \WP_REST_Request $request The incoming request.
      * @return true|\WP_Error
      */
     public function permission_consumer_only( \WP_REST_Request $request ): bool|\WP_Error {
+        // A system credential is the target-state form and is accepted in either state.
+        if ( SystemCredentialAuth::is_presented( $request ) ) {
+            $result = ( new SystemCredentialAuth() )->resolve( $request );
+            if ( is_wp_error( $result ) ) {
+                return $result;
+            }
+            $request->set_param( '_auth_context', $result );
+            return true;
+        }
+
+        // At target state nothing else is a credential here (spec §1.1, §1.4 step 4).
+        if ( Sparxstar3IAtlasDictionaryProtection::is_cutover_complete() ) {
+            return new \WP_Error(
+                'system_credential_required',
+                __( 'This endpoint serves approved systems only. Provide a system credential via the Authorization header.', 'sparxstar-3iatlas-dictionary' ),
+                array( 'status' => 401 )
+            );
+        }
+
         $has_api_key = '' !== trim( (string) $request->get_header( 'X-Api-Key' ) );
 
         if ( $has_api_key ) {
@@ -334,6 +360,137 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         return '';
     }
 
+    /**
+     * Read a bounded integer parameter, refusing any value above the cap.
+     *
+     * Spec §2 requires "no `per_page` override beyond the cap". The refusal is a 400
+     * rather than a silent clamp on purpose (ADR brief D-2): silently clamping answers
+     * the question "what is the cap?" for free, which is the first thing an enumerator
+     * measures.
+     *
+     * @param \WP_REST_Request $request The incoming request.
+     * @param string           $param   Parameter name.
+     * @param int              $default Value used when the parameter is absent.
+     * @param int              $max     Hard cap.
+     * @return int|\WP_Error The accepted value, or WP_Error 400.
+     */
+    private function capped_param( \WP_REST_Request $request, string $param, int $default, int $max ): int|\WP_Error {
+        $raw = $request->get_param( $param );
+
+        if ( null === $raw || '' === $raw ) {
+            return min( $default, $max );
+        }
+
+        // Not absint(): absint( -1 ) is 1, which would silently reinterpret
+        // `per_page=-1` — WordPress's idiom for "unlimited" — as a request for one
+        // result. An unbounded-list attempt must be refused (spec §1.5), not coerced.
+        if ( ! is_numeric( $raw ) ) {
+            return new \WP_Error(
+                'invalid_param',
+                sprintf(
+                    /* translators: %s: request parameter name. */
+                    __( '%s must be a positive integer.', 'sparxstar-3iatlas-dictionary' ),
+                    $param
+                ),
+                array( 'status' => 400 )
+            );
+        }
+
+        $value = (int) $raw;
+
+        if ( $value < 1 ) {
+            return new \WP_Error(
+                'invalid_param',
+                sprintf(
+                    /* translators: %s: request parameter name. */
+                    __( '%s must be a positive integer.', 'sparxstar-3iatlas-dictionary' ),
+                    $param
+                ),
+                array( 'status' => 400 )
+            );
+        }
+
+        if ( $value > $max ) {
+            return new \WP_Error(
+                'over_cap',
+                sprintf(
+                    /* translators: 1: request parameter name, 2: maximum permitted value. */
+                    __( '%1$s may not exceed %2$d.', 'sparxstar-3iatlas-dictionary' ),
+                    $param,
+                    $max
+                ),
+                array( 'status' => 400 )
+            );
+        }
+
+        return $value;
+    }
+
+    /**
+     * Charge distinct entries served against the calling system's rolling budget.
+     *
+     * Spec §1.2: per-system ceilings are "expressed primarily as ROLLING UNIQUE-ENTRY
+     * BUDGETS", so "even a fully compromised consumer system cannot bulk-harvest the
+     * corpus under its own credential". Only system credentials are charged; the
+     * browser-app credentials carry their own request quotas and are retired at cutover.
+     *
+     * @param \WP_REST_Request $request  The incoming request.
+     * @param array<int,int>   $post_ids Entry post IDs served by this response.
+     * @return \WP_Error|null WP_Error 429 when the budget is exhausted, otherwise null.
+     */
+    private function charge_entry_budget( \WP_REST_Request $request, array $post_ids ): ?\WP_Error {
+        $context = $request->get_param( '_auth_context' );
+
+        if ( ! $context instanceof AuthContext ) {
+            return null;
+        }
+
+        if ( SystemCredentialAuth::CREDENTIAL_TYPE !== $context->credential_type ) {
+            return null;
+        }
+
+        $credential_id = (string) ( $context->key_id ?? '' );
+
+        if ( '' === $credential_id ) {
+            return null;
+        }
+
+        $served = UniqueEntryBudget::record( $credential_id, $post_ids );
+
+        if ( $served < 0 ) {
+            // Accounting is unavailable. Before cutover that is tolerated so a missing
+            // table cannot take the site down; at target state the budget is a security
+            // control, and an unenforceable control fails closed.
+            if ( ! Sparxstar3IAtlasDictionaryProtection::is_cutover_complete() ) {
+                return null;
+            }
+
+            return new \WP_Error(
+                'budget_unavailable',
+                __( 'Entry budget accounting is unavailable.', 'sparxstar-3iatlas-dictionary' ),
+                array( 'status' => 503 )
+            );
+        }
+
+        $record  = SystemCredentialAuth::find_by_id( $credential_id );
+        $ceiling = UniqueEntryBudget::ceiling_for( $credential_id, is_array( $record ) ? $record : array() );
+
+        if ( $ceiling > 0 && $served > $ceiling ) {
+            UniqueEntryBudget::alarm_exhausted( $credential_id, $served, $ceiling );
+
+            return new \WP_Error(
+                'entry_budget_exhausted',
+                __( 'This system has reached its unique-entry budget for the current window.', 'sparxstar-3iatlas-dictionary' ),
+                array(
+                    'status'  => 429,
+                    'headers' => array( 'Retry-After' => (string) UniqueEntryBudget::window_seconds() ),
+                )
+            );
+        }
+
+        return null;
+    }
+
     private function build_entry( int $post_id, bool $include_audio = true ): array {
         $post = get_post( $post_id );
         if ( ! $post ) {
@@ -440,6 +597,11 @@ final class Sparxstar3IAtlasDictionaryRestApi {
 
         $include_audio = filter_var( $request->get_param( 'include_audio' ) ?? false, FILTER_VALIDATE_BOOLEAN );
 
+        $budget_error = $this->charge_entry_budget( $request, array( (int) $post->ID ) );
+        if ( null !== $budget_error ) {
+            return $budget_error;
+        }
+
         return $this->cached_response(
             array(
                 'success' => true,
@@ -457,8 +619,11 @@ final class Sparxstar3IAtlasDictionaryRestApi {
 
         $q        = sanitize_text_field( (string) ( $request->get_param( 'q' ) ?? '' ) );
         $lang     = sanitize_text_field( (string) ( $request->get_param( 'lang_source' ) ?? '' ) );
-        $per_page = min( 100, max( 1, absint( $request->get_param( 'per_page' ) ?? 20 ) ) );
-        $page     = max( 1, absint( $request->get_param( 'page' ) ?? 1 ) );
+        $per_page = $this->capped_param( $request, 'per_page', 20, Sparxstar3IAtlasDictionaryProtection::SEARCH_RESULTS_MAX );
+        if ( is_wp_error( $per_page ) ) {
+            return $per_page;
+        }
+        $page = max( 1, absint( $request->get_param( 'page' ) ?? 1 ) );
 
         if ( wp_strlen( $q ) < 2 ) {
             return new \WP_Error( 'query_too_short', 'q must be at least 2 characters.', array( 'status' => 400 ) );
@@ -501,14 +666,20 @@ final class Sparxstar3IAtlasDictionaryRestApi {
             );
         }
 
+        $budget_error = $this->charge_entry_budget( $request, wp_list_pluck( $query->posts, 'ID' ) );
+        if ( null !== $budget_error ) {
+            return $budget_error;
+        }
+
         return $this->cached_response(
             array(
                 'success' => true,
                 'data'    => array( 'results' => $items ),
                 'meta'    => array(
-                    'total'    => (int) $query->found_posts,
-                    'page'     => $page,
-                    'per_page' => $per_page,
+                    // Spec §2: an exact corpus count is a scraper's progress bar.
+                    'total_approx' => Sparxstar3IAtlasDictionaryProtection::approximate_count( (int) $query->found_posts ),
+                    'page'         => $page,
+                    'per_page'     => $per_page,
                 ),
             )
         );
@@ -521,7 +692,10 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         }
 
         $lang          = sanitize_text_field( (string) ( $request->get_param( 'lang_source' ) ?? '' ) );
-        $per_page      = min( 2000, max( 1, absint( $request->get_param( 'per_page' ) ?? 1000 ) ) );
+        $per_page = $this->capped_param( $request, 'per_page', 100, Sparxstar3IAtlasDictionaryProtection::LIST_PAGE_MAX );
+        if ( is_wp_error( $per_page ) ) {
+            return $per_page;
+        }
         $page          = max( 1, absint( $request->get_param( 'page' ) ?? 1 ) );
         $include_audio = filter_var( $request->get_param( 'include_audio' ) ?? false, FILTER_VALIDATE_BOOLEAN );
 
@@ -589,13 +763,19 @@ final class Sparxstar3IAtlasDictionaryRestApi {
             $words[] = $word;
         }
 
+        $budget_error = $this->charge_entry_budget( $request, $post_ids );
+        if ( null !== $budget_error ) {
+            return $budget_error;
+        }
+
         $payload = array(
             'success' => true,
             'data'    => array( 'words' => $words ),
             'meta'    => array(
-                'total'    => (int) $query->found_posts,
-                'page'     => $page,
-                'per_page' => $per_page,
+                // Spec §2: total-results counts rounded or omitted.
+                'total_approx' => Sparxstar3IAtlasDictionaryProtection::approximate_count( (int) $query->found_posts ),
+                'page'         => $page,
+                'per_page'     => $per_page,
             ),
         );
 
@@ -753,7 +933,10 @@ final class Sparxstar3IAtlasDictionaryRestApi {
 
         $lang          = sanitize_text_field( (string) ( $request->get_param( 'lang_source' ) ?? '' ) );
         $domain        = sanitize_text_field( (string) ( $request->get_param( 'domain' ) ?? '' ) );
-        $limit         = min( 50, max( 1, absint( $request->get_param( 'limit' ) ?? 20 ) ) );
+        $limit = $this->capped_param( $request, 'limit', 20, Sparxstar3IAtlasDictionaryProtection::GAME_SET_MAX );
+        if ( is_wp_error( $limit ) ) {
+            return $limit;
+        }
         $include_audio = filter_var( $request->get_param( 'include_audio' ), FILTER_VALIDATE_BOOLEAN );
 
         if ( '' === $lang ) {
@@ -881,7 +1064,8 @@ final class Sparxstar3IAtlasDictionaryRestApi {
                 )
             );
 
-        $words = array();
+        $words      = array();
+        $served_ids = array();
         foreach ( $posts as $post ) {
             if ( ! $post instanceof \WP_Post ) {
                 continue;
@@ -927,13 +1111,21 @@ final class Sparxstar3IAtlasDictionaryRestApi {
                 $word['audio_url'] = is_array( $audio ) ? ( $audio['url'] ?? null ) : ( $audio ?: null );
             }
 
-            $words[] = $word;
+            $words[]      = $word;
+            $served_ids[] = (int) $post->ID;
+        }
+
+        $budget_error = $this->charge_entry_budget( $request, $served_ids );
+        if ( null !== $budget_error ) {
+            return $budget_error;
         }
 
         $payload = array(
             'success' => true,
             'data'    => array( 'words' => $words ),
             'meta'    => array(
+                // A game set is caller-sized and already capped, so its own length is
+                // not an enumeration signal the way a corpus-wide count is.
                 'total'         => count( $words ),
                 'lang_source'   => $lang,
                 'domain'        => $domain,
@@ -1002,6 +1194,11 @@ final class Sparxstar3IAtlasDictionaryRestApi {
 
         if ( empty( $posts ) || ! $posts[0] instanceof \WP_Post ) {
             return new \WP_Error( 'not_found', 'Could not select word of the day.', array( 'status' => 404 ) );
+        }
+
+        $budget_error = $this->charge_entry_budget( $request, array( (int) $posts[0]->ID ) );
+        if ( null !== $budget_error ) {
+            return $budget_error;
         }
 
         $entry = $this->build_entry( $posts[0]->ID );

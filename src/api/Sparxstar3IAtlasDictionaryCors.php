@@ -127,6 +127,9 @@ final class Sparxstar3IAtlasDictionaryCors {
             $response->header( 'Vary', $existing_vary . ', Origin' );
         }
         $response->header( 'Access-Control-Allow-Methods', 'GET, POST, OPTIONS' );
+        // X-Api-Key remains architecturally condemned (spec §1.1) even while it is
+        // temporarily served under the §1.4 migration exception. It retires at cutover,
+        // at which point this whole handler stops matching the route.
         $response->header( 'Access-Control-Allow-Headers', 'Content-Type, If-None-Match, X-Api-Key, X-Page-Token' );
         $response->header( 'Access-Control-Expose-Headers', 'ETag, X-RateLimit-Remaining, Retry-After' );
         $response->header( 'Access-Control-Max-Age', '86400' );
@@ -140,6 +143,13 @@ final class Sparxstar3IAtlasDictionaryCors {
      * @return bool
      */
     private function is_dictionary_route( \WP_REST_Request $request ): bool {
+        // Spec §1.4 step 4: at cutover, CORS is removed from the route. After that the
+        // only callers are server-side systems, for which CORS is meaningless, and
+        // continuing to advertise browser access would contradict §1.1.
+        if ( \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryProtection::is_cutover_complete() ) {
+            return false;
+        }
+
         $route = $request->get_route();
         return str_starts_with( $route, self::ROUTE_PREFIX );
     }
