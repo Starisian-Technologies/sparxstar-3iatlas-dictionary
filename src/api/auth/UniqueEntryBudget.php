@@ -299,7 +299,15 @@ final class UniqueEntryBudget {
      * @return void
      */
     public static function register_hooks(): void {
-        add_action( self::PURGE_HOOK, array( self::class, 'purge' ) );
+        // Wrapped rather than passed directly: purge() returns the number of
+        // rows removed, and an action callback must not return a value. The
+        // return stays useful to direct callers.
+        add_action(
+            self::PURGE_HOOK,
+            static function (): void {
+                self::purge();
+            }
+        );
 
         if ( ! wp_next_scheduled( self::PURGE_HOOK ) ) {
             wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', self::PURGE_HOOK );

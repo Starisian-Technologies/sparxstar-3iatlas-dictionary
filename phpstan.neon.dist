@@ -28,9 +28,17 @@ parameters:
 
   # WP-CLI is an optional CLI-only dependency; no stubs are installed for it.
   # Suppress only in files that legitimately use WP_CLI.
+  # Globbed rather than pinned per file: pinning is exactly why v3.0.0 failed.
+  # A new command file, Sparxstar3IAtlasSystemCredentialCliCommands.php, was not
+  # in the list and produced nine errors that stopped the release.
   ignoreErrors:
     - message: '#^Call to static method .+ on an unknown class WP_CLI\.$#'
-      path: src/cli/Sparxstar3IAtlasDictionaryCliCommands.php
+      paths:
+        - src/cli/*
+        - src/core/Sparxstar3IAtlasDictionary.php
+    - message: '#^Function WP_CLI.+ not found\.$#'
+      paths:
+        - src/cli/*
     - message: '#^Call to static method .+ on an unknown class WP_CLI\.$#'
       path: src/core/Sparxstar3IAtlasDictionary.php
     - message: '#^Function WP_CLI.+ not found\.$#'
