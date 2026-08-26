@@ -88,7 +88,7 @@ class Sparxstar3IAtlasSystemCredentialCliCommands {
             \WP_CLI::log( 'Provisioned the unique-entry budget store (spec §1.2).' );
         }
 
-        $secret  = bin2hex( random_bytes( 32 ) );
+        $secret  = bin2hex( random_bytes( 48 ) );
         $records = SystemCredentialAuth::all();
 
         $record = array(
