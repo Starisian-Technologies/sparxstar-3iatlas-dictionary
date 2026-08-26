@@ -18,7 +18,7 @@
         "test": "jest",
         "prepare": "husky"
     },
-    "version": "2.10.1",
+    "version": "2.10.7",
     "description": "SPARXSTAR 3iAtlas Dictionary - A WordPress plugin for dictionary management with SCF and WPGraphQL integration.",
     "main": "commitlint.config.js",
     "directories": {

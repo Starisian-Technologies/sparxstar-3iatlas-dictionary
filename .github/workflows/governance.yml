@@ -78,7 +78,7 @@ jobs:
                   # Canonical registry path from MANIFEST.json INCLUDES the domain
                   # directory. A flat specs/<key>/ target creates an orphan file
                   # instead of updating the canonical spec.
-                  SPEC_DOMAIN: "3iAtlas"
+                  SPEC_DOMAIN: '3iAtlas'
               run: |
                   set -euo pipefail
                   REGISTRY="Starisian-Technologies/sparxstar-product-specification-registry"

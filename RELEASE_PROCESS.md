@@ -33,8 +33,18 @@ its next Release PR starts from the version you just shipped.
 
 ## Path B — release-please (version computed from commits)
 
-Use this when the work is genuinely `feat:`/`fix:` and you want the version and
-changelog derived from the commits.
+**Run on request only:** Actions → "Release Please" → Run workflow. It no longer
+fires on every push, so no Release PR sits open unless you asked for one.
+
+Use it when the work is genuinely `feat:`/`fix:` and you want the version and
+the changelog derived from the commits.
+
+Note it cannot see releases cut by Path A or C. Those do not commit to `main` —
+it is protected — so this workflow's manifest falls behind the tags, and
+dispatching it after a manual release will propose a version that has already
+shipped. It offered 2.8.14 while v2.10.7 was live. Check what it proposes before
+merging, and if it is behind, sync `.release-please-manifest.json`,
+`package.json` and the plugin header to the latest tag first.
 
 1. Merge PRs to `main` using [Conventional Commits](https://www.conventionalcommits.org/)
    commit/PR-title format (`fix:`, `feat:`, `feat!:` / `BREAKING CHANGE:`, etc.) —

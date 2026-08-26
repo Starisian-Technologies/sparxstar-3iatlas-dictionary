@@ -16,15 +16,16 @@
 
 name: Release Please
 
+# Run on request only. This used to fire on every push to main and keep a
+# Release PR permanently open, which is noise when releases are cut by hand —
+# and worse than noise once the two paths disagree: Manual Release cannot commit
+# to main (it is protected), so this workflow's manifest falls behind the tags
+# and it starts proposing versions that have already shipped. It last offered
+# 2.8.14 while v2.10.7 was live.
+#
+# Dispatch it when you actually want a Conventional-Commit-derived version and
+# a generated changelog. Otherwise use Manual Release, or tag main directly.
 on:
-    push:
-        branches: [main]
-    # Lets a maintainer re-run the version calculation without pushing a commit
-    # to main. Needed whenever release-please's inputs change out from under it —
-    # most importantly when a release tag is added or removed, since it picks the
-    # most recent vX.Y.Z as the anchor for "what is unreleased" (see
-    # RELEASE_PROCESS.md). Without this the only ways to recompute were another
-    # commit to main or re-running the last run from the Actions UI.
     workflow_dispatch:
 
 permissions:
