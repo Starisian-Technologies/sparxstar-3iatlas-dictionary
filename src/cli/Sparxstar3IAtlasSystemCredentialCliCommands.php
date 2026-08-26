@@ -77,9 +77,6 @@ class Sparxstar3IAtlasSystemCredentialCliCommands {
             \WP_CLI::error( sprintf( 'A credential with id "%s" already exists. Use `rotate` to replace its secret.', $credential_id ) );
         }
 
-        // 32 bytes = 256 bits of entropy. bin2hex is a bijective encoding, so the
-        // 64-character output carries exactly those 256 bits — representation does not
-        // dilute entropy. (32 hex *characters* would be 128 bits; 32 *bytes* is not.)
         // Provision the §1.2 budget store here rather than at plugin activation: it is
         // the subject of ADR brief D-10, so it is created only when an operator
         // deliberately provisions a consuming system, never as a merge side effect.
@@ -88,6 +85,14 @@ class Sparxstar3IAtlasSystemCredentialCliCommands {
             \WP_CLI::log( 'Provisioned the unique-entry budget store (spec §1.2).' );
         }
 
+        // 48 bytes = 384 bits of entropy, rendered as 96 hex characters. bin2hex is a
+        // bijective encoding, so the output carries exactly those 384 bits.
+        //
+        // 32 bytes (256 bits) already exceeded any practical requirement; 48 is the
+        // owner's ruling, taken so the value clears a 256-bit bar under any reading,
+        // including one that counts hex characters rather than bytes. Keep this figure
+        // identical in rotate(): a rotation that minted a weaker secret than the
+        // credential it replaces would be a silent downgrade.
         $secret  = bin2hex( random_bytes( 48 ) );
         $records = SystemCredentialAuth::all();
 
@@ -209,8 +214,8 @@ class Sparxstar3IAtlasSystemCredentialCliCommands {
         }
 
         $records = SystemCredentialAuth::all();
-        // 256 bits of entropy, as in generate() above.
-        $secret = bin2hex( random_bytes( 32 ) );
+        // Matches generate() exactly: 48 bytes = 384 bits. See the note there.
+        $secret = bin2hex( random_bytes( 48 ) );
         $found  = false;
 
         foreach ( $records as $index => $record ) {
