@@ -60,7 +60,7 @@ input, not a decision.
 | D-9 | **Numeric rate limits and their measurement points** | §2, §9.1 | Plugin is authoritative (§2). Cloudflare/nginx numbers belong to `system-core`, not this repo. |
 | D-10 | Governance conflict: **custom database tables** | §1.2, §5 | See §5 of this brief. Needs an explicit ruling. |
 | D-11 | **Single permalinks vs. the autolinker** — a §7.1 access conflict | §1.3, §7.1 | See §4a of this brief. Escalated, not decided. |
-| D-12 | **Block editor for dictionary entries** — `show_in_rest => false` means editors get the classic editor | §1.3 | Needs confirmation from the editorial team, not a ruling from engineering. See §4b. |
+| D-12 | **Block editor for dictionary entries** — `show_in_rest => false` means editors get the classic editor | §1.3 | **Owner decision taken:** gated on cutover rather than applied on merge, so the editorial change lands with the deploy-reviewed flip. See §4b. |
 
 ---
 
@@ -102,17 +102,21 @@ not estimates.
 
 | Surface | Evidence nothing consumes it |
 |---|---|
-| Default `wp/v2` REST for the CPT | `src/js/app.jsx` calls only `graphqlUrl` and `restUrl`; no `wp/v2` reference exists in the repo |
 | Global search (`/?s=`) | No shipped template surfaces dictionary results in WP search |
 | Feeds, sitemaps, oEmbed, author archives | No client reference; these are WordPress defaults, never a product feature here |
 | Post-type archives | The app renders at its own `/dictionary/` route via `template_redirect`, never at a CPT archive |
 | Attachment pages | Never linked; audio is delivered by URL from the API payload |
 
-Two §1.3 surfaces are **gated rather than closed now**, both because live access depends on
-them: the WPGraphQL full-index path (§3.1 above) and single entry permalinks (§4a below).
-The §2 response-contract changes (caps, over-cap `400`, count suppression) are gated for the
-same reason, per §1 above. All are wired to the same cutover flag as the credential
-enforcement.
+Four things are **gated rather than closed now**, each because something live depends on
+them: the WPGraphQL full-index path (§3.1), single entry permalinks (§4a), `show_in_rest`
+and with it the block editor (§4b), and the §2 response-contract changes (§1). All are wired
+to the same cutover flag as the credential enforcement, so one deploy-reviewed switch moves
+the whole regime at once.
+
+Deferring `show_in_rest` costs nothing in exposure terms: before cutover the entire corpus is
+already served to browsers through the WPGraphQL index, so the default `wp/v2` routes add no
+reach that is not already open. It is the §1.5 full-dump path, not `wp/v2`, that carries the
+real pre-cutover exposure — and closing that is what the cutover is for.
 
 ---
 
@@ -156,8 +160,13 @@ pre-existing defects, unrelated to this PR and deliberately not fixed in it; the
 recorded here so they are not lost.)
 
 So this is a real change for editors, and whether it is acceptable is a question for the
-people who enter entries. If they do use the block editor, the fallback is to keep
-`show_in_rest => true` and capability-gate the `wp/v2` routes instead, accepting that
+people who enter entries rather than for engineering.
+
+**Owner decision (2026-08-26): gate it on cutover.** `show_in_rest` stays as it is today and
+switches off with the rest of the regime at the deploy-reviewed flip, so the editorial change
+cannot land silently on merge and the team has the cutover window to confirm or object. If
+they turn out to need the block editor permanently, the fallback remains keeping
+`show_in_rest => true` and capability-gating the `wp/v2` routes, accepting that
 `/wp/v2/search` then needs its own handling.
 
 ## 5. Governance conflict requiring an explicit ruling (D-10)

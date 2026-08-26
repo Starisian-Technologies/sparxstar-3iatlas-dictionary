@@ -27,11 +27,13 @@ require_once __DIR__ . '/../../src/api/auth/DictionaryAuthResolver.php';
 require_once __DIR__ . '/../../src/api/Sparxstar3IAtlasRateLimitTrait.php';
 require_once __DIR__ . '/../../src/api/Sparxstar3IAtlasDictionaryRestApi.php';
 require_once __DIR__ . '/../../src/api/Sparxstar3IAtlasDictionaryTripwire.php';
+require_once __DIR__ . '/../../src/includes/Sparxstar3IAtlasSurfaceLockdown.php';
 
 use PHPUnit\Framework\TestCase;
 use Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryProtection as Protection;
 use Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryRestApi;
 use Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryTripwire;
+use Starisian\Sparxstar\IAtlas\includes\Sparxstar3IAtlasSurfaceLockdown;
 use Starisian\Sparxstar\IAtlas\api\auth\DictionaryAuthResolver;
 use Starisian\Sparxstar\IAtlas\api\auth\SystemCredentialAuth;
 use Starisian\Sparxstar\IAtlas\api\auth\UniqueEntryBudget;
@@ -565,5 +567,89 @@ final class AssetProtectionTest extends TestCase {
             ),
             Sparxstar3IAtlasDictionaryTripwire::observation_history()
         );
+    }
+
+    // -------------------------------------------------------------------------
+    // Spec §1.3 — the two-tier surface lockdown, and which tier each door is in.
+    // -------------------------------------------------------------------------
+
+    /**
+     * Run the lockdown's post-type argument filter.
+     *
+     * @return array<string,mixed>
+     */
+    private function harden( array $args = array() ): array {
+        $args = array_merge(
+            array(
+                'public'          => true,
+                'show_in_rest'    => true,
+                'show_in_graphql' => true,
+            ),
+            $args
+        );
+
+        return ( new Sparxstar3IAtlasSurfaceLockdown() )
+            ->harden_post_type_args( $args, Sparxstar3IAtlasSurfaceLockdown::CPT );
+    }
+
+    public function test_surfaces_nothing_consumes_are_closed_immediately(): void {
+        $args = $this->harden();
+
+        $this->assertTrue( $args['exclude_from_search'], 'Entries must leave WP search now.' );
+        $this->assertFalse( $args['has_archive'], 'Archives must close now.' );
+    }
+
+    public function test_live_access_surfaces_survive_until_cutover(): void {
+        $args = $this->harden();
+
+        // Each of these carries something live: the app's data source, the autolinker's
+        // permalinks, and the editors' block editor. None may close on merge.
+        $this->assertTrue( $args['public'], 'Permalinks carry autolinker links (D-11).' );
+        $this->assertTrue( $args['show_in_graphql'], 'GraphQL index is the app data source.' );
+        $this->assertTrue( $args['show_in_rest'], 'Block editor needs this until cutover (D-12).' );
+    }
+
+    public function test_everything_closes_at_cutover(): void {
+        $this->arm_cutover();
+
+        $args = $this->harden();
+
+        $this->assertFalse( $args['public'] );
+        $this->assertFalse( $args['publicly_queryable'] );
+        $this->assertFalse( $args['show_in_rest'] );
+        $this->assertFalse( $args['show_in_graphql'] );
+        $this->assertFalse( $args['rewrite'] );
+    }
+
+    public function test_admin_ui_survives_the_cutover(): void {
+        // show_ui and show_in_menu default to `public`, so without pinning them the
+        // cutover would take the admin screens away from the editorial team too.
+        $this->arm_cutover();
+
+        $args = $this->harden();
+
+        $this->assertTrue( $args['show_ui'] );
+        $this->assertTrue( $args['show_in_menu'] );
+    }
+
+    public function test_unrelated_post_types_are_untouched(): void {
+        $original = array( 'public' => true, 'show_in_rest' => true );
+
+        $this->assertSame(
+            $original,
+            ( new Sparxstar3IAtlasSurfaceLockdown() )->harden_post_type_args( $original, 'post' )
+        );
+    }
+
+    public function test_dictionary_is_removed_from_sitemaps(): void {
+        $remaining = ( new Sparxstar3IAtlasSurfaceLockdown() )->remove_from_sitemaps(
+            array(
+                Sparxstar3IAtlasSurfaceLockdown::CPT => 'dictionary',
+                'post'                               => 'post',
+            )
+        );
+
+        $this->assertArrayNotHasKey( Sparxstar3IAtlasSurfaceLockdown::CPT, $remaining );
+        $this->assertArrayHasKey( 'post', $remaining );
     }
 }

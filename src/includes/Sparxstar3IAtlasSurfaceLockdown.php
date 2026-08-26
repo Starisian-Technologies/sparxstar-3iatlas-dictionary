@@ -7,15 +7,22 @@
  *
  * Two tiers, deliberately:
  *
- * 1. CLOSED IMMEDIATELY — surfaces no shipped client consumes, so closing them is
- *    not a behaviour change: default `wp/v2` REST, global search, feeds, sitemaps,
- *    oEmbed, and attachment pages for dictionary audio.
- * 2. CLOSED AT CUTOVER — surfaces that currently carry legitimate community access:
- *    single permalinks (the autolinker publishes them into post content) and the
- *    WPGraphQL full-index path (the deployed app's data source). Closing these today
- *    would reduce community access below its pre-measure level, which spec §7.1
- *    forbids, and §7.1 requires that conflict be escalated to an ADR rather than
- *    resolved silently here. See the ADR brief D-11.
+ * 1. CLOSED IMMEDIATELY — surfaces nothing consumes, so closing them costs nobody
+ *    anything: global search, post-type archives, feeds, sitemaps, oEmbed, and
+ *    attachment pages for dictionary audio.
+ * 2. CLOSED AT CUTOVER — surfaces that carry live access today, where closing early
+ *    would take something away before its replacement exists:
+ *    - single permalinks (the autolinker publishes them into post content, and the
+ *      app has no deep-linking to replace them) — ADR brief D-11;
+ *    - the WPGraphQL full-index path (the deployed app's data source) — §1.5;
+ *    - `show_in_rest`, because switching it off also switches dictionary entries to
+ *      the classic editor. Whether that is acceptable is the editorial team's call,
+ *      not engineering's, so it flips with everything else at the deploy-reviewed
+ *      cutover rather than silently on merge — ADR brief D-12.
+ *
+ * Spec §7.1 governs the split: no measure may reduce legitimate access below its
+ * pre-measure level, and where protection and access conflict the conflict is
+ * escalated rather than resolved silently here.
  *
  * @package Starisian\Sparxstar\IAtlas\includes
  * @license Starisian Technologies Proprietary License (STPL)
@@ -62,12 +69,13 @@ final class Sparxstar3IAtlasSurfaceLockdown {
     /**
      * Harden the dictionary post type's registration arguments.
      *
-     * `show_in_rest` is switched off rather than capability-gated. Spec §1.3 permits
-     * either; switching it off is the complete option, because it also removes the CPT
-     * from `/wp/v2/search`, which a per-route capability gate would leave open. The
-     * editing experience is unaffected in practice: entry content lives in ACF fields,
-     * and `post_content` is a generated search index rather than authored prose (see
-     * Sparxstar3IAtlasDictionaryCore::sparxIAtlas_sync_dictionary_search_index).
+     * `show_in_rest` is switched off rather than capability-gated — spec §1.3 permits
+     * either, and switching it off is the complete option because it also removes the
+     * CPT from `/wp/v2/search`, which a per-route capability gate would leave open.
+     * But it is applied AT CUTOVER, not immediately, because it also forces the
+     * classic editor for dictionary entries (ADR brief D-12). Deferring costs nothing
+     * in exposure terms: before cutover the whole corpus is already served to browsers
+     * through the WPGraphQL index, so `wp/v2` adds no reach that is not already open.
      *
      * @param array<string,mixed> $args      Registration arguments.
      * @param string              $post_type The post type being registered.
@@ -78,8 +86,7 @@ final class Sparxstar3IAtlasSurfaceLockdown {
             return $args;
         }
 
-        // Tier 1 — closed immediately.
-        $args['show_in_rest']        = false;
+        // Tier 1 — closed immediately; nothing consumes these.
         $args['exclude_from_search'] = true;
         $args['has_archive']         = false;
 
@@ -91,6 +98,7 @@ final class Sparxstar3IAtlasSurfaceLockdown {
         if ( Sparxstar3IAtlasDictionaryProtection::is_cutover_complete() ) {
             $args['public']             = false;
             $args['publicly_queryable'] = false;
+            $args['show_in_rest']       = false;
             $args['show_in_graphql']    = false;
             $args['rewrite']            = false;
         }
