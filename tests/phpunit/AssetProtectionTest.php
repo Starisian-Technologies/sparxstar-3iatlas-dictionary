@@ -652,4 +652,28 @@ final class AssetProtectionTest extends TestCase {
         $this->assertArrayNotHasKey( Sparxstar3IAtlasSurfaceLockdown::CPT, $remaining );
         $this->assertArrayHasKey( 'post', $remaining );
     }
+
+    // -------------------------------------------------------------------------
+    // Budget accounting must fail CLOSED and must not treat 0 as unlimited.
+    // -------------------------------------------------------------------------
+
+    public function test_zero_or_invalid_stored_ceiling_is_not_unlimited(): void {
+        // absint( 'abc' ) and absint( '0' ) both yield 0. If 0 meant "unlimited", an
+        // operator typo would silently switch off the primary extraction control.
+        $this->assertGreaterThan( 0, UniqueEntryBudget::ceiling_for( 'esu-sky', array( 'entry_budget' => 0 ) ) );
+        $this->assertGreaterThan( 0, UniqueEntryBudget::ceiling_for( 'esu-sky', array( 'entry_budget' => -5 ) ) );
+
+        // And it falls back to the default rather than to something arbitrary.
+        $this->assertSame(
+            UniqueEntryBudget::ceiling_for( 'esu-sky' ),
+            UniqueEntryBudget::ceiling_for( 'esu-sky', array( 'entry_budget' => 0 ) )
+        );
+    }
+
+    public function test_unavailable_accounting_reports_minus_one_not_zero(): void {
+        // -1 means "unknown", which the caller fails closed on at target state. Zero
+        // would read as "nothing served yet" and hand out an unbounded budget.
+        $this->assertFalse( UniqueEntryBudget::is_installed() );
+        $this->assertSame( -1, UniqueEntryBudget::record( 'esu-sky', array( 1, 2, 3 ) ) );
+    }
 }

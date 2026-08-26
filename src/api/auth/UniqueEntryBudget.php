@@ -51,7 +51,7 @@ final class UniqueEntryBudget {
      *
      * @var string
      */
-    private const SCHEMA_VERSION = '1';
+    private const SCHEMA_VERSION = '2';
 
     /**
      * Option storing the installed schema version.
@@ -118,9 +118,13 @@ final class UniqueEntryBudget {
      * @return int Ceiling for this credential; 0 or less means unlimited.
      */
     public static function ceiling_for( string $credential_id, array $credential = array() ): int {
-        $ceiling = isset( $credential['entry_budget'] )
-            ? (int) $credential['entry_budget']
-            : self::DEFAULT_CEILING;
+        $stored = isset( $credential['entry_budget'] ) ? (int) $credential['entry_budget'] : 0;
+
+        // A non-positive stored value falls back to the default rather than meaning
+        // "unlimited". Treating 0 as unlimited would turn an operator typo — absint()
+        // of a mistyped `--budget` yields 0 — into a credential with no ceiling at all,
+        // silently disabling the primary extraction control for that system.
+        $ceiling = $stored > 0 ? $stored : self::DEFAULT_CEILING;
 
         /**
          * Filter the distinct-entry ceiling for one credential.
@@ -152,12 +156,26 @@ final class UniqueEntryBudget {
         $sql = "CREATE TABLE {$table} (
             credential_id VARCHAR(64) NOT NULL,
             entry_id BIGINT UNSIGNED NOT NULL,
-            first_served BIGINT UNSIGNED NOT NULL,
+            last_served BIGINT UNSIGNED NOT NULL,
             PRIMARY KEY  (credential_id, entry_id),
-            KEY first_served (first_served)
+            KEY last_served (last_served)
         ) {$charset_collate};";
 
         dbDelta( $sql );
+
+        // Record the schema as installed ONLY after confirming the table exists.
+        // dbDelta() reports nothing useful on failure, and is_installed() trusts this
+        // option; marking it unconditionally would let a failed creation look like
+        // working accounting, which is the one direction a security control must never
+        // fail. See fail-closed handling in record().
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Schema verification on a custom protection table; caching a schema probe would defeat its purpose.
+        $exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
+
+        if ( $exists !== $table ) {
+            delete_option( self::SCHEMA_OPTION );
+            return;
+        }
+
         update_option( self::SCHEMA_OPTION, self::SCHEMA_VERSION, false );
     }
 
@@ -206,28 +224,42 @@ final class UniqueEntryBudget {
                 $values[] = $now;
             }
 
-            // A row already inside the live window keeps its original first_served, so it
-            // is not re-counted. A row whose first_served has aged out of the window is
-            // refreshed, so it counts again — that is what makes the window rolling.
-            $sql = "INSERT INTO {$table} (credential_id, entry_id, first_served) VALUES "
+            // Every touch advances last_served, so an entry counts for a full window
+            // from its MOST RECENT service. Keying the window off first service instead
+            // would drop an entry served at hour 0 and again at hour 23 out of the count
+            // at hour 24, even though it was served an hour ago — freeing budget the
+            // caller has not stopped using, which is an undercount in the one direction
+            // that matters.
+            $sql = "INSERT INTO {$table} (credential_id, entry_id, last_served) VALUES "
                 . implode( ', ', $rows )
-                . ' ON DUPLICATE KEY UPDATE first_served = IF(first_served < %d, %d, first_served)';
+                . ' ON DUPLICATE KEY UPDATE last_served = %d';
 
-            $values[] = $cutoff;
             $values[] = $now;
 
             // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom protection table; placeholders are generated, every value is passed through prepare(), and the count must be uncached to be a security control.
-            $wpdb->query( $wpdb->prepare( $sql, $values ) );
+            $written = $wpdb->query( $wpdb->prepare( $sql, $values ) );
+
+            // A failed write means the accounting is unknown, not zero. Reporting it as
+            // unavailable lets the caller fail closed at target state.
+            if ( false === $written ) {
+                return -1;
+            }
         }
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom protection table; a cached budget count would be trivially defeated by concurrency.
         $count = $wpdb->get_var(
             $wpdb->prepare(
-                "SELECT COUNT(*) FROM {$table} WHERE credential_id = %s AND first_served >= %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is derived from $wpdb->prefix, not from input.
+                "SELECT COUNT(*) FROM {$table} WHERE credential_id = %s AND last_served >= %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is derived from $wpdb->prefix, not from input.
                 $credential_id,
                 $cutoff
             )
         );
+
+        // get_var() returns null on a query error. Casting that to 0 would read as
+        // "nothing served yet" and hand the caller an unbounded budget.
+        if ( null === $count ) {
+            return -1;
+        }
 
         return (int) $count;
     }
@@ -253,7 +285,7 @@ final class UniqueEntryBudget {
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Scheduled maintenance on a custom protection table.
         $removed = $wpdb->query(
             $wpdb->prepare(
-                "DELETE FROM {$table} WHERE first_served < %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is derived from $wpdb->prefix, not from input.
+                "DELETE FROM {$table} WHERE last_served < %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is derived from $wpdb->prefix, not from input.
                 $cutoff
             )
         );

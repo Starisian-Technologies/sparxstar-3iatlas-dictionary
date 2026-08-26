@@ -101,11 +101,26 @@ class Sparxstar3IAtlasSystemCredentialCliCommands {
         );
 
         if ( isset( $assoc_args['budget'] ) ) {
-            $record['entry_budget'] = absint( $assoc_args['budget'] );
+            $budget = $assoc_args['budget'];
+
+            // Validated strictly rather than passed through absint(): absint( 'abc' )
+            // and absint( '0' ) are both 0, and a 0 ceiling would previously have read
+            // as "no limit" — turning a typo into a credential with the primary
+            // extraction control switched off.
+            if ( ! is_numeric( $budget ) || (int) $budget < 1 ) {
+                \WP_CLI::error( '--budget must be a positive integer (distinct entries per rolling window).' );
+            }
+
+            $record['entry_budget'] = (int) $budget;
         }
 
         $records[] = $record;
-        SystemCredentialAuth::save( $records );
+
+        // Never print a secret the registry did not actually accept: a failed save
+        // would otherwise hand an operator a credential that cannot authenticate.
+        if ( ! SystemCredentialAuth::save( $records ) ) {
+            \WP_CLI::error( sprintf( 'Failed to persist system credential "%s". No secret was issued.', $credential_id ) );
+        }
 
         \WP_CLI::success( sprintf( 'Created system credential "%s".', $credential_id ) );
         \WP_CLI::line( '' );
@@ -213,7 +228,14 @@ class Sparxstar3IAtlasSystemCredentialCliCommands {
             \WP_CLI::error( sprintf( 'No credential with id "%s".', $credential_id ) );
         }
 
-        SystemCredentialAuth::save( $records );
+        if ( ! SystemCredentialAuth::save( $records ) ) {
+            \WP_CLI::error(
+                sprintf(
+                    'Failed to persist the rotation of "%s". The PREVIOUS secret is still active; do not deploy a new one.',
+                    $credential_id
+                )
+            );
+        }
 
         \WP_CLI::success( sprintf( 'Rotated system credential "%s".', $credential_id ) );
         \WP_CLI::line( '' );
@@ -252,12 +274,17 @@ class Sparxstar3IAtlasSystemCredentialCliCommands {
             \WP_CLI::error( 'A --id is required.' );
         }
 
-        $records = SystemCredentialAuth::all();
-        $found   = false;
+        $records         = SystemCredentialAuth::all();
+        $found           = false;
+        $already_revoked = true;
 
         foreach ( $records as $index => $record ) {
             if ( ! is_array( $record ) || (string) ( $record['credential_id'] ?? '' ) !== $credential_id ) {
                 continue;
+            }
+
+            if ( true === ( $record['active'] ?? false ) ) {
+                $already_revoked = false;
             }
 
             $records[ $index ]['active']  = false;
@@ -269,7 +296,17 @@ class Sparxstar3IAtlasSystemCredentialCliCommands {
             \WP_CLI::error( sprintf( 'No credential with id "%s".', $credential_id ) );
         }
 
-        SystemCredentialAuth::save( $records );
+        // A revoke that silently fails to persist leaves a possibly-leaked credential
+        // live while reporting otherwise, which is the worst failure mode of the three.
+        if ( ! SystemCredentialAuth::save( $records ) && ! $already_revoked ) {
+            \WP_CLI::error(
+                sprintf(
+                    'Failed to persist the revocation of "%s". The credential is STILL ACTIVE.',
+                    $credential_id
+                )
+            );
+        }
+
         \WP_CLI::success( sprintf( 'Revoked system credential "%s".', $credential_id ) );
     }
 }

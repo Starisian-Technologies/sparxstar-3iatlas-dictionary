@@ -42,6 +42,7 @@ final class Sparxstar3IAtlasDictionaryCors {
         // Priority 1 — run before route registration so headers are set early.
         add_action( 'rest_api_init', array( $this, 'intercept_options_preflight' ), 1 );
         add_filter( 'rest_pre_serve_request', array( $this, 'add_cors_headers' ), 10, 4 );
+        add_filter( 'rest_pre_dispatch', array( $this, 'withdraw_core_cors_at_cutover' ), 10, 3 );
     }
 
     /**
@@ -134,6 +135,43 @@ final class Sparxstar3IAtlasDictionaryCors {
         $response->header( 'Access-Control-Expose-Headers', 'ETag, X-RateLimit-Remaining, Retry-After' );
         $response->header( 'Access-Control-Max-Age', '86400' );
         // Never emit Access-Control-Allow-Credentials.
+    }
+
+    /**
+     * Withdraw WordPress core's CORS reflection from dictionary routes at cutover.
+     *
+     * Spec §1.4 step 4 says CORS is REMOVED from the route at cutover. Simply making
+     * this plugin's handler stop matching does not achieve that: core registers
+     * `rest_send_cors_headers` on `rest_pre_serve_request`, and that function reflects
+     * whatever `Origin` the request carried and adds
+     * `Access-Control-Allow-Credentials: true`. Leaving it in place would keep the
+     * route browser-callable cross-origin — exactly what §1.1 forbids — for anything
+     * that obtained a system credential.
+     *
+     * Scoped to dictionary routes so other namespaces on the same install keep their
+     * normal REST CORS behaviour.
+     *
+     * @param mixed            $result  Pre-dispatch result, returned untouched.
+     * @param \WP_REST_Server  $server  REST server instance, required by the filter signature.
+     * @param \WP_REST_Request $request The incoming request.
+     * @return mixed The unmodified $result.
+     */
+    public function withdraw_core_cors_at_cutover( $result, $server, $request ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundBeforeLastUsed -- $server is required by the rest_pre_dispatch filter signature.
+        if ( ! $request instanceof \WP_REST_Request ) {
+            return $result;
+        }
+
+        if ( ! \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryProtection::is_cutover_complete() ) {
+            return $result;
+        }
+
+        $route = $request->get_route();
+
+        if ( self::ROUTE_PREFIX === $route || str_starts_with( $route, self::ROUTE_PREFIX . '/' ) ) {
+            remove_filter( 'rest_pre_serve_request', 'rest_send_cors_headers' );
+        }
+
+        return $result;
     }
 
     /**

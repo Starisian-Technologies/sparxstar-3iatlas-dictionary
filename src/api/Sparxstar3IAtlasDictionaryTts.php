@@ -306,7 +306,17 @@ final class Sparxstar3IAtlasDictionaryTts {
         status_header( 200 );
         header( 'Content-Type: audio/wav' );
         header( 'Content-Length: ' . strlen( $wav ) );
-        header( 'Cache-Control: public, max-age=' . self::CACHE_MAX_AGE );
+        // Spec §2 rules edge caching of dictionary responses OFF: caching an
+        // authenticated response without a proven cache-key design risks
+        // cross-credential replay, and a shared cache would also replay this audio
+        // without the requesting credential being validated. Public caching is
+        // therefore only ever offered while the route is still anonymous-reachable
+        // under the §1 migration exception.
+        if ( \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryProtection::is_cutover_complete() ) {
+            header( 'Cache-Control: private, no-store' );
+        } else {
+            header( 'Cache-Control: public, max-age=' . self::CACHE_MAX_AGE );
+        }
         header( 'X-Content-Type-Options: nosniff' );
         header( 'X-TTS-Cache: ' . ( $cached ? 'HIT' : 'MISS' ) );
 
