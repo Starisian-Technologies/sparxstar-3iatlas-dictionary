@@ -133,6 +133,9 @@ class Sparxstar3IAtlasAutoLinker {
             );
 
             $batch = $query->posts;
+            // Counted here rather than in the while condition:
+            // Squiz.PHP.DisallowSizeFunctionsInLoops rejects count() there.
+            $batch_count = count( $batch );
 
             foreach ( $batch as $post_id ) {
                 $title = get_the_title( $post_id );
@@ -146,7 +149,7 @@ class Sparxstar3IAtlasAutoLinker {
 
             // no_found_rows means there is no total to compare against, so a
             // short page is what tells us the last one has been read.
-        } while ( count( $batch ) === 100 );
+        } while ( 100 === $batch_count );
 
         // Sort by length (Longest first) to ensure "Hospitality Management" 
         // matches before "Hospitality"
