@@ -1,4 +1,9 @@
 <?php
+/**
+ * Sparxstar3 IAtlas Dictionary Rest Api.
+ *
+ * @package Sparxstar\3iAtlas\Dictionary
+ */
 
 declare(strict_types=1);
 
@@ -22,6 +27,9 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit( 1 );
 }
 
+/**
+ * REST API for the 3iAtlas dictionary.
+ */
 final class Sparxstar3IAtlasDictionaryRestApi {
 
     use Sparxstar3IAtlasRateLimitTrait;
@@ -43,10 +51,20 @@ final class Sparxstar3IAtlasDictionaryRestApi {
     private const RATE_LIMIT    = 100;
     private const RATE_WINDOW   = 900;
 
+    /**
+     * Register hooks.
+     *
+     * @return void
+     */
     public function register_hooks(): void {
         add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
     }
 
+    /**
+     * Register rest routes.
+     *
+     * @return void
+     */
     public function register_rest_routes(): void {
         // Public endpoint — mints ephemeral page tokens.
         register_rest_route(
@@ -189,6 +207,11 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         );
     }
 
+    /**
+     * Permission open.
+     *
+     * @return bool
+     */
     public function permission_open(): bool {
         return true;
     }
@@ -206,8 +229,8 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         // calls and privacy-protected browsers omit it; the IP rate limit is the backstop.
         $referer = trim( (string) $request->get_header( 'Referer' ) );
         if ( '' !== $referer ) {
-            $referer_host  = (string) parse_url( $referer, PHP_URL_HOST );
-            $site_host     = (string) parse_url( site_url(), PHP_URL_HOST );
+            $referer_host = (string) parse_url( $referer, PHP_URL_HOST );
+            $site_host    = (string) parse_url( site_url(), PHP_URL_HOST );
             if ( '' !== $referer_host && $referer_host !== $site_host ) {
                 return new \WP_Error(
                     'forbidden',
@@ -230,8 +253,8 @@ final class Sparxstar3IAtlasDictionaryRestApi {
             );
         }
 
-        $token     = $this->mint_ephemeral_token();
-        $expires   = time() + 3600;
+        $token   = $this->mint_ephemeral_token();
+        $expires = time() + 3600;
 
         $response = new \WP_REST_Response(
             array(
@@ -298,6 +321,12 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         return $encoded_payload . '.' . hash_hmac( 'sha256', $encoded_payload, $secret );
     }
 
+    /**
+     * Parse bearer token.
+     *
+     * @param string $authorization_header Authorization header.
+     * @return ?string
+     */
     private function parse_bearer_token( string $authorization_header ): ?string {
         $authorization_header = trim( $authorization_header );
 
@@ -312,6 +341,12 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         return $matches[1];
     }
 
+    /**
+     * Permission helios.
+     *
+     * @param \WP_REST_Request $request Request.
+     * @return bool
+     */
     public function permission_helios( \WP_REST_Request $request ): bool {
         // TODO: Replace with Helios token introspection when available.
         $auth  = $request->get_header( 'Authorization' );
@@ -321,6 +356,11 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         return null !== $token && is_user_logged_in() && current_user_can( 'edit_posts' );
     }
 
+    /**
+     * Rate limit error.
+     *
+     * @return \WP_Error
+     */
     private function rate_limit_error(): \WP_Error {
         return new \WP_Error(
             'rate_limited',
@@ -332,6 +372,13 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         );
     }
 
+    /**
+     * Cached response.
+     *
+     * @param array $data Data.
+     * @param int   $max_age Max age.
+     * @return \WP_REST_Response
+     */
     private function cached_response( array $data, int $max_age = 3600 ): \WP_REST_Response {
         $data['meta'] = $data['meta'] ?? array();
         $response     = new \WP_REST_Response( $data, 200 );
@@ -343,6 +390,13 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         return $response;
     }
 
+    /**
+     * If none match contains.
+     *
+     * @param string $if_none_match If none match.
+     * @param string $etag_value Etag value.
+     * @return bool
+     */
     private function if_none_match_contains( string $if_none_match, string $etag_value ): bool {
         $if_none_match = trim( $if_none_match );
         if ( '' === $if_none_match ) {
@@ -367,6 +421,12 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         return false;
     }
 
+    /**
+     * Domain code from slug.
+     *
+     * @param string $slug Slug.
+     * @return string
+     */
     private static function domain_code_from_slug( string $slug ): string {
         if ( 1 === preg_match( '/-([0-9]+(?:\.[0-9]+)*)$/', $slug, $matches ) ) {
             return $matches[1];
@@ -393,9 +453,9 @@ final class Sparxstar3IAtlasDictionaryRestApi {
      * - AT cutover: the spec regime — refuse over-cap with 400 rather than clamping,
      *   because a silent clamp answers "what is the cap?" for free (ADR brief D-2).
      *
-     * @param \WP_REST_Request    $request The incoming request.
-     * @param string              $param   Parameter name.
-     * @param array<string,int>   $caps    Keys: default, max, legacy_default, legacy_max.
+     * @param \WP_REST_Request  $request The incoming request.
+     * @param string            $param   Parameter name.
+     * @param array<string,int> $caps    Keys: default, max, legacy_default, legacy_max.
      * @return int|\WP_Error The accepted value, or WP_Error 400 at target state.
      */
     private function capped_param( \WP_REST_Request $request, string $param, array $caps ): int|\WP_Error {
@@ -566,6 +626,13 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         return null;
     }
 
+    /**
+     * Build entry.
+     *
+     * @param int  $post_id Post id.
+     * @param bool $include_audio Include audio.
+     * @return array
+     */
     private function build_entry( int $post_id, bool $include_audio = true ): array {
         $post = get_post( $post_id );
         if ( ! $post ) {
@@ -633,6 +700,12 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         return $entry;
     }
 
+    /**
+     * Handle lookup.
+     *
+     * @param \WP_REST_Request $request Request.
+     * @return \WP_REST_Response|\WP_Error
+     */
     public function handle_lookup( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
         // TODO: Replace with Helios token introspection when available.
         if ( ! $this->check_rate_limit() ) {
@@ -686,6 +759,12 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         );
     }
 
+    /**
+     * Handle search.
+     *
+     * @param \WP_REST_Request $request Request.
+     * @return \WP_REST_Response|\WP_Error
+     */
     public function handle_search( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
         // TODO: Replace with Helios token introspection when available.
         if ( ! $this->check_rate_limit() ) {
@@ -770,13 +849,19 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         );
     }
 
+    /**
+     * Handle wordlist.
+     *
+     * @param \WP_REST_Request $request Request.
+     * @return \WP_REST_Response|\WP_Error
+     */
     public function handle_wordlist( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
         // TODO: Replace with Helios token introspection when available.
         if ( ! $this->check_rate_limit() ) {
             return $this->rate_limit_error();
         }
 
-        $lang          = sanitize_text_field( (string) ( $request->get_param( 'lang_source' ) ?? '' ) );
+        $lang     = sanitize_text_field( (string) ( $request->get_param( 'lang_source' ) ?? '' ) );
         $per_page = $this->capped_param(
             $request,
             'per_page',
@@ -892,6 +977,12 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         return $response;
     }
 
+    /**
+     * Handle languages.
+     *
+     * @param \WP_REST_Request $request Request.
+     * @return \WP_REST_Response|\WP_Error
+     */
     public function handle_languages( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
         // TODO: Replace with Helios token introspection when available.
         if ( ! $this->check_rate_limit() ) {
@@ -929,6 +1020,12 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         );
     }
 
+    /**
+     * Handle domains.
+     *
+     * @param \WP_REST_Request $request Request.
+     * @return \WP_REST_Response|\WP_Error
+     */
     public function handle_domains( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
         // TODO: Replace with Helios token introspection when available.
         if ( ! $this->check_rate_limit() ) {
@@ -1020,15 +1117,21 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         );
     }
 
+    /**
+     * Handle game set.
+     *
+     * @param \WP_REST_Request $request Request.
+     * @return \WP_REST_Response|\WP_Error
+     */
     public function handle_game_set( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
         // TODO: Replace with Helios token introspection when available.
         if ( ! $this->check_rate_limit() ) {
             return $this->rate_limit_error();
         }
 
-        $lang          = sanitize_text_field( (string) ( $request->get_param( 'lang_source' ) ?? '' ) );
-        $domain        = sanitize_text_field( (string) ( $request->get_param( 'domain' ) ?? '' ) );
-        $limit = $this->capped_param(
+        $lang   = sanitize_text_field( (string) ( $request->get_param( 'lang_source' ) ?? '' ) );
+        $domain = sanitize_text_field( (string) ( $request->get_param( 'domain' ) ?? '' ) );
+        $limit  = $this->capped_param(
             $request,
             'limit',
             array(
@@ -1254,6 +1357,12 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         return $response;
     }
 
+    /**
+     * Handle word of day.
+     *
+     * @param \WP_REST_Request $request Request.
+     * @return \WP_REST_Response|\WP_Error
+     */
     public function handle_word_of_day( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
         // TODO: Replace with Helios token introspection when available.
         if ( ! $this->check_rate_limit() ) {

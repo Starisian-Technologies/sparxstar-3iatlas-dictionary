@@ -1,4 +1,9 @@
 <?php
+/**
+ * sparxstar-3iatlas-dictionary.
+ *
+ * @package Sparxstar\3iAtlas\Dictionary
+ */
 
 declare(strict_types=1);
 
@@ -82,7 +87,7 @@ if ( file_exists( SPARX_3IATLAS_PATH . 'vendor/autoload.php' ) ) {
         define( 'SPARX_3IATLAS_PATH', SPARX_3IATLAS_PATH );
     }
     
-    // Register the Autoloder
+    // Register the Autoloder.
     if ( class_exists( 'Starisian\Sparxstar\IAtlas\includes\Autoloader' ) ) {
         \Starisian\Sparxstar\IAtlas\includes\Autoloader::sparxIAtlas_register();
     }
@@ -102,7 +107,7 @@ register_uninstall_hook( __FILE__, 'Starisian\Sparxstar\IAtlas\sparxIAtlas_unins
  * @return void
  */
 function sparxIAtlas_activate_plugin() {
-    // Trigger CPT registration to verify rewrite rules
+    // Trigger CPT registration to verify rewrite rules.
     if ( class_exists( Sparxstar3IAtlasPostTypes::class ) ) {
         $pt = new Sparxstar3IAtlasPostTypes();
     }
@@ -143,7 +148,7 @@ function sparxIAtlas_deactivate_plugin() {
  * @return void
  */
 function sparxIAtlas_uninstall_plugin() {
-    // Clean up options or data if needed
+    // Clean up options or data if needed.
     delete_option( 'sparxstar_dict_flush_routes' );
 }
 

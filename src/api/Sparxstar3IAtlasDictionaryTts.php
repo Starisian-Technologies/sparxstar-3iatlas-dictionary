@@ -1,4 +1,9 @@
 <?php
+/**
+ * Sparxstar3 IAtlas Dictionary Tts.
+ *
+ * @package Sparxstar\3iAtlas\Dictionary
+ */
 
 declare(strict_types=1);
 
@@ -31,6 +36,9 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit( 1 );
 }
 
+/**
+ * Text-to-speech endpoints for dictionary entries.
+ */
 final class Sparxstar3IAtlasDictionaryTts {
 
     /** REST namespace shared with the main API class. */
@@ -52,10 +60,20 @@ final class Sparxstar3IAtlasDictionaryTts {
     /** Whether the pending wav was served from cache (for X-TTS-Cache header). */
     private bool $pending_cached = false;
 
+    /**
+     * Register hooks.
+     *
+     * @return void
+     */
     public function register_hooks(): void {
         add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
     }
 
+    /**
+     * Register rest routes.
+     *
+     * @return void
+     */
     public function register_rest_routes(): void {
         register_rest_route(
             self::REST_NAMESPACE,
@@ -78,6 +96,8 @@ final class Sparxstar3IAtlasDictionaryTts {
 
     /**
      * Permission callback: ephemeral page token or API key required (browse scope).
+     *
+     * @param \WP_REST_Request $request Request.
      */
     public function permission_browse( \WP_REST_Request $request ): bool|\WP_Error {
         $resolver = new DictionaryAuthResolver();
@@ -91,6 +111,8 @@ final class Sparxstar3IAtlasDictionaryTts {
 
     /**
      * Strips tags, trims, and enforces UTF-8 on the headword.
+     *
+     * @param string $value Value.
      */
     public function sanitize_word( string $value ): string {
         return mb_substr( trim( wp_strip_all_tags( $value ) ), 0, self::MAX_WORD_BYTES, 'UTF-8' );
@@ -98,6 +120,8 @@ final class Sparxstar3IAtlasDictionaryTts {
 
     /**
      * Rejects empty headwords and overly long inputs.
+     *
+     * @param mixed $value Value.
      */
     public function validate_word( mixed $value ): bool|\WP_Error {
         $s = (string) $value;
@@ -114,6 +138,8 @@ final class Sparxstar3IAtlasDictionaryTts {
      * Handles GET /pronounce?word=<headword>.
      *
      * Checks the file cache first; synthesizes via Piper on miss; returns audio/wav.
+     *
+     * @param \WP_REST_Request $request Request.
      */
     public function handle_pronounce( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
         $word = (string) $request->get_param( 'word' );
@@ -214,9 +240,9 @@ final class Sparxstar3IAtlasDictionaryTts {
         );
 
         $descriptors = array(
-            0 => array( 'pipe', 'r' ), // stdin
-            1 => array( 'pipe', 'w' ), // stdout (unused with --output_file)
-            2 => array( 'pipe', 'w' ), // stderr (error detection)
+            0 => array( 'pipe', 'r' ), // stdin.
+            1 => array( 'pipe', 'w' ), // stdout (unused with --output_file).
+            2 => array( 'pipe', 'w' ), // stderr (error detection).
         );
 
         $pipes   = array();

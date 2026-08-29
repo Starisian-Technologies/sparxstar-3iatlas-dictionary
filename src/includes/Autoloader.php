@@ -1,4 +1,10 @@
 <?php
+/**
+ * Autoloader.
+ *
+ * @package Sparxstar\3iAtlas\Dictionary
+ */
+
 declare( strict_types=1 );
 
 namespace Starisian\Sparxstar\IAtlas\includes;
@@ -54,7 +60,7 @@ class Autoloader {
      * @return void
      */
     public static function sparxIAtlas_loadClass( string $className ): void {
-        // Ensure required constants are defined
+        // Ensure required constants are defined.
         if ( ! defined( 'SPARX_3IATLAS_NAMESPACE' ) || ! defined( 'SPARX_3IATLAS_PATH' ) ) {
             error_log( 'Autoloader error: SPARX_3IATLAS_NAMESPACE or SPARX_3IATLAS_PATH is not defined.' );
             return;

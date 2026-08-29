@@ -1,4 +1,9 @@
 <?php
+/**
+ * Sparxstar3 IAtlas Dictionary.
+ *
+ * @package Sparxstar\3iAtlas\Dictionary
+ */
 
 declare(strict_types=1);
 /**
@@ -43,6 +48,11 @@ final class Sparxstar3IAtlasDictionary {
      */
     private static ?Sparxstar3IAtlasDictionary $instance = null;
 
+    /**
+     * Construct.
+     *
+     * @return mixed
+     */
     private function __construct() {
         $this->sparxIAtlas_load_textdomain();
         $this->sparxIAtlas_load_dependencies();
@@ -327,7 +337,7 @@ final class Sparxstar3IAtlasDictionary {
      */
     public function sparxIAtlas_register_assets(): void {
         try {
-            // Register assets first so they can be enqueued later via shortcode or logic
+            // Register assets first so they can be enqueued later via shortcode or logic.
             wp_register_script(
                 'sparxstar-dictionary-app',
                 SPARX_3IATLAS_URL . 'assets/js/sparxstar-3iatlas-dictionary-app.min.js',
@@ -381,7 +391,7 @@ final class Sparxstar3IAtlasDictionary {
 
             // Pass settings to the frontend (variable name uses capital S to match the React app).
             wp_localize_script( 'sparxstar-dictionary-app', 'sparxstarDictionarySettings', $settings );
-            // Ensure assets are enqueued (in case they weren't caught by the global check, e.g., in a widget)
+            // Ensure assets are enqueued (in case they weren't caught by the global check, e.g., in a widget).
             wp_enqueue_script( 'sparxstar-dictionary-app' );
             wp_enqueue_style( 'sparxstar-dictionary-style' );
         } catch ( \Throwable $throwable ) {
@@ -412,20 +422,20 @@ final class Sparxstar3IAtlasDictionary {
                 new Sparxstar3IAtlasPostTypes();
             }
 
-            // Only load frontend components if not in admin area
+            // Only load frontend components if not in admin area.
             if ( ! is_admin() ) {
                 if ( class_exists( Sparxstar3IAtlasDictionaryCore::class ) ) {
-                    // Instantiate Core logic
+                    // Instantiate Core logic.
                     Sparxstar3IAtlasDictionaryCore::sparxIAtlas_get_instance();
                 }
 
                 if ( class_exists( Sparxstar3IAtlasDictionaryForm::class ) && is_user_logged_in() ) {
-                    // Instantiate Form if needed
+                    // Instantiate Form if needed.
                     new Sparxstar3IAtlasDictionaryForm();
                 }
             }
 
-            // REST API endpoints
+            // REST API endpoints.
             if ( class_exists( \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryRestApi::class ) ) {
                 ( new \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryRestApi() )->register_hooks();
             }
@@ -453,7 +463,7 @@ final class Sparxstar3IAtlasDictionary {
                 \Starisian\Sparxstar\IAtlas\api\auth\UniqueEntryBudget::register_hooks();
             }
 
-            // Instantiate Auto Linker
+            // Instantiate Auto Linker.
             if ( class_exists( Sparxstar3IAtlasAutoLinker::class ) ) {
                 new Sparxstar3IAtlasAutoLinker();
             }
@@ -486,17 +496,28 @@ final class Sparxstar3IAtlasDictionary {
         load_plugin_textdomain( 'sparxstar-3iatlas-dictionary', false, dirname( plugin_basename( SPARX_3IATLAS_PATH . 'sparxstar-3iatlas-dictionary.php' ) ) . '/languages' );
     }
 
-    // Prevent cloning and unserializing
+    // Prevent cloning and unserializing.
     private function __clone(): never {
         _doing_it_wrong( __FUNCTION__, 'Cloning this object is forbidden.', SPARX_3IATLAS_VERSION );
         throw new \RuntimeException( 'Cloning is not allowed.' );
     }
 
+    /**
+     * Wakeup.
+     *
+     * @return never
+     */
     public function __wakeup(): never {
         _doing_it_wrong( __FUNCTION__, 'Serializing this object is forbidden.', SPARX_3IATLAS_VERSION );
         throw new \RuntimeException( 'Serializing is not allowed.' );
     }
 
+    /**
+     * Unserialize.
+     *
+     * @param array $data Data.
+     * @return never
+     */
     public function __unserialize( array $data ): never {
         _doing_it_wrong( __FUNCTION__, 'Unserializing this object is forbidden.', SPARX_3IATLAS_VERSION );
         throw new \RuntimeException( 'Unserializing is not allowed.' );

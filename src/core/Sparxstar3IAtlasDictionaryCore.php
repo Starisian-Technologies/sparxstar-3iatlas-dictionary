@@ -1,4 +1,9 @@
 <?php
+/**
+ * Sparxstar3 IAtlas Dictionary Core.
+ *
+ * @package Sparxstar\3iAtlas\Dictionary
+ */
 
 /**
  * Core functionality file.
@@ -62,9 +67,9 @@ final class Sparxstar3IAtlasDictionaryCore {
      * @return void
      */
     private function sparxIAtlas_register_hooks(): void {
-        // Hook into ACF save post to sync search index
+        // Hook into ACF save post to sync search index.
         add_action( 'acf/save_post', array( $this, 'sparxIAtlas_sync_dictionary_search_index' ), 20 );
-        // Specifically for WP All Import to ensure the search index builds
+        // Specifically for WP All Import to ensure the search index builds.
         add_action(
             'pmxi_saved_post',
             function ( $id ) {
@@ -73,27 +78,27 @@ final class Sparxstar3IAtlasDictionaryCore {
             10,
             1
         );
-        // add action to set the alphabetical grouping taxonomy
+        // add action to set the alphabetical grouping taxonomy.
         add_action(
             'save_post_aiwa_cpt_dictionary',
             function ( $post_id ) {
-                // Get the first letter of the title
+                // Get the first letter of the title.
                 $title        = get_the_title( $post_id );
                 $first_letter = strtoupper( substr( $title, 0, 1 ) );
 
-                // If it's a number or special char, group under '#'
+                // If it's a number or special char, group under '#'.
                 if ( ! ctype_alpha( $first_letter ) ) {
                     $first_letter = '#';
                 }
 
-                // Set the taxonomy term
+                // Set the taxonomy term.
                 wp_set_object_terms( $post_id, $first_letter, 'aiwa-alpha-letter' );
             },
             10,
             1
         );
 
-        // NEW: Increase the query limit for Dictionary requests
+        // NEW: Increase the query limit for Dictionary requests.
         add_filter( 'graphql_connection_max_query_amount', array( $this, 'sparxIAtlas_increase_query_limit' ), 10, 5 );
     }
 
@@ -107,19 +112,19 @@ final class Sparxstar3IAtlasDictionaryCore {
      * @return void
      */
     public function sparxIAtlas_sync_dictionary_search_index( int $post_id ): void {
-        // Only run for our Dictionary CPT
+        // Only run for our Dictionary CPT.
         if ( get_post_type( $post_id ) !== 'aiwa_cpt_dictionary' ) {
             return;
         }
 
-        // Get the title (Foreign Word) and the ACF translation (English)
+        // Get the title (Foreign Word) and the ACF translation (English).
         $foreign_word = get_the_title( $post_id );
         $translation  = get_field( 'aiwa_translation', $post_id );
 
-        // Combine them into a single string
+        // Combine them into a single string.
         $combined_index = $foreign_word . ' ' . $translation;
 
-        // Update the post_content (hidden index) without triggering an infinite loop
+        // Update the post_content (hidden index) without triggering an infinite loop.
         remove_action( 'acf/save_post', 'sync_dictionary_search_index', 20 );
         wp_update_post(
             array(
@@ -169,7 +174,7 @@ final class Sparxstar3IAtlasDictionaryCore {
     }
 
 
-    // Prevent cloning and unserializing
+    // Prevent cloning and unserializing.
     /**
      * Prevents cloning of the singleton instance.
      *
@@ -197,6 +202,12 @@ final class Sparxstar3IAtlasDictionaryCore {
         throw new \RuntimeException( 'Serializing is not allowed.' );
     }
 
+    /**
+     * Unserialize.
+     *
+     * @param array $data Data.
+     * @return never
+     */
     public function __unserialize( array $data ): never {
         _doing_it_wrong(
             __FUNCTION__,

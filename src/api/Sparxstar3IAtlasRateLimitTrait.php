@@ -1,4 +1,9 @@
 <?php
+/**
+ * Sparxstar3 IAtlas Rate Limit Trait.
+ *
+ * @package Sparxstar\3iAtlas\Dictionary
+ */
 
 declare(strict_types=1);
 
@@ -26,6 +31,11 @@ trait Sparxstar3IAtlasRateLimitTrait {
         return $this->rate_limit_remaining;
     }
 
+    /**
+     * Check rate limit.
+     *
+     * @return bool
+     */
     private function check_rate_limit(): bool {
         // TODO: Replace with Helios token introspection when available.
         $ip       = $this->get_client_ip();
@@ -80,6 +90,12 @@ trait Sparxstar3IAtlasRateLimitTrait {
         }
     }
 
+    /**
+     * Acquire rate limit lock.
+     *
+     * @param string $lock_key Lock key.
+     * @return bool
+     */
     private function acquire_rate_limit_lock( string $lock_key ): bool {
         $lock_ttl    = 5;
         $attempts    = 5;
@@ -100,6 +116,12 @@ trait Sparxstar3IAtlasRateLimitTrait {
         return false;
     }
 
+    /**
+     * Release rate limit lock.
+     *
+     * @param string $lock_key Lock key.
+     * @return void
+     */
     private function release_rate_limit_lock( string $lock_key ): void {
         if ( wp_using_ext_object_cache() ) {
             wp_cache_delete( $lock_key, 'sparx_3iatlas_rate_limit' );
@@ -109,6 +131,12 @@ trait Sparxstar3IAtlasRateLimitTrait {
         $this->release_mysql_lock( $lock_key );
     }
 
+    /**
+     * Acquire mysql lock.
+     *
+     * @param string $lock_key Lock key.
+     * @return bool
+     */
     private function acquire_mysql_lock( string $lock_key ): bool {
         global $wpdb;
 
@@ -125,6 +153,12 @@ trait Sparxstar3IAtlasRateLimitTrait {
         return 1 === (int) $acquired;
     }
 
+    /**
+     * Release mysql lock.
+     *
+     * @param string $lock_key Lock key.
+     * @return void
+     */
     private function release_mysql_lock( string $lock_key ): void {
         global $wpdb;
 
@@ -138,6 +172,11 @@ trait Sparxstar3IAtlasRateLimitTrait {
         );
     }
 
+    /**
+     * Get client ip.
+     *
+     * @return string
+     */
     private function get_client_ip(): string {
         $remote_addr = trim( (string) ( $_SERVER['REMOTE_ADDR'] ?? '' ) );
 

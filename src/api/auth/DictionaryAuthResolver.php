@@ -59,7 +59,7 @@ final class DictionaryAuthResolver implements DictionaryAuthInterface {
                     'anomaly',
                     'retired_credential_presented_after_cutover',
                     array(
-                        'route'            => $request->get_route(),
+                        'route'             => $request->get_route(),
                         'presented_api_key' => $has_api_key,
                         'presented_token'   => $has_page_token,
                     )

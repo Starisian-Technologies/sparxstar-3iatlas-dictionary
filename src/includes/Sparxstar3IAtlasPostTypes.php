@@ -1,4 +1,10 @@
 <?php
+/**
+ * Sparxstar3 IAtlas Post Types.
+ *
+ * @package Sparxstar\3iAtlas\Dictionary
+ */
+
 declare(strict_types=1);
 /**
  * Post Types registration file.
@@ -1003,6 +1009,6 @@ class Sparxstar3IAtlasPostTypes {
             } 
         );
 
-        // End of registering custom fields for Dictionary Entry Details
+        // End of registering custom fields for Dictionary Entry Details.
     }
 }

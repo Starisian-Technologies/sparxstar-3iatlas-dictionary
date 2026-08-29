@@ -1,4 +1,9 @@
 <?php
+/**
+ * Sparxstar3 IAtlas Dictionary Spell Checker.
+ *
+ * @package Sparxstar\3iAtlas\Dictionary
+ */
 
 declare(strict_types=1);
 
@@ -33,6 +38,9 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit( 1 );
 }
 
+/**
+ * Spell-check and fuzzy-match dictionary headwords.
+ */
 final class Sparxstar3IAtlasDictionarySpellChecker {
 
     use Sparxstar3IAtlasRateLimitTrait;
@@ -109,6 +117,8 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
     /**
      * Validate a word list and provide corpus-wide validity plus ranked,
      * language-tagged suggestions.
+     *
+     * @param \WP_REST_Request $request Request.
      */
     public function handle_spell( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
         // TODO: Replace with Helios token introspection when available.
@@ -214,6 +224,8 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
      * Find a single published dictionary post that exactly matches a word,
      * regardless of language. Validity is a corpus-wide union — see class
      * docblock. Do not reintroduce a taxonomy filter here.
+     *
+     * @param string $word Word.
      */
     private function find_exact_word_post( string $word ): ?\WP_Post {
         global $wpdb;
@@ -243,6 +255,8 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
     /**
      * Resolve the source-language slug for a single dictionary post, for
      * attaching as metadata on a matched word or a suggestion candidate.
+     *
+     * @param int $post_id Post id.
      */
     private function language_slug_for_post( int $post_id ): string {
         // get_the_terms() (unlike wp_get_object_terms()) is backed by WordPress's
@@ -273,6 +287,8 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
      * only, never a filter), then post ID ascending for determinism.
      *
      * @return array<int, array{word:string,language:string,distance:int,frequency:null}>
+     * @param string $word Word.
+     * @param string $lang_source Lang source.
      */
     private function find_fuzzy_suggestions( string $word, string $lang_source ): array {
         // Length guard: a 1-character `s` search degrades to a near-universal
@@ -366,6 +382,9 @@ final class Sparxstar3IAtlasDictionarySpellChecker {
      * multi-byte character (e.g. Yorùbá's diacritics) as multiple edits.
      * That is unacceptable for a multilingual corpus, so distance is computed
      * here over an array of Unicode code points instead of raw bytes.
+     *
+     * @param string $a A.
+     * @param string $b B.
      */
     private static function utf8_levenshtein( string $a, string $b ): int {
         if ( $a === $b ) {
