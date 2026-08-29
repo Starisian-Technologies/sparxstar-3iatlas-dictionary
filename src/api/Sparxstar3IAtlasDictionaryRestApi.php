@@ -111,6 +111,8 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         );
 
         /**
+         * Legacy progress-sync route, retained only until the Game Service lands.
+         *
          * @deprecated June 2026 — retired per 3IATLAS-IDENTITY-AND-GAME-SERVICES-DECISION-v1.0 §6.2.
          * Progress sync moves to the SPARXSTAR Game Service (RLC engine). No client may be
          * built against this endpoint. Route removal is scheduled after the Game Service
@@ -229,8 +231,8 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         // calls and privacy-protected browsers omit it; the IP rate limit is the backstop.
         $referer = trim( (string) $request->get_header( 'Referer' ) );
         if ( '' !== $referer ) {
-            $referer_host = (string) parse_url( $referer, PHP_URL_HOST );
-            $site_host    = (string) parse_url( site_url(), PHP_URL_HOST );
+            $referer_host = (string) wp_parse_url( $referer, PHP_URL_HOST );
+            $site_host    = (string) wp_parse_url( site_url(), PHP_URL_HOST );
             if ( '' !== $referer_host && $referer_host !== $site_host ) {
                 return new \WP_Error(
                     'forbidden',
@@ -1363,6 +1365,7 @@ final class Sparxstar3IAtlasDictionaryRestApi {
      * @param \WP_REST_Request $request Request.
      * @return \WP_REST_Response|\WP_Error
      */
+    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter -- Required by the WP_REST_Server callback signature.
     public function handle_word_of_day( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
         // TODO: Replace with Helios token introspection when available.
         if ( ! $this->check_rate_limit() ) {
@@ -1449,6 +1452,8 @@ final class Sparxstar3IAtlasDictionaryRestApi {
     }
 
     /**
+     * Legacy progress-sync handler, retained only until the Game Service lands.
+     *
      * @deprecated June 2026 — retired per 3IATLAS-IDENTITY-AND-GAME-SERVICES-DECISION-v1.0 §6.2.
      * Progress sync moves to the SPARXSTAR Game Service (RLC engine). No client may be
      * built against this endpoint. Route removal is scheduled after the Game Service

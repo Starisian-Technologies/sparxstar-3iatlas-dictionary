@@ -65,7 +65,7 @@ final class Sparxstar3IAtlasDictionary {
      * @return Sparxstar3IAtlasDictionary The singleton instance.
      */
     public static function sparxIAtlas_get_instance(): Sparxstar3IAtlasDictionary {
-        if ( self::$instance === null ) {
+        if ( null === self::$instance ) {
             self::$instance = new self();
         }
         return self::$instance;
@@ -298,6 +298,7 @@ final class Sparxstar3IAtlasDictionary {
             exit;
         } catch ( \Throwable $throwable ) {
             if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Deliberate diagnostic, already gated on WP_DEBUG above.
                 error_log( '[Starisian 3IAtlas Dictionary]: Error rendering app page - ' . $throwable->getMessage() );
             }
             status_header( 500 );
@@ -358,10 +359,11 @@ final class Sparxstar3IAtlasDictionary {
                 'sparxstar-dictionary-style',
                 SPARX_3IATLAS_URL . 'assets/css/sparxstar-3iatlas-dictionary-app.min.css',
                 array( 'sparxstar-google-fonts' ),
-                SPARX_3IATLAS_VERSION
+                esc_html( SPARX_3IATLAS_VERSION )
             );
         } catch ( \Throwable $throwable ) {
             if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Deliberate diagnostic, already gated on WP_DEBUG above.
                 error_log( '[Starisian 3IAtlas Dictionary]: Error registering/enqueuing assets - ' . $throwable->getMessage() );
             }
         }
@@ -396,6 +398,7 @@ final class Sparxstar3IAtlasDictionary {
             wp_enqueue_style( 'sparxstar-dictionary-style' );
         } catch ( \Throwable $throwable ) {
             if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Deliberate diagnostic, already gated on WP_DEBUG above.
                 error_log( '[Starisian 3IAtlas Dictionary]: Error rendering shortcode - ' . $throwable->getMessage() );
             }
             return '<p>' . esc_html__( 'An error occurred while loading the dictionary.', 'sparxstar-3iatlas-dictionary' ) . '</p>';
@@ -482,6 +485,7 @@ final class Sparxstar3IAtlasDictionary {
             }
         } catch ( \Throwable $throwable ) {
             if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Deliberate diagnostic, already gated on WP_DEBUG above.
                 error_log( '[Starisian 3IAtlas Dictionary]: Error loading dependencies - ' . $throwable->getMessage() );
             }
         }
@@ -498,17 +502,18 @@ final class Sparxstar3IAtlasDictionary {
 
     // Prevent cloning and unserializing.
     private function __clone(): never {
-        _doing_it_wrong( __FUNCTION__, 'Cloning this object is forbidden.', SPARX_3IATLAS_VERSION );
+        _doing_it_wrong( __FUNCTION__, 'Cloning this object is forbidden.', esc_html( SPARX_3IATLAS_VERSION ) );
         throw new \RuntimeException( 'Cloning is not allowed.' );
     }
 
     /**
      * Wakeup.
      *
+     * @throws \RuntimeException Always — this object must not be duplicated.
      * @return never
      */
     public function __wakeup(): never {
-        _doing_it_wrong( __FUNCTION__, 'Serializing this object is forbidden.', SPARX_3IATLAS_VERSION );
+        _doing_it_wrong( __FUNCTION__, 'Serializing this object is forbidden.', esc_html( SPARX_3IATLAS_VERSION ) );
         throw new \RuntimeException( 'Serializing is not allowed.' );
     }
 
@@ -516,10 +521,11 @@ final class Sparxstar3IAtlasDictionary {
      * Unserialize.
      *
      * @param array $data Data.
+     * @throws \RuntimeException Always — this object must not be duplicated.
      * @return never
      */
     public function __unserialize( array $data ): never {
-        _doing_it_wrong( __FUNCTION__, 'Unserializing this object is forbidden.', SPARX_3IATLAS_VERSION );
+        _doing_it_wrong( __FUNCTION__, 'Unserializing this object is forbidden.', esc_html( SPARX_3IATLAS_VERSION ) );
         throw new \RuntimeException( 'Unserializing is not allowed.' );
     }
 }

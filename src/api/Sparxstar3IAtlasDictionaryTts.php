@@ -53,11 +53,18 @@ final class Sparxstar3IAtlasDictionaryTts {
     /** Cache-Control max-age for served wav responses (7 days). */
     private const CACHE_MAX_AGE = 604800;
 
-    /** Pending wav bytes to emit via serve_wav_response(). */
-    /** Pending wav bytes to emit via serve_wav_response(). */
+    /**
+     * Pending wav bytes to emit via serve_wav_response().
+     *
+     * @var string|null
+     */
     private ?string $pending_wav = null;
 
-    /** Whether the pending wav was served from cache (for X-TTS-Cache header). */
+    /**
+     * Whether the pending wav was served from cache (for the X-TTS-Cache header).
+     *
+     * @var bool
+     */
     private bool $pending_cached = false;
 
     /**
@@ -308,14 +315,15 @@ final class Sparxstar3IAtlasDictionaryTts {
     }
 
     /**
-     * rest_pre_serve_request filter — outputs wav bytes and signals that the
-     * request has been fully served.
+     * Outputs wav bytes on the rest_pre_serve_request filter and signals that
+     * the request has been fully served.
      *
      * @param bool              $served  Whether the request has already been served.
      * @param \WP_HTTP_Response $result  The response object (unused).
      * @param \WP_REST_Request  $request The current request (unused).
      * @return bool Always true (request is now served).
      */
+    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter -- Required by the rest_pre_serve_request filter signature.
     public function serve_wav_response( bool $served, \WP_HTTP_Response $result, \WP_REST_Request $request ): bool {
         if ( null === $this->pending_wav ) {
             return $served;

@@ -1,6 +1,6 @@
 <?php
 /**
- * sparxstar-3iatlas-dictionary.
+ * SPARXSTAR 3iAtlas Dictionary plugin bootstrap.
  *
  * @package Sparxstar\3iAtlas\Dictionary
  */

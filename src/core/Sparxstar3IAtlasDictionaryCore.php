@@ -48,7 +48,7 @@ final class Sparxstar3IAtlasDictionaryCore {
      * @return Sparxstar3IAtlasDictionaryCore The singleton instance.
      */
     public static function sparxIAtlas_get_instance(): Sparxstar3IAtlasDictionaryCore {
-        if ( self::$instance === null ) {
+        if ( null === self::$instance ) {
             self::$instance = new self();
         }
         return self::$instance;
@@ -178,26 +178,28 @@ final class Sparxstar3IAtlasDictionaryCore {
     /**
      * Prevents cloning of the singleton instance.
      *
+     * @throws \RuntimeException Always — this object must not be duplicated.
      * @return never
      */
     private function __clone(): never {
         _doing_it_wrong(
             __FUNCTION__,
             'Cloning this object is forbidden.',
-            SPARX_3IATLAS_VERSION
+            esc_html( SPARX_3IATLAS_VERSION )
         );
         throw new \RuntimeException( 'Cloning is not allowed.' );
     }
     /**
      * Prevents unserializing of the singleton instance.
      *
+     * @throws \RuntimeException Always — this object must not be duplicated.
      * @return never
      */
     public function __wakeup(): never {
         _doing_it_wrong(
             __FUNCTION__,
             'Serializing this object is forbidden.',
-            SPARX_3IATLAS_VERSION
+            esc_html( SPARX_3IATLAS_VERSION )
         );
         throw new \RuntimeException( 'Serializing is not allowed.' );
     }
@@ -206,13 +208,14 @@ final class Sparxstar3IAtlasDictionaryCore {
      * Unserialize.
      *
      * @param array $data Data.
+     * @throws \RuntimeException Always — this object must not be duplicated.
      * @return never
      */
     public function __unserialize( array $data ): never {
         _doing_it_wrong(
             __FUNCTION__,
             'Unserializing this object is forbidden.',
-            SPARX_3IATLAS_VERSION
+            esc_html( SPARX_3IATLAS_VERSION )
         );
         throw new \RuntimeException( 'Unserializing is not allowed.' );
     }

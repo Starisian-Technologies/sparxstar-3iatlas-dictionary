@@ -56,26 +56,29 @@ class Autoloader {
     /**
      * PSR-4 autoload implementation.
      *
-     * @param string $className Fully qualified class name.
+     * @param string $class_name Fully qualified class name.
      * @return void
      */
-    public static function sparxIAtlas_loadClass( string $className ): void {
+    public static function sparxIAtlas_loadClass( string $class_name ): void {
         // Ensure required constants are defined.
         if ( ! defined( 'SPARX_3IATLAS_NAMESPACE' ) || ! defined( 'SPARX_3IATLAS_PATH' ) ) {
-            error_log( 'Autoloader error: SPARX_3IATLAS_NAMESPACE or SPARX_3IATLAS_PATH is not defined.' );
+            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Deliberate bootstrap diagnostic, debug builds only.
+                error_log( 'Autoloader error: SPARX_3IATLAS_NAMESPACE or SPARX_3IATLAS_PATH is not defined.' );
+            }
             return;
         }
 
-        $baseNamespace = SPARX_3IATLAS_NAMESPACE;
-        $baseDir       = SPARX_3IATLAS_PATH . 'src/';
+        $base_namespace = SPARX_3IATLAS_NAMESPACE;
+        $base_dir       = SPARX_3IATLAS_PATH . 'src/';
 
-        $len = strlen( $baseNamespace );
-        if ( strncmp( $className, $baseNamespace, $len ) !== 0 ) {
+        $len = strlen( $base_namespace );
+        if ( strncmp( $class_name, $base_namespace, $len ) !== 0 ) {
             return;
         }
 
-        $relativeClass = substr( $className, $len );
-        $file          = $baseDir . str_replace( '\\', '/', $relativeClass ) . '.php';
+        $relative_class = substr( $class_name, $len );
+        $file           = $base_dir . str_replace( '\\', '/', $relative_class ) . '.php';
 
         if ( file_exists( $file ) ) {
             require_once $file;

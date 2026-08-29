@@ -18,7 +18,11 @@ namespace Starisian\Sparxstar\IAtlas\api;
 
 trait Sparxstar3IAtlasRateLimitTrait {
 
-    /** @var int Remaining quota from the last check_rate_limit() call. */
+    /**
+     * Remaining quota from the last check_rate_limit() call.
+     *
+     * @var int
+     */
     private int $rate_limit_remaining = 0;
 
     /**

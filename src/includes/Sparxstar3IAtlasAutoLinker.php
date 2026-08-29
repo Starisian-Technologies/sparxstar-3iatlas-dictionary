@@ -43,7 +43,18 @@ class Sparxstar3IAtlasAutoLinker {
     // Max terms per regex pass. Keeps each compiled pattern well under PCRE size limits.
     private const REGEX_CHUNK_SIZE = 200;
 
+    /**
+     * How long a cached post lookup stays valid, in seconds.
+     *
+     * @var int
+     */
     private int $post_cache_expires;
+
+    /**
+     * How long the cached term map stays valid, in seconds.
+     *
+     * @var int
+     */
     private int $term_cache_expires;
 
     /**
@@ -199,7 +210,7 @@ class Sparxstar3IAtlasAutoLinker {
      * Group 4: <style ...>...</style>    (Skip styles)
      * Group 5: (?<!\p{L})TERM(?!\p{L})  (Match whole words only, Unicode-aware)
      *
-     * @param string $content
+     * @param string $content The post content to scan for dictionary terms.
      * @param array  $terms  Associative array of term => URL, sorted longest-first.
      * @return string
      */
@@ -277,6 +288,7 @@ class Sparxstar3IAtlasAutoLinker {
             // the content as-is for this chunk rather than silently dropping output.
             if ( null === $result ) {
                 if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                    // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Deliberate diagnostic, already gated on WP_DEBUG above.
                     error_log( '[Sparxstar 3iAtlas Dictionary]: Auto-linker regex failed on chunk ' . $chunk_index . '. PCRE error code: ' . preg_last_error() );
                 }
                 continue;
@@ -374,6 +386,7 @@ class Sparxstar3IAtlasAutoLinker {
      * @param int $time Time.
      * @return void
      */
+    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter -- Required by the setter signature kept for symmetry with the getter.
     private function _set_post_cache_time( int $time = 0 ): void {
         if ( defined( 'SPARX_3IATLAS_POST_CACHE' ) && SPARX_3IATLAS_POST_CACHE > 0 ) {
             $this->post_cache_expires = SPARX_3IATLAS_POST_CACHE;
@@ -387,6 +400,7 @@ class Sparxstar3IAtlasAutoLinker {
      * @param int $time Time.
      * @return void
      */
+    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter -- Required by the setter signature kept for symmetry with the getter.
     private function _set_term_cache_time( int $time = 0 ): void {
         if ( defined( 'SPARX_3IATLAS_TERM_CACHE' ) && SPARX_3IATLAS_TERM_CACHE > 0 ) {
             $this->term_cache_expires = SPARX_3IATLAS_TERM_CACHE;

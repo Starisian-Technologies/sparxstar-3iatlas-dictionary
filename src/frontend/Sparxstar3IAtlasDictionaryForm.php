@@ -149,7 +149,7 @@ final class Sparxstar3IAtlasDictionaryForm {
         $entry_data = array();
         if ( $entry_id ) {
             $post = get_post( $entry_id );
-            if ( ! $post || $post->post_type !== 'aiwa-cpt-dictionary' ) {
+            if ( ! $post || 'aiwa-cpt-dictionary' !== $post->post_type ) {
                 return '<div class="sparxstar-dict-notice error" role="alert">Invalid entry ID.</div>';
             }
 
@@ -208,8 +208,9 @@ final class Sparxstar3IAtlasDictionaryForm {
                         );
                         if ( ! is_wp_error( $language_terms ) && is_array( $language_terms ) ) {
                             foreach ( $language_terms as $lang_term ) {
-                                $selected = ( ( $entry_data['language'] ?? '' ) === $lang_term->slug ) ? ' selected' : '';
-                                echo '<option value="' . esc_attr( $lang_term->slug ) . '"' . $selected . '>' . esc_html( $lang_term->name ) . '</option>';
+                                echo '<option value="' . esc_attr( $lang_term->slug ) . '"'
+                                    . selected( $entry_data['language'] ?? '', $lang_term->slug, false )
+                                    . '>' . esc_html( $lang_term->name ) . '</option>';
                             }
                         }
                         ?>
@@ -618,7 +619,7 @@ final class Sparxstar3IAtlasDictionaryForm {
     
         $post = get_post( $syn_id );
     
-        if ( ! $post || $post->post_type !== 'aiwa-cpt-dictionary' ) {
+        if ( ! $post || 'aiwa-cpt-dictionary' !== $post->post_type ) {
             wp_send_json_error( array( 'message' => 'Synonym not found.' ) );
         }
     
@@ -652,7 +653,7 @@ final class Sparxstar3IAtlasDictionaryForm {
     
         $post = get_post( $entry_id );
     
-        if ( ! $post || $post->post_type !== 'aiwa-cpt-dictionary' ) {
+        if ( ! $post || 'aiwa-cpt-dictionary' !== $post->post_type ) {
             wp_send_json_error( array( 'message' => 'Entry not found.' ) );
         }
     
