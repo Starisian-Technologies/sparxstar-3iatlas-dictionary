@@ -612,6 +612,27 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         $record  = SystemCredentialAuth::find_by_id( $credential_id );
         $ceiling = UniqueEntryBudget::ceiling_for( $credential_id, is_array( $record ) ? $record : array() );
 
+        // Record the same entries against the source IP so a walk spread across several
+        // credentials from one host is still one visible pattern (spec §3). Namespaced
+        // into the same table on purpose — see UniqueEntryBudget::ip_key().
+        $source_ip = $this->get_client_ip();
+        $ip_key    = 'unknown' !== $source_ip ? UniqueEntryBudget::ip_key( $source_ip ) : '';
+
+        if ( '' !== $ip_key ) {
+            UniqueEntryBudget::record( $ip_key, $post_ids );
+        }
+
+        // Enumeration signatures are checked BEFORE the ceiling is enforced. The ceiling
+        // only fires once a system has taken its entire budget; these fire while it is
+        // still taking it, which is the difference between catching a harvest and
+        // reporting one (spec §3, §4).
+        Sparxstar3IAtlasDictionaryEnumerationDetector::inspect(
+            $credential_id,
+            $served,
+            $ceiling,
+            'unknown' !== $source_ip ? $source_ip : ''
+        );
+
         if ( $ceiling > 0 && $served > $ceiling ) {
             UniqueEntryBudget::alarm_exhausted( $credential_id, $served, $ceiling );
 

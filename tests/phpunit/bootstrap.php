@@ -235,7 +235,16 @@ if ( ! function_exists( 'register_post_type' ) ) {
 // ---------------------------------------------------------------------------
 
 if ( ! function_exists( 'do_action' ) ) {
-    function do_action( string $tag, mixed ...$args ): void {}
+    /**
+     * Records fired actions so tests can assert what a security event actually carried,
+     * not merely that something was emitted. Reset via $GLOBALS['__wp_actions_fired'].
+     */
+    function do_action( string $tag, mixed ...$args ): void {
+        if ( ! isset( $GLOBALS['__wp_actions_fired'] ) || ! is_array( $GLOBALS['__wp_actions_fired'] ) ) {
+            $GLOBALS['__wp_actions_fired'] = [];
+        }
+        $GLOBALS['__wp_actions_fired'][] = [ 'tag' => $tag, 'args' => $args ];
+    }
 }
 if ( ! function_exists( 'wp_json_encode' ) ) {
     function wp_json_encode( mixed $data, int $flags = 0, int $depth = 512 ): string|false {
@@ -269,6 +278,18 @@ if ( ! function_exists( 'wp_list_pluck' ) ) {
             $list
         );
     }
+}
+
+if ( ! defined( 'HOUR_IN_SECONDS' ) ) {
+    define( 'HOUR_IN_SECONDS', 3600 );
+}
+if ( ! defined( 'DAY_IN_SECONDS' ) ) {
+    define( 'DAY_IN_SECONDS', 86400 );
+}
+
+// Records of actions fired during a test, populated by the do_action stub.
+if ( ! isset( $GLOBALS['__wp_actions_fired'] ) ) {
+    $GLOBALS['__wp_actions_fired'] = [];
 }
 
 // Initialise the options store used by stubs.
