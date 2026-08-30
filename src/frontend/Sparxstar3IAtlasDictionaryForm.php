@@ -95,6 +95,7 @@ final class Sparxstar3IAtlasDictionaryForm {
             wp_enqueue_media();
             if ( defined( 'SPARX_3IATLAS_URL' ) ) {
                 // Inter from Google Fonts — wide African-language coverage; system fonts are the fallback/swap.
+                // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- External Google Fonts URL; a version query string would defeat their caching.
                 wp_enqueue_style( 'sparxstar-google-fonts', SPARX_3IATLAS_GOOGLE_FONTS_URL, array(), null );
                 wp_enqueue_style( 'sparxstar-dict-form-style', SPARX_3IATLAS_URL . 'assets/css/sparxstar-3iatlas-dictionary-style.min.css', array( 'sparxstar-google-fonts' ), SPARX_3IATLAS_VERSION );
                 wp_enqueue_script( 'sparxstar-dict-form-script', SPARX_3IATLAS_URL . 'assets/js/sparxstar-3iatlas-dictionary-form.min.js', array( 'jquery' ), SPARX_3IATLAS_VERSION, true );

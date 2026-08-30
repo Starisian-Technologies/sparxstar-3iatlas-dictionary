@@ -352,6 +352,7 @@ final class Sparxstar3IAtlasDictionary {
                 'sparxstar-google-fonts',
                 SPARX_3IATLAS_GOOGLE_FONTS_URL,
                 array(),
+                // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- External Google Fonts URL; a version query string would defeat their caching.
                 null
             );
 
@@ -500,7 +501,12 @@ final class Sparxstar3IAtlasDictionary {
         load_plugin_textdomain( 'sparxstar-3iatlas-dictionary', false, dirname( plugin_basename( SPARX_3IATLAS_PATH . 'sparxstar-3iatlas-dictionary.php' ) ) . '/languages' );
     }
 
-    // Prevent cloning and unserializing.
+    /**
+     * Prevents cloning of the singleton instance.
+     *
+     * @throws \RuntimeException Always — this object must not be duplicated.
+     * @return never
+     */
     private function __clone(): never {
         _doing_it_wrong( __FUNCTION__, 'Cloning this object is forbidden.', esc_html( SPARX_3IATLAS_VERSION ) );
         throw new \RuntimeException( 'Cloning is not allowed.' );

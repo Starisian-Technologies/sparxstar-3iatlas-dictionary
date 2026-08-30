@@ -49,6 +49,7 @@ if ( ! defined( 'SPARX_3IATLAS_URL' ) ) {
     define( 'SPARX_3IATLAS_URL', plugin_dir_url( __FILE__ ) );
 }
 if ( ! defined( 'SPARX_3IATLAS_VERSION' ) ) {
+    // phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- Trailing marker is parsed by release-please; punctuating it would break version bumps.
     define( 'SPARX_3IATLAS_VERSION', '2.10.7' ); // x-release-please-version
 }
 if ( ! defined( 'SPARX_3IATLAS_NAMESPACE' ) ) {

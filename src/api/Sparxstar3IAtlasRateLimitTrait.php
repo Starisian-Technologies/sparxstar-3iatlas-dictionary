@@ -182,7 +182,7 @@ trait Sparxstar3IAtlasRateLimitTrait {
      * @return string
      */
     private function get_client_ip(): string {
-        $remote_addr = trim( (string) ( $_SERVER['REMOTE_ADDR'] ?? '' ) );
+        $remote_addr = trim( sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ?? '' ) ) );
 
         $remote_ip           = false !== filter_var( $remote_addr, FILTER_VALIDATE_IP ) ? $remote_addr : '';
         $trust_proxy_headers = defined( 'SPARX_3IATLAS_TRUST_PROXY_HEADERS' )
@@ -190,8 +190,8 @@ trait Sparxstar3IAtlasRateLimitTrait {
 
         $candidates = $trust_proxy_headers
             ? array(
-                (string) ( $_SERVER['HTTP_CF_CONNECTING_IP'] ?? '' ),
-                (string) ( $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '' ),
+                sanitize_text_field( wp_unslash( $_SERVER['HTTP_CF_CONNECTING_IP'] ?? '' ) ),
+                sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '' ) ),
                 $remote_ip,
             )
             : array( $remote_ip );

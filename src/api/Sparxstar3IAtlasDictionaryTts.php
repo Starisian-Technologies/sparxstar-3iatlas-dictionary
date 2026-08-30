@@ -252,7 +252,8 @@ final class Sparxstar3IAtlasDictionaryTts {
             2 => array( 'pipe', 'w' ), // stderr (error detection).
         );
 
-        $pipes   = array();
+        $pipes = array();
+        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_proc_open -- Piper is a local binary; proc_open is how its stdout is streamed.
         $process = proc_open( $cmd, $descriptors, $pipes );
 
         if ( ! is_resource( $process ) ) {
@@ -275,7 +276,7 @@ final class Sparxstar3IAtlasDictionaryTts {
         if ( 0 !== $exit_code ) {
             // Clean up any partial output Piper may have written.
             if ( file_exists( $cache_file ) ) {
-                @unlink( $cache_file );
+                unlink( $cache_file );
             }
             return new \WP_Error(
                 'piper_synthesis_failed',
@@ -323,8 +324,15 @@ final class Sparxstar3IAtlasDictionaryTts {
      * @param \WP_REST_Request  $request The current request (unused).
      * @return bool Always true (request is now served).
      */
-    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter -- Required by the rest_pre_serve_request filter signature.
-    public function serve_wav_response( bool $served, \WP_HTTP_Response $result, \WP_REST_Request $request ): bool {
+    /**
+     * Emit the pending wav bytes and mark the REST request as fully served.
+     *
+     * @param bool              $served  Whether the request has already been served.
+     * @param \WP_HTTP_Response $result  Unused; part of the filter signature.
+     * @param \WP_REST_Request  $request Unused; part of the filter signature.
+     * @return bool
+     */
+    public function serve_wav_response( bool $served, \WP_HTTP_Response $result, \WP_REST_Request $request ): bool { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter -- Fixed by the rest_pre_serve_request filter signature.
         if ( null === $this->pending_wav ) {
             return $served;
         }
