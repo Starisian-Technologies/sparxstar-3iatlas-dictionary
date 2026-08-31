@@ -615,11 +615,27 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         // Record the same entries against the source IP so a walk spread across several
         // credentials from one host is still one visible pattern (spec §3). Namespaced
         // into the same table on purpose — see UniqueEntryBudget::ip_key().
-        $source_ip = $this->get_client_ip();
-        $ip_key    = 'unknown' !== $source_ip ? UniqueEntryBudget::ip_key( $source_ip ) : '';
+        //
+        // trusted_source_ip(), not get_client_ip(): the latter accepts forwarding
+        // headers without establishing that the peer may assert them, which would let a
+        // caller pick its own accounting bucket and stay under the threshold forever.
+        // It returns an empty string when trust cannot be established rather than a
+        // spoofable or useless value.
+        $source_ip = Sparxstar3IAtlasDictionaryEnumerationDetector::trusted_source_ip();
+        $ip_key    = '' !== $source_ip ? UniqueEntryBudget::ip_key( $source_ip ) : '';
 
-        if ( '' !== $ip_key ) {
-            UniqueEntryBudget::record( $ip_key, $post_ids );
+        // The write result is checked rather than discarded: record() reports -1 on
+        // failure, and ignoring it would leave the cross-credential signature silently
+        // not running. Neither branch fails the request — per-source detection is an
+        // aid, not an enforcement control, and the §1.2 ceiling still applies either way.
+        if ( '' === $ip_key ) {
+            Sparxstar3IAtlasDictionaryEnumerationDetector::report_source_accounting_unavailable(
+                'source_ip_not_trustworthy'
+            );
+        } elseif ( UniqueEntryBudget::record( $ip_key, $post_ids ) < 0 ) {
+            Sparxstar3IAtlasDictionaryEnumerationDetector::report_source_accounting_unavailable(
+                'source_accounting_write_failed'
+            );
         }
 
         // Enumeration signatures are checked BEFORE the ceiling is enforced. The ceiling
@@ -630,7 +646,7 @@ final class Sparxstar3IAtlasDictionaryRestApi {
             $credential_id,
             $served,
             $ceiling,
-            'unknown' !== $source_ip ? $source_ip : ''
+            $source_ip
         );
 
         if ( $ceiling > 0 && $served > $ceiling ) {

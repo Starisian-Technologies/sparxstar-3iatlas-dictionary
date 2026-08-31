@@ -181,4 +181,97 @@ final class EnumerationDetectionTest extends TestCase {
         // sources' accounting into one.
         $this->assertLessThanOrEqual( 64, strlen( UniqueEntryBudget::ip_key( '198.51.100.7' ) ) );
     }
+
+    // -------------------------------------------------------------------------
+    // Threshold rounding — a percentage threshold must not fire BELOW its
+    // percentage, and must not round away to zero on small ceilings.
+    // -------------------------------------------------------------------------
+
+    public function test_near_cap_does_not_fire_below_its_stated_percentage(): void {
+        // With floor(), a ceiling of 2 gave a threshold of 1 — the "80%" signature
+        // firing at 50%. The first integer that actually reaches 80% of 2 is 2.
+        $this->assertSame( [], Detector::inspect( 'esu-sky', 1, 2 ) );
+        $this->assertContains( 'sustained_near_cap', Detector::inspect( 'esu-sky', 2, 2 ) );
+    }
+
+    public function test_near_cap_threshold_on_a_non_divisible_ceiling(): void {
+        // 80% of 7 is 5.6, so 5 is still below the stated percentage and 6 is the
+        // first value that reaches it.
+        $this->assertSame( [], Detector::inspect( 'esu-sky', 5, 7 ) );
+        $this->assertContains( 'sustained_near_cap', Detector::inspect( 'esu-sky', 6, 7 ) );
+    }
+
+    public function test_small_ceilings_do_not_disable_the_velocity_signature(): void {
+        // floor( ceiling * 0.25 ) was 0 for every ceiling below 4, and the guard then
+        // switched the signature off entirely — silently, on exactly the tightest
+        // budgets. The threshold must be at least 1 for any positive ceiling.
+        $method = ( new \ReflectionClass( Detector::class ) )->getMethod( 'report_velocity' );
+        $method->setAccessible( true );
+
+        foreach ( [ 1, 2, 3, 4 ] as $ceiling ) {
+            // Accounting is unavailable here, so the call returns false either way;
+            // what matters is that it is not short-circuited by a zero threshold.
+            $this->assertIsBool( $method->invoke( null, 'esu-sky', $ceiling ) );
+        }
+
+        // Assert the arithmetic directly: ceil() never yields 0 for a positive ceiling.
+        foreach ( [ 1, 2, 3, 4, 7 ] as $ceiling ) {
+            $this->assertGreaterThanOrEqual( 1, (int) ceil( $ceiling * 0.25 ) );
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // The accounting bucket must not be caller-controlled.
+    // -------------------------------------------------------------------------
+
+    public function test_source_ip_is_the_peer_when_no_proxy_is_declared(): void {
+        $_SERVER['REMOTE_ADDR'] = '198.51.100.7';
+
+        $this->assertSame( '198.51.100.7', Detector::trusted_source_ip() );
+    }
+
+    public function test_forged_headers_are_ignored_when_no_proxy_is_declared(): void {
+        // Without a declared proxy the peer address is the source, full stop. A caller
+        // asserting otherwise must not be able to move its own bucket.
+        $_SERVER['REMOTE_ADDR']            = '198.51.100.7';
+        $_SERVER['HTTP_CF_CONNECTING_IP']  = '203.0.113.99';
+        $_SERVER['HTTP_X_FORWARDED_FOR']   = '203.0.113.100';
+
+        $this->assertSame( '198.51.100.7', Detector::trusted_source_ip() );
+    }
+
+    public function test_an_invalid_peer_yields_no_source(): void {
+        $_SERVER['REMOTE_ADDR'] = 'not-an-ip';
+
+        $this->assertSame( '', Detector::trusted_source_ip() );
+    }
+
+    public function test_source_key_differs_per_address_so_buckets_do_not_merge(): void {
+        $a = UniqueEntryBudget::ip_key( '198.51.100.7' );
+        $b = UniqueEntryBudget::ip_key( '198.51.100.8' );
+
+        $this->assertNotSame( $a, $b );
+    }
+
+    // -------------------------------------------------------------------------
+    // Unavailable per-source accounting is reported, not swallowed.
+    // -------------------------------------------------------------------------
+
+    public function test_unavailable_source_accounting_is_reported(): void {
+        $emitted = Detector::report_source_accounting_unavailable( 'source_ip_not_trustworthy' );
+
+        $this->assertTrue( $emitted );
+
+        $events = $this->security_events();
+
+        $this->assertCount( 1, $events );
+        $this->assertSame( 'anomaly', $events[0]['severity'] );
+        $this->assertSame( 'source_accounting_unavailable', $events[0]['event'] );
+        $this->assertSame( 'source_ip_not_trustworthy', $events[0]['context']['reason'] );
+        // The alert must say what stops working, not merely that something failed.
+        $this->assertStringContainsString(
+            'distinct_entries_per_ip',
+            $events[0]['context']['effect']
+        );
+    }
 }

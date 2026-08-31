@@ -86,6 +86,195 @@ final class Sparxstar3IAtlasDictionaryEnumerationDetector {
     private const ALERT_DEDUPE_TTL = 900;
 
     /**
+     * Resolve a source IP that can actually be trusted for accounting.
+     *
+     * The per-IP signature is only meaningful if the caller cannot choose its own
+     * bucket. `get_client_ip()` (used for rate limiting) takes `CF-Connecting-IP` or
+     * the first `X-Forwarded-For` value whenever a global flag is set, without
+     * checking that the peer is a proxy entitled to assert them — so a credential
+     * holder who can reach the origin directly could rotate forged headers and split a
+     * corpus walk across arbitrary buckets, keeping every bucket under the threshold.
+     *
+     * The three cases:
+     *
+     * - No proxy declared: the peer address IS the source. Use it.
+     * - Proxy declared AND the peer is on the trusted list: the forwarded header is
+     *   asserted by a party entitled to assert it. Use it.
+     * - Proxy declared but no trusted list configured: trust cannot be established.
+     *   Return nothing rather than a spoofable value — and rather than the proxy's own
+     *   address, which would bucket ALL traffic together and make the signature fire
+     *   constantly on ordinary load.
+     *
+     * Deliberately separate from `get_client_ip()`: rate limiting keeps its existing
+     * behaviour, so tightening detection cannot change how requests are throttled.
+     *
+     * @return string A trustworthy source IP, or an empty string when none can be established.
+     */
+    public static function trusted_source_ip(): string {
+        // phpcs:ignore WordPressVIPMinimum.Variables.ServerVariables.UserControlledHeaders,WordPressVIPMinimum.Variables.RestrictedVariables.cache_constraints___SERVER__REMOTE_ADDR__ -- Validated as an IP on the very next line, and this value is used for security accounting rather than for anything a cache could serve.
+        $remote_addr = trim( sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ?? '' ) ) );
+        $peer        = false !== filter_var( $remote_addr, FILTER_VALIDATE_IP ) ? $remote_addr : '';
+
+        $behind_proxy = defined( 'SPARX_3IATLAS_TRUST_PROXY_HEADERS' )
+            && true === constant( 'SPARX_3IATLAS_TRUST_PROXY_HEADERS' );
+
+        if ( ! $behind_proxy ) {
+            return $peer;
+        }
+
+        if ( '' === $peer || ! self::is_trusted_proxy( $peer ) ) {
+            return '';
+        }
+
+        // These headers ARE user-controlled, which is the whole point of this method:
+        // they are read only after the peer has been confirmed a trusted proxy above,
+        // and each candidate is validated with filter_var in the loop below.
+        // phpcs:disable WordPressVIPMinimum.Variables.ServerVariables.UserControlledHeaders -- Read behind a trusted-proxy check and validated below.
+        $forwarded = array(
+            sanitize_text_field( wp_unslash( $_SERVER['HTTP_CF_CONNECTING_IP'] ?? '' ) ),
+            sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '' ) ),
+        );
+        // phpcs:enable WordPressVIPMinimum.Variables.ServerVariables.UserControlledHeaders
+
+        foreach ( $forwarded as $header ) {
+            if ( '' === $header ) {
+                continue;
+            }
+
+            $candidate = trim( explode( ',', $header )[0] );
+            $valid     = filter_var(
+                $candidate,
+                FILTER_VALIDATE_IP,
+                array( 'flags' => FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE )
+            );
+
+            if ( false !== $valid ) {
+                return $candidate;
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * Whether a peer address is a proxy entitled to assert forwarding headers.
+     *
+     * Configured via the `SPARX_3IATLAS_TRUSTED_PROXIES` constant (array or
+     * comma-separated string of exact IPs or CIDR ranges) or the matching filter.
+     * Unconfigured means no proxy is trusted, which is what makes the "cannot
+     * establish trust" case above reachable rather than theoretical.
+     *
+     * @param string $peer The connecting peer address.
+     * @return bool True when the peer is a configured trusted proxy.
+     */
+    private static function is_trusted_proxy( string $peer ): bool {
+        $configured = defined( 'SPARX_3IATLAS_TRUSTED_PROXIES' )
+            ? constant( 'SPARX_3IATLAS_TRUSTED_PROXIES' )
+            : array();
+
+        if ( is_string( $configured ) ) {
+            $configured = explode( ',', $configured );
+        }
+
+        if ( ! is_array( $configured ) ) {
+            $configured = array();
+        }
+
+        /**
+         * Filter the proxies entitled to assert client-IP forwarding headers.
+         *
+         * @param array<int,string> $configured Exact IPs or CIDR ranges.
+         */
+        $configured = (array) apply_filters( 'sparxstar_dict_trusted_proxies', $configured );
+
+        foreach ( $configured as $entry ) {
+            $entry = trim( (string) $entry );
+
+            if ( '' === $entry ) {
+                continue;
+            }
+
+            if ( $entry === $peer ) {
+                return true;
+            }
+
+            if ( str_contains( $entry, '/' ) && self::ip_in_cidr( $peer, $entry ) ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether an IPv4 address falls inside a CIDR range.
+     *
+     * IPv6 ranges are matched by exact address only; a partial IPv6 implementation
+     * that silently mismatched would be worse than an explicit limitation.
+     *
+     * @param string $ip   The address to test.
+     * @param string $cidr The range, as `network/prefix`.
+     * @return bool True when the address is inside the range.
+     */
+    private static function ip_in_cidr( string $ip, string $cidr ): bool {
+        $parts = explode( '/', $cidr, 2 );
+
+        if ( 2 !== count( $parts ) ) {
+            return false;
+        }
+
+        $network = filter_var( $parts[0], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 );
+        $address = filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 );
+
+        if ( false === $network || false === $address ) {
+            return false;
+        }
+
+        $prefix = (int) $parts[1];
+
+        if ( $prefix < 0 || $prefix > 32 ) {
+            return false;
+        }
+
+        if ( 0 === $prefix ) {
+            return true;
+        }
+
+        $mask = -1 << ( 32 - $prefix );
+
+        return ( ip2long( $address ) & $mask ) === ( ip2long( $network ) & $mask );
+    }
+
+    /**
+     * Report that per-source accounting could not be written or read.
+     *
+     * The per-IP signature is the only one that sees a walk spread across several
+     * credentials, so its silent absence is itself worth knowing about. Distinct from
+     * the signature staying quiet on an unmeasured request: this says the measurement
+     * itself is unavailable.
+     *
+     * @param string $reason Short machine-readable reason slug.
+     * @return bool True when an alert was emitted; false when suppressed as a duplicate.
+     */
+    public static function report_source_accounting_unavailable( string $reason ): bool {
+        if ( ! self::should_emit( 'source_accounting_unavailable', $reason ) ) {
+            return false;
+        }
+
+        Sparxstar3IAtlasDictionaryProtection::log_security_event(
+            'anomaly',
+            'source_accounting_unavailable',
+            array(
+                'reason'  => $reason,
+                'effect'  => 'distinct_entries_per_ip signature is not running',
+                'runbook' => 'docs/dictionary-enumeration-response-runbook.md',
+            )
+        );
+
+        return true;
+    }
+
+    /**
      * Inspect one served response for enumeration signatures.
      *
      * Reporting only. Refusal is the §1.2 ceiling's job; this exists so a walk is
@@ -132,7 +321,11 @@ final class Sparxstar3IAtlasDictionaryEnumerationDetector {
             return false;
         }
 
-        $threshold = (int) floor( $ceiling * self::NEAR_CAP_FRACTION );
+        // ceil(), not floor(): flooring fires BELOW the documented percentage. With a
+        // ceiling of 2, floor( 2 * 0.8 ) is 1, so the "80%" signature would report at
+        // 50%. ceil() makes the threshold the first integer that actually reaches the
+        // stated fraction.
+        $threshold = (int) ceil( $ceiling * self::NEAR_CAP_FRACTION );
 
         if ( $served < $threshold ) {
             return false;
@@ -175,7 +368,11 @@ final class Sparxstar3IAtlasDictionaryEnumerationDetector {
             return false;
         }
 
-        $threshold = (int) floor( $ceiling * self::VELOCITY_FRACTION );
+        // ceil() for the same reason as near-cap, and for a second one: flooring
+        // produced a threshold of 0 for any ceiling below 4, and the guard below then
+        // disabled this signature entirely for those budgets — silently, on exactly the
+        // smallest ceilings where a single entry already exceeds the fraction.
+        $threshold = (int) ceil( $ceiling * self::VELOCITY_FRACTION );
 
         if ( $threshold < 1 || $recent < $threshold ) {
             return false;
@@ -239,13 +436,9 @@ final class Sparxstar3IAtlasDictionaryEnumerationDetector {
      * @return bool True when an alert was emitted; false when suppressed as a duplicate.
      */
     private static function report( string $signature, string $subject, array $context ): bool {
-        $dedupe_key = self::ALERT_DEDUPE_PREFIX . $signature . '_' . md5( $subject );
-
-        if ( false !== get_transient( $dedupe_key ) ) {
+        if ( ! self::should_emit( $signature, $subject ) ) {
             return false;
         }
-
-        set_transient( $dedupe_key, 1, self::ALERT_DEDUPE_TTL );
 
         $context['signature'] = $signature;
         $context['runbook']   = 'docs/dictionary-enumeration-response-runbook.md';
@@ -255,6 +448,25 @@ final class Sparxstar3IAtlasDictionaryEnumerationDetector {
             'enumeration_signature_detected',
             $context
         );
+
+        return true;
+    }
+
+    /**
+     * Whether an alert of this kind for this subject is due, marking it emitted.
+     *
+     * @param string $kind    Alert kind slug.
+     * @param string $subject Credential ID, source key, or reason the alert is about.
+     * @return bool True when the caller should emit.
+     */
+    private static function should_emit( string $kind, string $subject ): bool {
+        $dedupe_key = self::ALERT_DEDUPE_PREFIX . $kind . '_' . md5( $subject );
+
+        if ( false !== get_transient( $dedupe_key ) ) {
+            return false;
+        }
+
+        set_transient( $dedupe_key, 1, self::ALERT_DEDUPE_TTL );
 
         return true;
     }
