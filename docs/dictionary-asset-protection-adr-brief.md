@@ -171,9 +171,18 @@ they turn out to need the block editor permanently, the fallback remains keeping
 
 ## 5. Governance conflict requiring an explicit ruling (D-10)
 
-`AGENTS.md` states, under **Absolute Rules — Never Violate**:
+**Three separate documents assert the prohibition**, which is worth knowing before the
+ADR rules on one of them and assumes it is done:
 
-> Never add a custom database table. Use WordPress CPTs and post meta only.
+| Source | What it says |
+|---|---|
+| `AGENTS.md`, **Absolute Rules — Never Violate** | "Never add a custom database table. Use WordPress CPTs and post meta only." |
+| `docs/dictionary-tech-spec.md` §48–53 | Dictionary data uses CPT/ACF storage, with "no custom database tables" |
+| Qodo platform rules 2921756 and 2924175 | Forbid non-core custom tables, and require rate-limiting state in transients exclusively |
+
+A ruling that amends only `AGENTS.md` leaves the tech spec and the automated rules still
+contradicting the code, so every future PR touching this store re-opens the argument. The
+ADR needs to name all three.
 
 Spec §1.2 requires an **atomic, durable** `(credential_id, entry_id, window)` store with
 race-safe insert-if-absent counting, naming *"a WordPress custom table with a unique index,
@@ -185,7 +194,9 @@ These cannot both hold. Engineering's read:
   a read-then-write race — exactly the race §1.2 says must not exist. Under concurrency a
   compromised consumer would undercount its own budget, which defeats the control.
 * Redis `SETNX` is atomic but **not durable across a cache flush**, and §1.2 says the store
-  must survive restarts. It is a correct fast path, not a correct system of record.
+  must survive restarts. It is a correct fast path, not a correct system of record. The same
+  objection defeats rule 2924175's "transients exclusively": a transient-backed budget fails
+  **open** on every cache flush, which is the one direction a security control must not fail.
 * Therefore the spec's requirement is only satisfiable by a table with a unique index.
 
 **Recommendation:** the ADR grants a narrowly scoped exception to the `AGENTS.md` rule,

@@ -612,6 +612,43 @@ final class Sparxstar3IAtlasDictionaryRestApi {
         $record  = SystemCredentialAuth::find_by_id( $credential_id );
         $ceiling = UniqueEntryBudget::ceiling_for( $credential_id, is_array( $record ) ? $record : array() );
 
+        // Record the same entries against the source IP so a walk spread across several
+        // credentials from one host is still one visible pattern (spec §3). Namespaced
+        // into the same table on purpose — see UniqueEntryBudget::ip_key().
+        //
+        // trusted_source_ip(), not get_client_ip(): the latter accepts forwarding
+        // headers without establishing that the peer may assert them, which would let a
+        // caller pick its own accounting bucket and stay under the threshold forever.
+        // It returns an empty string when trust cannot be established rather than a
+        // spoofable or useless value.
+        $source_ip = Sparxstar3IAtlasDictionaryEnumerationDetector::trusted_source_ip();
+        $ip_key    = '' !== $source_ip ? UniqueEntryBudget::ip_key( $source_ip ) : '';
+
+        // The write result is checked rather than discarded: record() reports -1 on
+        // failure, and ignoring it would leave the cross-credential signature silently
+        // not running. Neither branch fails the request — per-source detection is an
+        // aid, not an enforcement control, and the §1.2 ceiling still applies either way.
+        if ( '' === $ip_key ) {
+            Sparxstar3IAtlasDictionaryEnumerationDetector::report_source_accounting_unavailable(
+                'source_ip_not_trustworthy'
+            );
+        } elseif ( UniqueEntryBudget::record( $ip_key, $post_ids ) < 0 ) {
+            Sparxstar3IAtlasDictionaryEnumerationDetector::report_source_accounting_unavailable(
+                'source_accounting_write_failed'
+            );
+        }
+
+        // Enumeration signatures are checked BEFORE the ceiling is enforced. The ceiling
+        // only fires once a system has taken its entire budget; these fire while it is
+        // still taking it, which is the difference between catching a harvest and
+        // reporting one (spec §3, §4).
+        Sparxstar3IAtlasDictionaryEnumerationDetector::inspect(
+            $credential_id,
+            $served,
+            $ceiling,
+            $source_ip
+        );
+
         if ( $ceiling > 0 && $served > $ceiling ) {
             UniqueEntryBudget::alarm_exhausted( $credential_id, $served, $ceiling );
 

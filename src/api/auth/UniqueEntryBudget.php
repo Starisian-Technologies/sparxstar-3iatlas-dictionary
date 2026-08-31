@@ -265,6 +265,69 @@ final class UniqueEntryBudget {
     }
 
     /**
+     * Count distinct entries recorded under a key within the last N seconds.
+     *
+     * Feeds the §3 enumeration signatures, which ask a different question from the
+     * §1.2 ceiling: not "how much of its budget has this system spent" but "how fast
+     * is it spending it". A consumer serving real users re-reads a working set; one
+     * walking the corpus takes a wide swathe of new entries in a short time.
+     *
+     * @param string $key     Accounting key: a credential ID, or an ip: namespaced key.
+     * @param int    $seconds Look-back window in seconds.
+     * @return int Distinct entries in that period, or -1 when accounting is unavailable.
+     */
+    public static function count_recent( string $key, int $seconds ): int {
+        global $wpdb;
+
+        if ( '' === $key || ! self::is_installed() ) {
+            return -1;
+        }
+
+        $table  = self::table_name();
+        $cutoff = time() - max( 1, $seconds );
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom protection table; a cached count would be trivially defeated by the very behaviour it detects.
+        $count = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$table} WHERE credential_id = %s AND last_served >= %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is derived from $wpdb->prefix, not from input.
+                $key,
+                $cutoff
+            )
+        );
+
+        // Null means the query errored. Reporting that as 0 would read as "no activity"
+        // and silence the alarm on exactly the request that could not be measured.
+        if ( null === $count ) {
+            return -1;
+        }
+
+        return (int) $count;
+    }
+
+    /**
+     * Accounting key for a source IP.
+     *
+     * Namespaced into the same table rather than given one of its own. A second table
+     * would deepen the unresolved governance conflict recorded as ADR brief D-10, and
+     * this key space cannot collide with a credential ID: `sanitize_key()` strips the
+     * colon, so no credential ID can ever begin `ip:`.
+     *
+     * The IP is hashed, not stored: §3 requires source IPs in the request log, but this
+     * table is long-lived accounting rather than a log, and it does not need to hold a
+     * reversible identifier to count distinct entries against one source.
+     *
+     * @param string $ip The source IP address.
+     * @return string A namespaced, non-reversible accounting key.
+     */
+    public static function ip_key( string $ip ): string {
+        if ( '' === $ip ) {
+            return '';
+        }
+
+        return 'ip:' . substr( hash( 'sha256', $ip ), 0, 32 );
+    }
+
+    /**
      * Delete rows that have aged out of the rolling window.
      *
      * Only ever deletes strictly outside the live window, so a purge can never
