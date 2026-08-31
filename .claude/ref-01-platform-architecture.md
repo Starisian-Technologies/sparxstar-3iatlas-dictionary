@@ -18,6 +18,8 @@ Every data payload ascends through all five layers in order. No layer may be ski
 Execution order is always: Ouroboros → Helios → Sirus → Sky → Mḗh₁n̥s → Dheghom
 Enforced by: mu-plugins/00-sparxstar-loader.php
 
+This is the WordPress stack. The Node services (identity node, dictionary node, RLC engine) have no mu-plugin boot sequence and do not integrate Sirus — their authority root is `sparxstar-3iatlas-identity-node`. See ref-07; Sirus is unchanged for every repo listed above.
+
 ## Boot Sequence
 
 ```

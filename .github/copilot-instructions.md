@@ -208,7 +208,7 @@ This repo is SPARXSTAR-family but operates in standalone mode. Standalone means:
 - Do not attempt to replicate Sirus, Helios, Mḗh₁n̥s, or Dheghom behaviour locally
 
 **Suite identity (June 2026):**
-All 3iAtlas products share one identity system — the `sparxstar-identity` service (RS256 JWT, Cloudflare Workers). WordPress authentication is prohibited for all user-facing features. The Dictionary React app uses an ephemeral page token (HMAC-SHA256, server-minted) for browse access and will use suite JWTs for authenticated play when the Identity Service is live. Do not add `wp_nonce` or `is_user_logged_in()` to any new user-facing endpoint.
+All 3iAtlas products share one identity system — `sparxstar-3iatlas-identity-node` (`sparxstar-identity`; RS256 JWT, Node + Express + PostgreSQL — earlier drafts said Cloudflare Workers; the shipped service is not). WordPress authentication is prohibited for all user-facing features. The Dictionary React app uses an ephemeral page token (HMAC-SHA256, server-minted) for browse access and will use suite JWTs for authenticated play when the Identity Service is live. Do not add `wp_nonce` or `is_user_logged_in()` to any new user-facing endpoint.
 
 
 **Eshu migration awareness:**

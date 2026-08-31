@@ -78,6 +78,8 @@ FAIL: local redefinition of any Ouroboros-owned type
 
 ### Sirus Integration — Mandatory Pattern
 
+Applies to the WordPress/PHP repos. Node services use the identity-node root instead — see ref-07. Sirus is unchanged here.
+
 No repository may independently determine authority, context, or applicable rules.
 
 ```

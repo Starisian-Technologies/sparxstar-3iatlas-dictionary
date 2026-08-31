@@ -29,6 +29,9 @@ This is an engineering document. It defines measurable, testable, enforceable st
 | SIRUS | Sirus is not a helper library. It is not an optional service. It is a required dependency — a control plane that every governed repository must integrate. No repo may independently determine authority, context, or applicable rules. All such resolution is delegated to Sirus. If Sirus is unavailable: fail closed. No fallback. No guessing. |
 | :---- | :---- |
 
+| PLATFORM SCOPE | The Sirus mandate above governs the **WordPress/PHP repositories** — the DVE stack, where Sirus resolves device and user context alongside Helios. The **Node services** (`sparxstar-3iatlas-identity-node`, `sparxstar-3iatlas-dictionary-node`, the RLC engine) have no WordPress, no users and no devices, and do not integrate Sirus; their authority root for *who is calling* is `sparxstar-3iatlas-identity-node` (RS256 token verified against its JWKS). This is a per-platform split, **not** a retirement of Sirus: the rule below is unchanged for every PHP repo it already governed. See Section 1.6. |
+| :---- | :---- |
+
 # **0\.  Global System Rules — Non-Negotiable**
 
 | APPLIES TO | Every layer of the stack. PHP, JavaScript, GraphQL, TUS, Edge. No exceptions. |
@@ -164,6 +167,42 @@ Before any governed action:
 | :---- | :---- |
 
 | FAIL | local permission check without Sirus delegation |
+| :---- | :---- |
+
+## **1.6  Node Services — the Identity-Node Authority Root**
+
+Sections 1.1–1.5 assume a WordPress request with a user and a device. The Node services have none of those, so Sirus does not apply to them. The intent of Section 1 — *no repo invents its own answer to who is calling* — is met there by a different root.
+
+| Question | WordPress / PHP repos | Node services |
+| :---- | :---- | :---- |
+| Who is calling? | Sirus — `resolveAuthority()` / `resolveContext()` | `sparxstar-3iatlas-identity-node` — RS256 token verified against its JWKS, per-service audience |
+| Is this action permitted? | Sirus — governed action check | The service that owns the action, locally and fail-closed (its route table is its own structure) |
+| What consent applies? | Sirus — consent resolution | Helios / Mḗh₁n̥s where deployed. Never the identity node |
+
+Hard rules for the Node services, mirroring 1.3:
+
+* A verified caller identity MUST precede any governed action
+
+* Identity-node claims are authoritative and must not be modified, merged, or overridden downstream
+
+* If the identity node is unreachable: fail closed. No fallback, no default permissive state
+
+* No Node service may determine caller identity locally, hardcode roles, or infer a caller from request shape
+
+* Audience and tier claims state a **fact** about the caller; they never by themselves grant a permission
+
+* Only the identity node holds signing material. No other service mints or re-issues a token
+
+| FAIL | Node service governed action without a verified caller identity |
+| :---- | :---- |
+
+| FAIL | Node service determining caller identity locally instead of delegating |
+| :---- | :---- |
+
+| FAIL | Sirus integration or a PHP Sirus stub added to a Node service |
+| :---- | :---- |
+
+| FAIL | Authorization logic added to the identity node |
 | :---- | :---- |
 
 # **2\.  PHP and WordPress Standards**

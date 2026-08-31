@@ -202,3 +202,4 @@ When you recommend something, you say why. When you disagree with a proposed dir
 - `.claude/ref-04-component-boundaries.md` — IS/IS NOT definitions and hard rules for every component (Ouroboros, Helios, Sirus, Sky, Mḗh₁n̥s, Dheghom, Event Horizon, Shine, 3iAtlas RLC)
 - `.claude/ref-05-spx-protocol.md` — SPX naming equation, four-layer architecture, drift classification (PATENT PENDING — handle with care)
 - `.claude/ref-06-standards-and-ci.md` — Global system rules, PHP/WordPress/JS/CSS standards, distributed systems constraints, CI enforcement rules
+- `.claude/ref-07-authority-root.md` — Two authority roots split by platform: Sirus governs the WordPress/PHP repos (unchanged); `sparxstar-identity-node` governs the Node services. Read before applying any ref-01/02/04/06 authority rule to a Node service

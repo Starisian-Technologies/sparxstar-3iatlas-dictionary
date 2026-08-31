@@ -39,6 +39,7 @@ Load as needed — do not load all upfront:
 - `ref-04-component-boundaries.md` — What each component IS and IS NOT. Read when boundary violations suspected.
 - `ref-05-spx-protocol.md` — SPX naming, drift classification. PATENT PENDING — handle with care.
 - `ref-06-standards-and-ci.md` — Coding standards, CI rules, data modeling policy, field prefix protocol.
+- `ref-07-authority-root.md` — Which authority root applies: Sirus for WordPress/PHP repos, `sparxstar-identity-node` for Node services. Read before flagging an authority or authentication finding.
 ---
  
 ## Document Authority Hierarchy
