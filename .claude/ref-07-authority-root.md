@@ -12,7 +12,13 @@ coding-standards §1.1–1.5 stands unchanged for the repos it already governed.
 
 **The Node services are a separate platform with a separate root.**
 `sparxstar-3iatlas-identity-node`, `sparxstar-3iatlas-dictionary-node` and the RLC engine have no
-WordPress, no users and no devices. They do not integrate Sirus. Their authority root for *who is
+WordPress — no WordPress session, user record or device context for Sirus to resolve. They do not
+integrate Sirus.
+
+That is not the same as having no users. The identity node holds account records and authenticates
+the people who log in; its account holders are its own records, not WordPress identities. The
+distinction is whose user record it is, not whether users exist. (The dictionary node is the
+stronger case: machine-to-machine only, no human callers at all.) Their authority root for *who is
 calling* is `sparxstar-3iatlas-identity-node`: an RS256 token carrying a per-service audience
 (`aud: dictionary` for the dictionary service), verified against its JWKS.
 
@@ -27,7 +33,7 @@ satisfied on both platforms. Only the root differs.
 | Who is calling? | `Sirus::resolveContext()` / `resolveAuthority()` | RS256 token verified against the identity node's JWKS |
 | Is this action permitted? | Sirus — governed action check | The service that owns the action, locally and fail-closed |
 | What consent applies? | Sirus — consent resolution | Helios / Mḗh₁n̥s where deployed. Never the identity node |
-| Device / user context | Sirus ContextPulse, `SIRUS_PULSE_SIGNING_KEY` | Does not exist — no users, no devices, no WordPress |
+| Device / user context | Sirus ContextPulse, `SIRUS_PULSE_SIGNING_KEY` | No WordPress session, user record or device context exists to resolve (the identity node has its own account holders; that is a different thing) |
 | Fail-closed on unreachable root | Required | Required, identically |
 
 ## Two mistakes this document exists to prevent
