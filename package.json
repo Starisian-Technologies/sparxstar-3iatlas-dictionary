@@ -54,7 +54,7 @@
         "@eslint/js": "^8.57.1",
         "autoprefixer": "^10.5.4",
         "babel-loader": "^10.1.1",
-        "css-loader": "^7.1.4",
+        "css-loader": "^7.1.5",
         "css-minimizer-webpack-plugin": "^5.0.1",
         "eslint": "^8.57.1",
         "eslint-config-prettier": "^10.1.8",
