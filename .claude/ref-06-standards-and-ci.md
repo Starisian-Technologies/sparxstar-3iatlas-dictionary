@@ -76,7 +76,9 @@ FAIL: ContextBootException caught and swallowed
 FAIL: local redefinition of any Ouroboros-owned type
 ```
 
-### Sirus Integration — Mandatory Pattern
+### Authority Root Integration — Mandatory Pattern
+
+**Superseded: the authority root is `sparxstar-identity-node`, not Sirus — see ref-07 for what transfers and what does not.** The pattern below is retained as the WordPress-era form. For any new work, `Sirus::resolveContext()/resolveAuthority()` is replaced by verifying an RS256 token against the identity node's JWKS, followed by the owning service's own fail-closed authorization decision.
 
 No repository may independently determine authority, context, or applicable rules.
 

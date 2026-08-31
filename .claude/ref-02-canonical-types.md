@@ -280,7 +280,7 @@ Empty `behavior_flags` = no threat signals. Helios and Mḗh₁n̥s must NEVER a
 | Component | Namespace |
 |---|---|
 | Ouroboros | `Starisian\Sparxstar\Infrastructure\` |
-| Sirus | `Starisian\Sparxstar\Sirus\` |
+| Sirus (retired — see ref-07) | `Starisian\Sparxstar\Sirus\` |
 | Mḗh₁n̥s | `Starisian\Sparxstar\Mehns\` |
 | Dheghom | `Starisian\Sparxstar\Dheghom\` |
 | ZonePrimitive | `Starisian\Sparxstar\Infrastructure\DTOs\ZonePrimitive` |

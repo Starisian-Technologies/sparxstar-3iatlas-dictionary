@@ -39,6 +39,7 @@ Load as needed — do not load all upfront:
 - `ref-04-component-boundaries.md` — What each component IS and IS NOT. Read when boundary violations suspected.
 - `ref-05-spx-protocol.md` — SPX naming, drift classification. PATENT PENDING — handle with care.
 - `ref-06-standards-and-ci.md` — Coding standards, CI rules, data modeling policy, field prefix protocol.
+- `ref-07-authority-root.md` — `sparxstar-identity-node` supersedes Sirus as the authority root. Read before flagging any authority or authentication finding.
 ---
  
 ## Document Authority Hierarchy
@@ -47,7 +48,7 @@ Load as needed — do not load all upfront:
 2. PAM-002 — supersedes PAM-001 (withdrawn)
 3. DVE Trust Architecture (DVE-TRUST-001)
 4. MCP Standard v1.0 + Platform MCP Map v1.0
-5. Component specs (Ouroboros, Helios, Sirus, Sky DVE v2.0, Mḗh₁n̥s, Dheghom, Eshu, Yahura, Behistun)
+5. Component specs (Ouroboros, Helios, Sirus [retired — superseded by `sparxstar-identity-node`, ref-07], Sky DVE v2.0, Mḗh₁n̥s, Dheghom, Eshu, Yahura, Behistun)
 6. Coding Standards, Data Modeling Policy
 PAM-001 is withdrawn. Flag any PAM-001 reference as a violation.
  

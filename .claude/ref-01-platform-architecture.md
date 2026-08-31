@@ -10,13 +10,15 @@ Every data payload ascends through all five layers in order. No layer may be ski
 |---|---|---|---|
 | ∞ | Ouroboros Integrity | sparxstar-ouroboros-integrity | Execution substrate. Loads first, enforces last. Shared exceptions, DTOs, interfaces, constants, loader. |
 | ☀ | Helios Trust | sparxstar-helios-trust | Edge Agreement Engine. Stateless fail-closed evaluator. Decides whether a request may proceed. |
-| ✦ | Sirus Context | sparxstar-sirus-context | Sovereign context engine. Establishes who is present, on what device, under what authority, before anything else. |
+| ✦ | Sirus Context **(RETIRED)** | sparxstar-sirus-context | WordPress device/user context engine. **Superseded as the authority root by `sparxstar-identity-node` — see ref-07.** Described here as the deployed DVE stack, not as a target for new integration. |
 | ☁ | Sky DVE Core | sparxstar-sky-dve-core | AI intake layer. Converts conversation to structured draft. Waits for human commit. |
 | 🌙 | Mḗh₁n̥s DVE Core | sparxstar-mehns-dve-core | The Epistemic Sieve. Governance enforcement, policy evaluation, cultural law. Mints GovernanceToken. |
 | 🌍 | Dheghom DVE Core | sparxstar-dheghom-dve-core | Schema-driven vault. Persistent sovereign storage. Final resting place of aligned, governed truth. |
 
 Execution order is always: Ouroboros → Helios → Sirus → Sky → Mḗh₁n̥s → Dheghom
 Enforced by: mu-plugins/00-sparxstar-loader.php
+
+This order describes the WordPress DVE stack as deployed. It is not an authority mandate on new services: the authority root is `sparxstar-identity-node` (ref-07), and the Node services have no mu-plugin boot sequence to occupy.
 
 ## Boot Sequence
 

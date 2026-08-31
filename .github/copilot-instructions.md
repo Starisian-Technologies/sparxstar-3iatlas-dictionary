@@ -30,7 +30,7 @@ You are a reviewer, not the authority. Flag and explain. The owner decides.
 
 ## What This Repo Is
 
-A standalone WordPress plugin that is the **authoritative lexical data store and REST API** for the 3iAtlas platform. It is part of the SPARXSTAR family but is **not a DVE component** — it does not use Sirus, Helios, Mḗh₁n̥s, or Dheghom at runtime. It operates in standalone mode by design.
+A standalone WordPress plugin that is the **authoritative lexical data store and REST API** for the 3iAtlas platform. It is part of the SPARXSTAR family but is **not a DVE component** — it does not use Helios, Mḗh₁n̥s, or Dheghom at runtime, and Sirus is retired platform-wide (the authority root is `sparxstar-3iatlas-identity-node`; see `.claude/ref-07-authority-root.md`). It operates in standalone mode by design.
 
 Every other 3iAtlas tool (WordPad, RLC, Sound to Symbol) is a consumer of this plugin's REST API. Data flow is one-way: this repo serves, others consume. No reverse flow.
 
@@ -110,7 +110,7 @@ These appear across `src/api/` (RestApi, SpellChecker, RateLimitTrait). They are
 - **Never hardcode language names in the React app.** Language terms come from `GET /languages`.
 - **Never add a custom database table.** Use WordPress CPTs and post meta only.
 - **Never use `aiwa_` or `sparxstar_` prefixes for game mechanics data.** Those prefixes are governed cultural data markers. Game scores, session state, and learned-word records must use `game_` prefix or `_spx_` for session-scoped data. This keeps the governed data perimeter clean for future DVE integration.
-- **Never add DVE, Sky, Mḗh₁n̥s, Dheghom, or Sirus dependencies.** This is a standalone component.
+- **Never add DVE, Sky, Mḗh₁n̥s, or Dheghom dependencies.** This is a standalone component. Sirus is retired — never add a Sirus dependency or a `// PROVISIONAL` Sirus stub in any repo; the authority root is `sparxstar-3iatlas-identity-node` (`.claude/ref-07-authority-root.md`).
 - **Never use `wordpress/mcp-adapter`.** It does not exist on Packagist. Use the Node gateway pattern for any MCP integration.
 - **License header on all PHP files: `Proprietary`, not `MIT`.**
 - **Text domain: `sparxstar-3iatlas-dictionary`.**
@@ -205,10 +205,10 @@ This repo is SPARXSTAR-family but operates in standalone mode. Standalone means:
 - Functional to the highest capability possible without the full DVE stack
 - The Helios TODO stubs are correct — they mark future integration points
 - `syncNow()` no-op is correct — it marks a future governed pipeline integration point
-- Do not attempt to replicate Sirus, Helios, Mḗh₁n̥s, or Dheghom behaviour locally
+- Do not attempt to replicate Helios, Mḗh₁n̥s, or Dheghom behaviour locally, and do not replicate or stub Sirus at all — it is retired
 
 **Suite identity (June 2026):**
-All 3iAtlas products share one identity system — the `sparxstar-identity` service (RS256 JWT, Cloudflare Workers). WordPress authentication is prohibited for all user-facing features. The Dictionary React app uses an ephemeral page token (HMAC-SHA256, server-minted) for browse access and will use suite JWTs for authenticated play when the Identity Service is live. Do not add `wp_nonce` or `is_user_logged_in()` to any new user-facing endpoint.
+All 3iAtlas products share one identity system — `sparxstar-3iatlas-identity-node` (`sparxstar-identity`; RS256 JWT, Node + Express + PostgreSQL, not Cloudflare Workers as earlier drafts said). It is the platform authority root, succeeding Sirus (`.claude/ref-07-authority-root.md`). WordPress authentication is prohibited for all user-facing features. The Dictionary React app uses an ephemeral page token (HMAC-SHA256, server-minted) for browse access and will use suite JWTs for authenticated play when the Identity Service is live. Do not add `wp_nonce` or `is_user_logged_in()` to any new user-facing endpoint.
 
 
 **Eshu migration awareness:**
@@ -246,7 +246,7 @@ The dependency direction is: DVE → export → 3iAtlas dictionary → RLC. The 
 - Re-introduce `aiwa-cpt-correction` CPT or `user_vote` / `vote_counts` fields
 - Add a custom WordPress admin page — use standard WP CPT list for admin needs
 - Connect to Brain (PostgreSQL) directly — this plugin does not use Brain
-- Add Sirus, Helios, Sky, Mḗh₁n̥s, or Dheghom dependencies
+- Add Helios, Sky, Mḗh₁n̥s, or Dheghom dependencies — or any Sirus dependency or stub, Sirus being retired
 - Use `wordpress/mcp-adapter` — it does not exist
 - Add `aiwa_sentence_ipa` to the SCF JSON
 - Create a custom database table

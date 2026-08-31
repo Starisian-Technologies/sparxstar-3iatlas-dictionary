@@ -23,10 +23,10 @@ This is an engineering document. It defines measurable, testable, enforceable st
 | WHY THIS IS NOT JUST CODING STANDARDS | Traditional coding standards govern naming, formatting, and basic implementation rules. This document governs more than that — and deliberately so. In systems serving constrained environments, you cannot separate code correctness from runtime behavior, system interaction, and failure handling. Bad code does not just fail — it consumes bandwidth that costs money, drains batteries, and degrades service for real users who have no alternative. Code, runtime limits, concurrency rules, cache behavior, failure handling, governance, and infrastructure boundaries are inseparable. This document enforces all of them together because separating them produces an incomplete standard that breaks in production. |
 | :---- | :---- |
 
-| SCOPE | Stack: WordPress (latest stable), PHP (latest stable with active support), JavaScript, GraphQL, TUS, Edge layer (provider-agnostic), Apache or equivalent, PHP-FPM, MariaDB or equivalent, Redis (Predis), OPcache. Provider selection follows Section 0.7. Sirus is the cross-repo authority layer referenced throughout. |
+| SCOPE | Stack: WordPress (latest stable), PHP (latest stable with active support), JavaScript, GraphQL, TUS, Edge layer (provider-agnostic), Apache or equivalent, PHP-FPM, MariaDB or equivalent, Redis (Predis), OPcache. Provider selection follows Section 0.7. `sparxstar-identity-node` is the authority root referenced throughout — see Section 1. |
 | :---- | :---- |
 
-| SIRUS | Sirus is not a helper library. It is not an optional service. It is a required dependency — a control plane that every governed repository must integrate. No repo may independently determine authority, context, or applicable rules. All such resolution is delegated to Sirus. If Sirus is unavailable: fail closed. No fallback. No guessing. |
+| AUTHORITY ROOT | `sparxstar-identity-node` is not a helper library and not an optional service. It is the platform's single authority root for *who is calling*, and every governed repository verifies against it. No repo may determine caller identity for itself. If the identity node is unreachable: fail closed. No fallback. No guessing. Whether that caller may take the action is the owning service's own fail-closed decision — see Section 1.1. **This supersedes Sirus, which is retired.** |
 | :---- | :---- |
 
 # **0\.  Global System Rules — Non-Negotiable**
@@ -46,7 +46,7 @@ Every system MUST declare its operating mode. Mode governs limits, logging verbo
 
 ## **0.2  Determinism Rule**
 
-Same input produces the same output with no hidden side effects. Applies to PHP functions, REST handlers, GraphQL resolvers, and all Sirus-governed actions.
+Same input produces the same output with no hidden side effects. Applies to PHP functions, REST handlers, GraphQL resolvers, and all governed actions.
 
 ## **0.3  No Silent Failure**
 
@@ -89,38 +89,43 @@ All endpoints must be safe to retry without duplication. Especially TUS uploads,
 | :---- | :---- | :---- |
 | Client | Untrusted | Validate everything. Assume nothing. |
 | API layer | Validated | Validates all upstream input before acting. |
-| Sirus output | Authoritative | Must not be modified, merged, or overridden downstream. |
+| Identity-node claims | Authoritative | Must not be modified, merged, or overridden downstream. |
 | Cache (Redis) | Disposable | Never treat as source of truth. Always verify. |
 | DB (MariaDB) | Authoritative | Single source of truth. Never trusts upstream. |
 | Edge cache | Disposable | TTL-bounded. Invalidated on write. |
 
-# **1\.  Sirus — Cross-Repo Authority Layer**
+# **1\.  Authority Root — sparxstar-identity-node**
 
-| STATUS | Sirus is the only repository named specifically in this document. It is named because it is a required dependency, not because it is the most complex. It is the control plane. Everything else defers to it. |
+| STATUS | `sparxstar-identity-node` is the named authority root for the platform. It **replaces Sirus**, which was WordPress device and user context discovery paired with Helios; Sirus is retired and must not be integrated by new work. The root is named here for the same reason Sirus was: no repository may invent its own answer to *who is calling*. |
 | :---- | :---- |
 
-## **1.1  What Sirus Resolves**
+| SUCCESSION | This is a substitution of the trust root, not of the whole control plane. Authentication moves to the identity node. Authorization stays with the service that owns the action, and consent/agreement evaluation stays with Helios and Mḗh₁n̥s where they are deployed. A repo that reads this section as "identity node answers everything Sirus answered" has misread it — see 1.1. |
+| :---- | :---- |
 
-No repository may independently determine authority, context, or applicable rules. Sirus is the only system permitted to answer the question: what rules apply right now to this action for this caller?
+## **1.1  What the Identity Node Resolves — and What It Does Not**
+
+The identity node answers exactly one question, and its own repository rules forbid it answering the others. Delegating a route decision to it would require it to know another service's route table.
 
 | Question | Who Answers |
 | :---- | :---- |
-| What authority does this caller have? | Sirus — resolveAuthority() |
-| What rules apply to this action? | Sirus — resolveContext() |
-| Is this action permitted? | Sirus — governed action check |
-| What consent has been given? | Sirus — consent resolution |
+| Who is this caller? | `sparxstar-identity-node` — RS256 token verified against its JWKS |
+| Is this caller's token still valid, or revoked? | `sparxstar-identity-node` — validation / revocation |
+| May this caller take this action on this route? | The service that owns the action — locally, fail-closed |
+| What consent or agreement applies? | Helios / Mḗh₁n̥s where deployed. Never the identity node |
+
+No repository may determine caller identity locally, hardcode roles, or infer a caller from request shape. Local *authorization* is required and correct; local *identification* is a fail condition.
 
 ## **1.2  Mandatory Integration Pattern**
 
-Every governed action must call Sirus before execution. No exceptions.
+Every governed action must resolve a verified caller identity before execution. No exceptions.
 
 Before any governed action:
 
-  context   \= Sirus::resolveContext(request)
+  identity \= verify(token) against the identity node's JWKS   ← delegated
 
-  authority \= Sirus::resolveAuthority(caller)
+  decision \= this service's own resolver(identity, action)     ← local, fail-closed
 
-  if context is null OR authority is null:
+  if identity is unverified OR decision is not an explicit allow:
 
     FAIL CLOSED
 
@@ -134,36 +139,44 @@ Before any governed action:
 
 ## **1.3  Hard Rules**
 
-* Sirus MUST be called before any governed action in every repo
+* A verified caller identity MUST precede any governed action in every repo
 
-* Sirus output is authoritative and must not be modified downstream
+* Identity-node claims are authoritative and must not be modified, merged, or overridden downstream
 
-* If Sirus is unavailable: fail closed. No fallback. No default permissive state
+* If the identity node is unreachable: fail closed. No fallback. No default permissive state
 
-* Absence of Sirus metadata means most restrictive state applies
+* Absence of identity claims means the most restrictive state applies
 
-* No repo may hardcode roles, infer permissions locally, or assume context from request shape
+* No repo may hardcode roles, infer permissions locally, or assume a caller from request shape
 
-* Sirus decisions must not be merged with local assumptions
+* Tier and audience claims state a **fact** about the caller. They never by themselves grant a permission — the owning service still decides
+
+* No repo may mint or re-issue a token. Only the identity node holds signing material
 
 ## **1.4  Performance Constraint**
 
 | Metric | Limit |
 | :---- | :---- |
-| Sirus calls per request | 1 preferred / 2 hard cap |
-| Sirus response cache TTL | 30 seconds maximum |
-| Cross-user context reuse | Forbidden |
-| Long-lived authority caching | Forbidden — authority is dynamic and revocable |
+| Identity-node round trips per request | 0 preferred (local JWKS verification) / 1 hard cap |
+| JWKS key material cache | Per the identity node's rotation policy |
+| Cross-caller identity reuse | Forbidden |
+| Long-lived authorization caching | Forbidden — authority is dynamic and revocable |
 
 ## **1.5  CI Enforcement**
 
-| FAIL | governed action exists without preceding Sirus call |
+| FAIL | governed action exists without a verified caller identity |
 | :---- | :---- |
 
-| FAIL | Sirus output modified or overridden downstream |
+| FAIL | identity-node claims modified or overridden downstream |
 | :---- | :---- |
 
-| FAIL | local permission check without Sirus delegation |
+| FAIL | caller identity determined locally instead of delegated |
+| :---- | :---- |
+
+| FAIL | authorization decision that is not fail-closed |
+| :---- | :---- |
+
+| FAIL | new integration against Sirus, or a `// PROVISIONAL` Sirus stub |
 | :---- | :---- |
 
 # **2\.  PHP and WordPress Standards**
@@ -523,12 +536,12 @@ Either the upload completes fully and the DB write succeeds, or both are rolled 
 
 * N+1 queries are forbidden
 
-* All resolvers must check Sirus authority before executing governed actions
+* All resolvers must resolve a verified caller identity, then their own fail-closed authorization decision, before executing governed actions
 
 | FAIL | N+1 query pattern in resolver |
 | :---- | :---- |
 | **FAIL** | unbounded list query without explicit limit |
-| **FAIL** | governed resolver without Sirus authority check |
+| **FAIL** | governed resolver without a verified caller identity |
 
 # **7\.  Edge Layer — Cloudflare, Nginx, Varnish**
 
@@ -597,7 +610,7 @@ Machines do not oops. Invalid request behavior is treated as intent, not error.
 | Tier | Allowed | Restricted |
 | :---- | :---- | :---- |
 | Public read | GET requests. Public resources. No authentication required. | POST, PUT, DELETE require authentication. Bulk scraping rate-limited. |
-| Authenticated write | All methods. Scoped to caller's authorized coordinates. | Must pass Sirus authority check before any write action. |
+| Authenticated write | All methods. Scoped to caller's authorized coordinates. | Must resolve a verified caller identity and pass the owning service's authorization check before any write action. |
 
 # **8\.  Concurrency and State Consistency**
 
@@ -724,7 +737,7 @@ try {
 | Cache hit ratio | \< 80% in production |
 | Upload failure rate | \> 2% of uploads |
 | Retry rate | \> 10% of requests |
-| Sirus call failures | Any failure in production |
+| Identity verification failures | Any failure in production |
 | Blocked requests by geo | Tracked — reviewed weekly |
 
 # **12\.  Distributed System Maturity**
@@ -852,7 +865,7 @@ These conditions must cause CI to fail in development and production modes. In d
 | **FAIL** | raw superglobal access without sanitization |
 | **FAIL** | direct SQL string interpolation |
 | **FAIL** | SELECT \* in any query |
-| **FAIL** | governed action without Sirus call |
+| **FAIL** | governed action without a verified caller identity |
 | **FAIL** | governed action without ability check |
 | **FAIL** | governed action without consent verification |
 
@@ -888,7 +901,7 @@ These conditions must cause CI to fail in development and production modes. In d
 | FAIL | query depth \> 5 |
 | :---- | :---- |
 | **FAIL** | N+1 query pattern in resolver |
-| **FAIL** | governed resolver without Sirus call |
+| **FAIL** | governed resolver without a verified caller identity |
 
 ## **13.6  CSS**
 

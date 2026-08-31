@@ -377,7 +377,7 @@ intake spec, which already exists.
 - ACF/SCF for custom fields
 - React (PWA) built with webpack/babel, pnpm-managed
 - myCred (optional, listens for `aiwa_game_*` hooks; no-op if absent)
-- No DVE, Sirus, Helios, Mḗh₁n̥s, or Dheghom runtime dependencies (standalone mode)
+- No DVE, Helios, Mḗh₁n̥s, or Dheghom runtime dependencies (standalone mode). Sirus is retired platform-wide; the authority root is `sparxstar-3iatlas-identity-node`, and this plugin does not depend on it at runtime either
 
 ## Security and privacy
 
