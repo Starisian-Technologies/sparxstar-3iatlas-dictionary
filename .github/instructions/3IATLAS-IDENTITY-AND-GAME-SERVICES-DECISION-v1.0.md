@@ -118,4 +118,3 @@ Three sales motions, per market analysis (June 2026):
 ## 11. Session Capture — Not Decided, Parked
 
 - **Sirus JS extraction:** Sirus's large client-side JavaScript (context, error monitoring, reporting) lives inside a PHP repo. Candidate for extraction into its own JS package, following the `@sparxstar/starmus-audio` precedent. Needs its own session; do not act on this note alone.
-  **Moot as of 2026-08-31:** Sirus is retired as the authority root, superseded by `sparxstar-3iatlas-identity-node` (`.claude/ref-07-authority-root.md`). Do not open this extraction.

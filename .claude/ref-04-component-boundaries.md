@@ -95,8 +95,6 @@ Helios enforcement is opt-in via possession of a Helios-issued credential. Norma
 
 ## Sirus Context
 
-**RETIRED as the authority root — superseded by `sparxstar-identity-node` (ref-07).** The boundaries below describe the component as built in WordPress. New work does not integrate it.
-
 **IS:**
 - ContextEngine — context creation and current() accessor
 - SirusContext DTO — primary output of context engine

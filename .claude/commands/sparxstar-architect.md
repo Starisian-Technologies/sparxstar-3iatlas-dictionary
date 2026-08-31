@@ -199,7 +199,7 @@ When you recommend something, you say why. When you disagree with a proposed dir
 - `.claude/ref-01-platform-architecture.md` — Five-layer stack, boot order, two-zone model, five invariants, repository topology, standalone rule
 - `.claude/ref-02-canonical-types.md` — PAM-002 canonical DTOs (ContextPulse, AgreementResult, ResourceSensitivity, ZonePrimitive, GovernanceToken), signing material, TTL tiers, HeliosClientInterface
 - `.claude/ref-03-governance-chain.md` — Three-token model, Release Gate 7-step sequence, QUARANTINE contract, DecisionStatus enum, PolicyResolver
-- `.claude/ref-04-component-boundaries.md` — IS/IS NOT definitions and hard rules for every component (Ouroboros, Helios, Sirus [retired — see ref-07], Sky, Mḗh₁n̥s, Dheghom, Event Horizon, Shine, 3iAtlas RLC)
+- `.claude/ref-04-component-boundaries.md` — IS/IS NOT definitions and hard rules for every component (Ouroboros, Helios, Sirus, Sky, Mḗh₁n̥s, Dheghom, Event Horizon, Shine, 3iAtlas RLC)
 - `.claude/ref-05-spx-protocol.md` — SPX naming equation, four-layer architecture, drift classification (PATENT PENDING — handle with care)
 - `.claude/ref-06-standards-and-ci.md` — Global system rules, PHP/WordPress/JS/CSS standards, distributed systems constraints, CI enforcement rules
-- `.claude/ref-07-authority-root.md` — `sparxstar-identity-node` supersedes Sirus as the authority root: what transfers, what does not, and the authentication/authorization split (supersedes the Sirus mandate in ref-01/02/04/06 where they conflict)
+- `.claude/ref-07-authority-root.md` — Two authority roots split by platform: Sirus governs the WordPress/PHP repos (unchanged); `sparxstar-identity-node` governs the Node services. Read before applying any ref-01/02/04/06 authority rule to a Node service
