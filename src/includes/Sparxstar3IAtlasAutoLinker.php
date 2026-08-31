@@ -386,8 +386,13 @@ class Sparxstar3IAtlasAutoLinker {
      * @param int $time Time.
      * @return void
      */
-    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter -- Required by the setter signature kept for symmetry with the getter.
-    private function _set_post_cache_time( int $time = 0 ): void {
+    /**
+     * Record when the post cache was last written.
+     *
+     * @param int $time Unused; kept so the setter mirrors _get_post_cache_time().
+     * @return void
+     */
+    private function _set_post_cache_time( int $time = 0 ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter -- Signature kept symmetrical with the getter.
         if ( defined( 'SPARX_3IATLAS_POST_CACHE' ) && SPARX_3IATLAS_POST_CACHE > 0 ) {
             $this->post_cache_expires = SPARX_3IATLAS_POST_CACHE;
         }
@@ -400,8 +405,13 @@ class Sparxstar3IAtlasAutoLinker {
      * @param int $time Time.
      * @return void
      */
-    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter -- Required by the setter signature kept for symmetry with the getter.
-    private function _set_term_cache_time( int $time = 0 ): void {
+    /**
+     * Record when the term cache was last written.
+     *
+     * @param int $time Unused; kept so the setter mirrors _get_term_cache_time().
+     * @return void
+     */
+    private function _set_term_cache_time( int $time = 0 ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter -- Signature kept symmetrical with the getter.
         if ( defined( 'SPARX_3IATLAS_TERM_CACHE' ) && SPARX_3IATLAS_TERM_CACHE > 0 ) {
             $this->term_cache_expires = SPARX_3IATLAS_TERM_CACHE;
         }

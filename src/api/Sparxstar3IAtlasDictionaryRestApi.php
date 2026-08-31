@@ -1006,7 +1006,7 @@ final class Sparxstar3IAtlasDictionaryRestApi {
      * @param \WP_REST_Request $request Request.
      * @return \WP_REST_Response|\WP_Error
      */
-    public function handle_languages( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
+    public function handle_languages( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter -- Fixed by the WP_REST_Server callback signature.
         // TODO: Replace with Helios token introspection when available.
         if ( ! $this->check_rate_limit() ) {
             return $this->rate_limit_error();
@@ -1386,7 +1386,12 @@ final class Sparxstar3IAtlasDictionaryRestApi {
      * @param \WP_REST_Request $request Request.
      * @return \WP_REST_Response|\WP_Error
      */
-    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter -- Required by the WP_REST_Server callback signature.
+    /**
+     * Return the word of the day.
+     *
+     * @param \WP_REST_Request $request The incoming request.
+     * @return \WP_REST_Response|\WP_Error
+     */
     public function handle_word_of_day( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
         // TODO: Replace with Helios token introspection when available.
         if ( ! $this->check_rate_limit() ) {
