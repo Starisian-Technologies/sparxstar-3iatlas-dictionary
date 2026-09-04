@@ -307,26 +307,77 @@ When the course ends, students already know where to go. They have been playing 
 
 ## How WordPad Connects
 
-WordPad consumes the Dictionary API via a server-side proxy. The dictionary never goes to the device directly.
+> **CORRECTED 2026-09-04** — endpoints only. The *architecture* below was right all along and is
+> unchanged: WordPad reaches the Dictionary through a server-side layer, and the Dictionary never
+> goes to the device directly. What was stale was the endpoint table, which named WordPress routes
+> (`/search`, `/lookup`, `/languages`, `/domains`, `lang_source`, slugs) that
+> `sparxstar-3iatlas-dictionary-node` does not expose. Governing record:
+> `sparxstar-3iatlas-wordpad` `docs/adr/WPAD-ADR-009-dictionary-bff-and-machine-identity.md`
+> (Accepted, owner-ratified). This file is a byte-identical copy shared with the WordPad repo —
+> **any further edit must land in both, in one change.**
 
-| WordPad Need | Dictionary Endpoint |
-| :---- | :---- |
-| Spell check | `/search?q={word}&lang_source={lang}` — checks if word exists, returns variants |
-| Synonym lookup | `/lookup?slug={word}` — returns synonyms from entry |
-| Antonym lookup | `/lookup?slug={word}` — returns antonyms from entry |
-| Rhyme lookup | `/lookup?slug={word}` — returns phonetic variants as rhyme approximation |
-| Language list for selector | `/languages` |
-| Domain list | `/domains?lang_source={lang}` |
+WordPad consumes the Dictionary API through its own same-origin BFF. The Dictionary never goes to
+the device directly, and the browser holds no Dictionary credential.
+
+```
+authenticated WordPad browser
+  → same-origin  /api/dictionary/*                          (WordPad's BFF)
+  → machine token  POST https://id.sparxstar.com/oauth2/token   (private_key_jwt, aud=dictionary)
+  → private        https://dictionary-api.sparxstar.com/v1/m2m/*
+```
+
+Every Dictionary route requires an RS256 Identity machine token with `aud: dictionary` and
+`sub: service:<registered-caller>`; WordPad's is `service:wordpad`, with its own key, caller row and
+entry budget. There is no anonymous or page-token path, and an uncredentialed request returns `401`.
+
+| WordPad Need | WordPad BFF route | Dictionary route |
+| :---- | :---- | :---- |
+| Spell check | `POST /api/dictionary/spell-check` | `POST /v1/m2m/spell-check` |
+| Definition, IPA, examples, level | `GET /api/dictionary/writing-lookup?tool=define` | `GET /v1/m2m/writing-lookup` |
+| Synonyms, antonyms, domain, relations | `GET /api/dictionary/writing-lookup?tool=thesaurus` | `GET /v1/m2m/writing-lookup` |
+| Feature availability | `GET /api/dictionary/health` | `GET /healthz` |
+
+**Corrections worth stating, because each replaces something the old table implied:**
+
+- **Spell check is its own route**, not `/search`. Validity is **scoped to the requested
+  `language`** (required, ISO 639-3, exact filter) — `valid: false` means "not in this language's
+  lexicon", never "not a word". There is no corpus-wide union.
+- **Language is ISO 639-3** (`mnk`), not a `lang_source` taxonomy slug (`mandinka`), and not
+  ISO 639-1 (`en`). WordPad asks only about languages with an **approved lexicon**; anything else is
+  reported as unavailable and never as checked.
+- **Rhyme does not come from the Dictionary.** The old table derived it from "phonetic variants as
+  rhyme approximation". WordPad's rhyme suggestions stay a local, explicitly-labelled approximation
+  until an approved per-language prosody profile exists — Mandinka verbal art centres rhythm,
+  breath-line, assonance, alliteration and repetition alongside or above end-rhyme, and the
+  Dictionary's own `/v1/m2m/rhymes` reports `meta.prosody_rule` for exactly that reason.
+- **No `/languages` or `/domains` call.** Those routes are not on WordPad's BFF allowlist. The
+  language selector is WordPad's own list; a domain arrives as a field on a lookup, if at all.
+- **Per-tool narrowing is the contract**, not an optimisation: `writing-lookup` returns only the
+  active tool's fields. The `translate` tool — carrying the English/French lemma and gloss — is
+  deliberately **not** requestable by WordPad, because that material is rights-restricted and an
+  authenticated writer is not an entitled one.
 
 **What WordPad does not do:**
 
-- Write to the Dictionary  
-- Store dictionary data locally in any form  
-- Make direct calls to the Dictionary REST API from the browser (all calls go through WordPad's server-side layer)
+- Write to the Dictionary — it reaches no write route; `POST /v1/import/release` is the service's
+  only write door and is not on the allowlist
+- Store dictionary data locally in any form
+- Make direct calls to the Dictionary REST API from the browser (all calls go through WordPad's
+  same-origin BFF, which holds the only credential)
+- Preload, enumerate or mirror the corpus — no `wordlist`, `gamepack`, `sparkpack` or
+  `artifacts/spell-lexicon` route is reachable through the BFF
+- Modify, collect, vote on, or treat tentative words as approved entries
+- Identify, in telemetry or logs, which corpus entries a writer looked up
 
 ### WordPad → Games Bridge (Future)
 
-When spell check suggests a correction, a "Practice this word" micro-link can deep-link into the Dictionary's Play mode for that word. This is a URL-based link — no shared session state required. Format: `https://dictionary.aiwa.gm/play?word={slug}&lang={lang}`.
+When spell check suggests a correction, a "Practice this word" micro-link could deep-link into the
+Dictionary's Play mode for that word — a URL-based link, no shared session state.
+
+**The host and path in the earlier version of this line (`https://dictionary.aiwa.gm/play?...`) are
+not confirmed against any current deployment** and must be verified before anything is built on
+them; the same inferred host is what WordPad's own client was wrongly pointed at. Treat the format
+as illustrative, not as a contract.
 
 ---
 
