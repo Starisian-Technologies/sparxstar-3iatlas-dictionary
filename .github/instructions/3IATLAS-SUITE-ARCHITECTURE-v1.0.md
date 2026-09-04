@@ -307,26 +307,97 @@ When the course ends, students already know where to go. They have been playing 
 
 ## How WordPad Connects
 
-WordPad consumes the Dictionary API via a server-side proxy. The dictionary never goes to the device directly.
+> **CORRECTED 2026-09-04** — which service, and which endpoints. The *architecture* below was right
+> all along and is unchanged: WordPad reaches the Dictionary through a server-side layer, and the
+> Dictionary never goes to the device directly. What was stale was **which surface** the endpoint
+> table named.
+>
+> There are **two** Dictionary surfaces in this suite, and the old table conflated them:
+>
+> | Surface | Repo | Routes |
+> | :-- | :-- | :-- |
+> | WordPress plugin REST API | `sparxstar-3iatlas-dictionary` | `sparxstar/v1/dictionary/…` — `/search`, `/lookup`, `/languages`, `/domains`, `/spell`, `/page-token`, `/wordlist`, `/game-set`, `/word-of-day`, `/pronounce`, `/progress/sync` |
+> | Dictionary Node service | `sparxstar-3iatlas-dictionary-node` | `/v1/m2m/…`, `/v1/display/…`, `/v1/import/…` |
+>
+> Both exist. **WordPad no longer calls the WordPress plugin surface at all** — it calls the
+> Dictionary Node. The old table's routes are real; they are simply not WordPad's, which is why the
+> RLC section below still references `/languages`, `/domains` and `/wordlist` correctly.
+>
+> Governing record: `sparxstar-3iatlas-wordpad`
+> `docs/adr/WPAD-ADR-009-dictionary-bff-and-machine-identity.md` (Accepted, owner-ratified
+> 2026-09-04). This file is a byte-identical copy shared with the WordPad repo — **any further edit
+> must land in both, in one change.**
 
-| WordPad Need | Dictionary Endpoint |
-| :---- | :---- |
-| Spell check | `/search?q={word}&lang_source={lang}` — checks if word exists, returns variants |
-| Synonym lookup | `/lookup?slug={word}` — returns synonyms from entry |
-| Antonym lookup | `/lookup?slug={word}` — returns antonyms from entry |
-| Rhyme lookup | `/lookup?slug={word}` — returns phonetic variants as rhyme approximation |
-| Language list for selector | `/languages` |
-| Domain list | `/domains?lang_source={lang}` |
+WordPad consumes the **Dictionary Node** through its own same-origin BFF. The Dictionary never goes
+to the device directly, and the browser holds no Dictionary credential.
+
+```
+authenticated WordPad browser
+  → same-origin  /api/dictionary/*                          (WordPad's BFF)
+  → machine token  POST https://id.sparxstar.com/oauth2/token   (private_key_jwt, aud=dictionary)
+  → private        https://dictionary-api.sparxstar.com/v1/m2m/*
+```
+
+**On the Dictionary Node's `/v1/*` routes** — this paragraph is scoped to that service and does not
+describe the WordPress plugin's namespace — every route requires an RS256 Identity machine token
+with `aud: dictionary` and `sub: service:<registered-caller>`; WordPad's is `service:wordpad`, with
+its own key, caller row and entry budget. On those routes there is no anonymous and no page-token
+path, and an uncredentialed request returns `401`. (The WordPress plugin's own namespace does
+support `X-Page-Token` and `X-Api-Key` via its `DictionaryAuthResolver`; WordPad uses neither, and
+that resolver's own source records `X-Api-Key` as architecturally condemned.)
+
+| WordPad Need | WordPad BFF route | Dictionary route |
+| :---- | :---- | :---- |
+| Spell check | `POST /api/dictionary/spell-check` | `POST /v1/m2m/spell-check` |
+| Definition, IPA, examples, level | `GET /api/dictionary/writing-lookup?tool=define` | `GET /v1/m2m/writing-lookup` |
+| Synonyms, antonyms, domain, relations | `GET /api/dictionary/writing-lookup?tool=thesaurus` | `GET /v1/m2m/writing-lookup` |
+| Feature availability | `GET /api/dictionary/health` | `GET /healthz` |
+
+**Corrections worth stating, because each replaces something the old table implied:**
+
+- **Spell check is its own route**, not `/search`. Validity is **scoped to the requested
+  `language`** (required, ISO 639-3, exact filter) — `valid: false` means "not in this language's
+  lexicon", never "not a word". There is no corpus-wide union.
+- **Language is ISO 639-3** (`mnk`), not a `lang_source` taxonomy slug (`mandinka`), and not
+  ISO 639-1 (`en`). WordPad asks only about languages with an **approved lexicon**; anything else is
+  reported as unavailable and never as checked.
+- **WordPad calls no rhyme route.** The old table derived rhymes from `/lookup`'s "phonetic
+  variants as rhyme approximation". WordPad's rhyme suggestions are now a local,
+  explicitly-labelled approximation, and no rhyme endpoint on either surface is on its BFF
+  allowlist. Why it stays that way rather than being wired to the Node's `/v1/m2m/rhymes`: that
+  route derives rhyme keys under a DEFAULT rule and reports `meta.prosody_rule` saying so, because
+  Mandinka verbal art centres rhythm, breath-line, assonance, alliteration and repetition alongside
+  or above end-rhyme. Presenting either the default or a spelling guess as the language's own
+  measure needs a per-language profile approved with speakers, which does not exist yet.
+- **No `/languages` or `/domains` call.** Those routes are not on WordPad's BFF allowlist. The
+  language selector is WordPad's own list; a domain arrives as a field on a lookup, if at all.
+- **Per-tool narrowing is the contract**, not an optimisation: `writing-lookup` returns only the
+  active tool's fields. The `translate` tool — carrying the English/French lemma and gloss — is
+  deliberately **not** requestable by WordPad, because that material is rights-restricted and an
+  authenticated writer is not an entitled one.
 
 **What WordPad does not do:**
 
-- Write to the Dictionary  
-- Store dictionary data locally in any form  
-- Make direct calls to the Dictionary REST API from the browser (all calls go through WordPad's server-side layer)
+- Write to the Dictionary — it reaches no write route; `POST /v1/import/release` is the service's
+  only write door and is not on the allowlist
+- Store dictionary data locally in any form
+- Make direct calls to either Dictionary surface from the browser (all calls go through WordPad's
+  same-origin BFF, which holds the only credential)
+- Call the WordPress plugin REST namespace at all, from anywhere
+- Preload, enumerate or mirror the corpus — no `wordlist`, `gamepack`, `sparkpack` or
+  `artifacts/spell-lexicon` route is reachable through the BFF
+- Modify, collect, vote on, or treat tentative words as approved entries
+- Identify, in telemetry or logs, which corpus entries a writer looked up
 
 ### WordPad → Games Bridge (Future)
 
-When spell check suggests a correction, a "Practice this word" micro-link can deep-link into the Dictionary's Play mode for that word. This is a URL-based link — no shared session state required. Format: `https://dictionary.aiwa.gm/play?word={slug}&lang={lang}`.
+When spell check suggests a correction, a "Practice this word" micro-link could deep-link into the
+Dictionary's Play mode for that word — a URL-based link, no shared session state.
+
+**The host and path in the earlier version of this line (`https://dictionary.aiwa.gm/play?...`) are
+not confirmed against any current deployment** and must be verified before anything is built on
+them; the same inferred host is what WordPad's own client was wrongly pointed at. Treat the format
+as illustrative, not as a contract.
 
 ---
 
@@ -488,13 +559,16 @@ The service worker is versioned. On update, old caches are cleared and fresh wor
 
 ## Version History
 
-| Version | Date | Changes |
-| :---- | :---- | :---- |
-| 1.0 | May 2026 | Initial document. Suite architecture, API contract, games design, consumer relationships, resolved decisions, MyCred gamification, offline strategy. |
+One table. There were two, both numbered `1.0` and both dated May 2026, with different change
+descriptions — a concatenation artifact rather than two real revisions. The surviving row keeps the
+fuller of the two descriptions, which is a superset of the shorter one. Reported by Amazon Q on the
+2026-09-04 correction PR; merged here rather than deferred, because a row could not honestly be
+added to a table that appeared twice with conflicting content.
 
 | Version | Date | Changes |
 | :---- | :---- | :---- |
-| 1.0 | May 2026 | Initial document. Suite architecture, API contract, games design, consumer relationships. |
+| 1.0 | May 2026 | Initial document. Suite architecture, API contract, games design, consumer relationships, resolved decisions, MyCred gamification, offline strategy. |
+| 1.0.1 | 2026-09-04 | **"How WordPad Connects" endpoint table corrected.** It named the WordPress surface (`/search`, `/lookup`, `/languages`, `/domains`, `lang_source`, slugs), which `sparxstar-3iatlas-dictionary-node` does not expose. The section's *architecture* was already correct and is unchanged. Adds the machine-token flow, records language-scoped spell-check validity and ISO 639-3 codes, states that rhyme does not come from the Dictionary, and flags the unverified `dictionary.aiwa.gm` deep-link as unconfirmed. Version-history duplication merged. Governing record: `sparxstar-3iatlas-wordpad` WPAD-ADR-009 (Accepted). Applied identically to both repo copies in one change. |
 
 ---
 
