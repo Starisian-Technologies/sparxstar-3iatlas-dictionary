@@ -307,17 +307,29 @@ When the course ends, students already know where to go. They have been playing 
 
 ## How WordPad Connects
 
-> **CORRECTED 2026-09-04** — endpoints only. The *architecture* below was right all along and is
-> unchanged: WordPad reaches the Dictionary through a server-side layer, and the Dictionary never
-> goes to the device directly. What was stale was the endpoint table, which named WordPress routes
-> (`/search`, `/lookup`, `/languages`, `/domains`, `lang_source`, slugs) that
-> `sparxstar-3iatlas-dictionary-node` does not expose. Governing record:
-> `sparxstar-3iatlas-wordpad` `docs/adr/WPAD-ADR-009-dictionary-bff-and-machine-identity.md`
-> (Accepted, owner-ratified). This file is a byte-identical copy shared with the WordPad repo —
-> **any further edit must land in both, in one change.**
+> **CORRECTED 2026-09-04** — which service, and which endpoints. The *architecture* below was right
+> all along and is unchanged: WordPad reaches the Dictionary through a server-side layer, and the
+> Dictionary never goes to the device directly. What was stale was **which surface** the endpoint
+> table named.
+>
+> There are **two** Dictionary surfaces in this suite, and the old table conflated them:
+>
+> | Surface | Repo | Routes |
+> | :-- | :-- | :-- |
+> | WordPress plugin REST API | `sparxstar-3iatlas-dictionary` | `sparxstar/v1/dictionary/…` — `/search`, `/lookup`, `/languages`, `/domains`, `/spell`, `/page-token`, `/wordlist`, `/game-set`, `/word-of-day`, `/pronounce`, `/progress/sync` |
+> | Dictionary Node service | `sparxstar-3iatlas-dictionary-node` | `/v1/m2m/…`, `/v1/display/…`, `/v1/import/…` |
+>
+> Both exist. **WordPad no longer calls the WordPress plugin surface at all** — it calls the
+> Dictionary Node. The old table's routes are real; they are simply not WordPad's, which is why the
+> RLC section below still references `/languages`, `/domains` and `/wordlist` correctly.
+>
+> Governing record: `sparxstar-3iatlas-wordpad`
+> `docs/adr/WPAD-ADR-009-dictionary-bff-and-machine-identity.md` (Accepted, owner-ratified
+> 2026-09-04). This file is a byte-identical copy shared with the WordPad repo — **any further edit
+> must land in both, in one change.**
 
-WordPad consumes the Dictionary API through its own same-origin BFF. The Dictionary never goes to
-the device directly, and the browser holds no Dictionary credential.
+WordPad consumes the **Dictionary Node** through its own same-origin BFF. The Dictionary never goes
+to the device directly, and the browser holds no Dictionary credential.
 
 ```
 authenticated WordPad browser
@@ -326,9 +338,13 @@ authenticated WordPad browser
   → private        https://dictionary-api.sparxstar.com/v1/m2m/*
 ```
 
-Every Dictionary route requires an RS256 Identity machine token with `aud: dictionary` and
-`sub: service:<registered-caller>`; WordPad's is `service:wordpad`, with its own key, caller row and
-entry budget. There is no anonymous or page-token path, and an uncredentialed request returns `401`.
+**On the Dictionary Node's `/v1/*` routes** — this paragraph is scoped to that service and does not
+describe the WordPress plugin's namespace — every route requires an RS256 Identity machine token
+with `aud: dictionary` and `sub: service:<registered-caller>`; WordPad's is `service:wordpad`, with
+its own key, caller row and entry budget. On those routes there is no anonymous and no page-token
+path, and an uncredentialed request returns `401`. (The WordPress plugin's own namespace does
+support `X-Page-Token` and `X-Api-Key` via its `DictionaryAuthResolver`; WordPad uses neither, and
+that resolver's own source records `X-Api-Key` as architecturally condemned.)
 
 | WordPad Need | WordPad BFF route | Dictionary route |
 | :---- | :---- | :---- |
@@ -345,11 +361,14 @@ entry budget. There is no anonymous or page-token path, and an uncredentialed re
 - **Language is ISO 639-3** (`mnk`), not a `lang_source` taxonomy slug (`mandinka`), and not
   ISO 639-1 (`en`). WordPad asks only about languages with an **approved lexicon**; anything else is
   reported as unavailable and never as checked.
-- **Rhyme does not come from the Dictionary.** The old table derived it from "phonetic variants as
-  rhyme approximation". WordPad's rhyme suggestions stay a local, explicitly-labelled approximation
-  until an approved per-language prosody profile exists — Mandinka verbal art centres rhythm,
-  breath-line, assonance, alliteration and repetition alongside or above end-rhyme, and the
-  Dictionary's own `/v1/m2m/rhymes` reports `meta.prosody_rule` for exactly that reason.
+- **WordPad calls no rhyme route.** The old table derived rhymes from `/lookup`'s "phonetic
+  variants as rhyme approximation". WordPad's rhyme suggestions are now a local,
+  explicitly-labelled approximation, and no rhyme endpoint on either surface is on its BFF
+  allowlist. Why it stays that way rather than being wired to the Node's `/v1/m2m/rhymes`: that
+  route derives rhyme keys under a DEFAULT rule and reports `meta.prosody_rule` saying so, because
+  Mandinka verbal art centres rhythm, breath-line, assonance, alliteration and repetition alongside
+  or above end-rhyme. Presenting either the default or a spelling guess as the language's own
+  measure needs a per-language profile approved with speakers, which does not exist yet.
 - **No `/languages` or `/domains` call.** Those routes are not on WordPad's BFF allowlist. The
   language selector is WordPad's own list; a domain arrives as a field on a lookup, if at all.
 - **Per-tool narrowing is the contract**, not an optimisation: `writing-lookup` returns only the
@@ -362,8 +381,9 @@ entry budget. There is no anonymous or page-token path, and an uncredentialed re
 - Write to the Dictionary — it reaches no write route; `POST /v1/import/release` is the service's
   only write door and is not on the allowlist
 - Store dictionary data locally in any form
-- Make direct calls to the Dictionary REST API from the browser (all calls go through WordPad's
+- Make direct calls to either Dictionary surface from the browser (all calls go through WordPad's
   same-origin BFF, which holds the only credential)
+- Call the WordPress plugin REST namespace at all, from anywhere
 - Preload, enumerate or mirror the corpus — no `wordlist`, `gamepack`, `sparkpack` or
   `artifacts/spell-lexicon` route is reachable through the BFF
 - Modify, collect, vote on, or treat tentative words as approved entries
