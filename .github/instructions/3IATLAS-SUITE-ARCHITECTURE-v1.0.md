@@ -539,13 +539,16 @@ The service worker is versioned. On update, old caches are cleared and fresh wor
 
 ## Version History
 
-| Version | Date | Changes |
-| :---- | :---- | :---- |
-| 1.0 | May 2026 | Initial document. Suite architecture, API contract, games design, consumer relationships, resolved decisions, MyCred gamification, offline strategy. |
+One table. There were two, both numbered `1.0` and both dated May 2026, with different change
+descriptions — a concatenation artifact rather than two real revisions. The surviving row keeps the
+fuller of the two descriptions, which is a superset of the shorter one. Reported by Amazon Q on the
+2026-09-04 correction PR; merged here rather than deferred, because a row could not honestly be
+added to a table that appeared twice with conflicting content.
 
 | Version | Date | Changes |
 | :---- | :---- | :---- |
-| 1.0 | May 2026 | Initial document. Suite architecture, API contract, games design, consumer relationships. |
+| 1.0 | May 2026 | Initial document. Suite architecture, API contract, games design, consumer relationships, resolved decisions, MyCred gamification, offline strategy. |
+| 1.0.1 | 2026-09-04 | **"How WordPad Connects" endpoint table corrected.** It named the WordPress surface (`/search`, `/lookup`, `/languages`, `/domains`, `lang_source`, slugs), which `sparxstar-3iatlas-dictionary-node` does not expose. The section's *architecture* was already correct and is unchanged. Adds the machine-token flow, records language-scoped spell-check validity and ISO 639-3 codes, states that rhyme does not come from the Dictionary, and flags the unverified `dictionary.aiwa.gm` deep-link as unconfirmed. Version-history duplication merged. Governing record: `sparxstar-3iatlas-wordpad` WPAD-ADR-009 (Accepted). Applied identically to both repo copies in one change. |
 
 ---
 
