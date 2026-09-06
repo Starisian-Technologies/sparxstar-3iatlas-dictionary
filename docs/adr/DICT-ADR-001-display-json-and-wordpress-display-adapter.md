@@ -145,7 +145,7 @@ defeats the purpose of having a contract at all.
 
 ## Provenance
 
-Ruled by the platform owner (max.b@sparxstar.com), 2026-09-06, in the working
+Ruled by the platform owner, 2026-09-06, in the working
 session that opened branch `claude/dictionary-plugin-api-cyvzs4` across
 `sparxstar-3iatlas-dictionary-node`, `sparxstar-3iatlas-dictionary`, and
 `sparxstar-3iatlas-identity-node`.
