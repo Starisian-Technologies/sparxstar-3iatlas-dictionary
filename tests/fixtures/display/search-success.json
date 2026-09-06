@@ -4,9 +4,7 @@
     "results": [
       { "slug": "kaŋo", "header_word": "kaŋo", "language": "zxx", "part_of_speech": "noun", "matched_on": "exact" },
       { "slug": "ɗaa", "header_word": "ɗaa", "language": "zxx", "part_of_speech": "noun", "matched_on": "fuzzy" }
-    ],
-    "is_suggestion": false,
-    "truncated": false
+    ]
   },
-  "meta": { "total": "a few" }
+  "meta": { "is_suggestion": false, "truncated": false }
 }

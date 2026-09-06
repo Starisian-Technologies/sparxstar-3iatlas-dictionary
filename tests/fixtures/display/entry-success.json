@@ -24,6 +24,5 @@
       "audio_url": "https://example.invalid/signed/audio.mp3",
       "image_url": "https://example.invalid/signed/image.jpg"
     }
-  },
-  "meta": { "audit_reference": "example-audit-reference" }
+  }
 }

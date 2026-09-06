@@ -246,7 +246,8 @@ final class DisplayAdapterTest extends TestCase {
         $this->assertSame( 'zxx', $result['entry']['language'] );
         $this->assertSame( 'noun', $result['entry']['part_of_speech'] );
         $this->assertCount( 1, $result['entry']['examples'] );
-        $this->assertSame( 'example-audit-reference', $result['meta']['audit_reference'] );
+        // The entry route emits no `meta` at all; an absent one is not an error.
+        $this->assertSame( array(), $result['meta'] );
     }
 
     public function test_the_success_key_is_success_not_ok(): void {
@@ -275,7 +276,7 @@ final class DisplayAdapterTest extends TestCase {
         );
     }
 
-    public function test_search_results_are_normalised_and_counts_are_not_invented(): void {
+    public function test_search_results_are_normalised_and_no_count_is_read_or_invented(): void {
         $source = $this->source( [ $this->json_response( $this->fixture( 'search-success.json' ) ) ] );
 
         $result = $source->search( 'ka', 'zxx', 20, 'reader-ref' );
@@ -283,6 +284,19 @@ final class DisplayAdapterTest extends TestCase {
         $this->assertCount( 2, $result['results'] );
         $this->assertSame( 'kaŋo', $result['results'][0]['headword'] );
         $this->assertFalse( $result['meta']['is_suggestion'] );
+        $this->assertFalse( $result['meta']['truncated'] );
+        // `meta.total` is never emitted on this tier, and nothing here parses for it.
+        $this->assertSame( [ 'is_suggestion', 'truncated' ], array_keys( $result['meta'] ) );
+    }
+
+    public function test_an_upstream_total_is_ignored_rather_than_surfaced(): void {
+        $body   = '{"success":true,"data":{"results":[]},"meta":{"total":4321,"is_suggestion":false,"truncated":true}}';
+        $source = $this->source( [ $this->json_response( $body ) ] );
+
+        $result = $source->search( 'ka', 'zxx', 20, 'r' );
+
+        $this->assertArrayNotHasKey( 'total', $result['meta'] );
+        $this->assertTrue( $result['meta']['truncated'] );
     }
 
     public function test_word_of_day_carries_its_date(): void {
@@ -290,6 +304,7 @@ final class DisplayAdapterTest extends TestCase {
 
         $result = $source->get_word_of_day( 'zxx', 'reader-ref' );
 
+        // The calendar date travels in `meta` on this route.
         $this->assertSame( '2026-09-06', $result['date'] );
         $this->assertSame( 'kaŋo', $result['entry']['slug'] );
     }
@@ -301,6 +316,8 @@ final class DisplayAdapterTest extends TestCase {
 
         $this->assertSame( 'dom-one', $result['domains'][0]['code'] );
         $this->assertSame( 'Example Domain Name', $result['domains'][1]['name'] );
+        // `truncated` says "there is more" without saying how much.
+        $this->assertFalse( $result['meta']['truncated'] );
     }
 
     // -----------------------------------------------------------------------

@@ -178,15 +178,18 @@ final class LiveJsonDisplaySource implements DictionaryDisplaySourceInterface {
 
         $data = is_array( $result['data'] ) ? $result['data'] : array();
 
+        /*
+         * Search is the one route with a `meta` of its own: `is_suggestion` and
+         * `truncated`. `truncated` is a boolean and never a remainder — there is
+         * no count on this tier, so nothing here reads `meta.total`, which the
+         * contract states is never emitted.
+         */
         return array(
             'results' => $results,
-            'meta'    => array_merge(
-                $result['meta'],
-                array(
-                    // Presented to the reader as "did you mean", never as a result.
-                    'is_suggestion' => (bool) ( $data['is_suggestion'] ?? false ),
-                    'truncated'     => (bool) ( $data['truncated'] ?? false ),
-                )
+            'meta'    => array(
+                // Presented to the reader as "did you mean", never as a result.
+                'is_suggestion' => (bool) ( $result['meta']['is_suggestion'] ?? $data['is_suggestion'] ?? false ),
+                'truncated'     => (bool) ( $result['meta']['truncated'] ?? $data['truncated'] ?? false ),
             ),
         );
     }
@@ -218,7 +221,7 @@ final class LiveJsonDisplaySource implements DictionaryDisplaySourceInterface {
 
         return array(
             'domains' => $domains,
-            'meta'    => $result['meta'],
+            'meta'    => array( 'truncated' => (bool) ( $result['meta']['truncated'] ?? false ) ),
         );
     }
 
@@ -240,8 +243,14 @@ final class LiveJsonDisplaySource implements DictionaryDisplaySourceInterface {
             return self::schema_error();
         }
 
+        // The word-of-day route carries its calendar date in `meta`.
         $data = is_array( $result['data'] ) ? $result['data'] : array();
-        $date = isset( $data['date'] ) && is_string( $data['date'] ) ? $data['date'] : '';
+        $date = '';
+        foreach ( array( $result['meta'], $data ) as $carrier ) {
+            if ( isset( $carrier['date'] ) && is_string( $carrier['date'] ) && '' === $date ) {
+                $date = $carrier['date'];
+            }
+        }
 
         return array(
             'entry' => $entry,
