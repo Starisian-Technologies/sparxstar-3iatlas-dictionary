@@ -16,6 +16,19 @@ spec_id_prefix: 'DICT'
 
 ## Identity
 
+> **Superseded in part by `DICT-ADR-001` (accepted 2026-09-06).** The Dictionary
+> Node (`sparxstar-3iatlas-dictionary-node`) is the authoritative lexical data
+> service. This plugin is the **public display application**: it owns the UI,
+> routing, theme and SEO, and reads lexical data from the Node's credentialed
+> `/v1/display/*` JSON tier through a server-side adapter. It stores no corpus,
+> and its CPT/SCF fields stop being a data authority.
+>
+> The description below records the **pre-cutover** state, which is still what
+> runs in production until the adapter is enabled. Read it as history, not as
+> instruction. See `docs/adr/DICT-ADR-001-display-json-and-wordpress-display-adapter.md`
+> and `.github/instructions/3IATLAS-DICTIONARY-DISPLAY-JSON-CONTRACT-v1.0.md`.
+
+
 The 3iAtlas Dictionary is the authoritative lexical data store and REST API
 service for the 3iAtlas platform. It is a standalone WordPress plugin
 (`sparxstar-3iatlas-dictionary`) with a React PWA frontend. Every other

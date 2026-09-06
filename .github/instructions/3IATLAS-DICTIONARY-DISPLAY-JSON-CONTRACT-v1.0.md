@@ -24,9 +24,10 @@
 > re-sourced from there.
 >
 > Governing record: `DICT-ADR-001` (`docs/adr/`), accepted 2026-09-06.
-> Machine-readable home: `docs/dictionary-openapi.yaml` in this repo. Where this
-> prose and that contract disagree, **the served code wins** and both documents
-> are corrected to match it.
+> Machine-readable home: `docs/dictionary-openapi.yaml` in
+> `sparxstar-3iatlas-dictionary-node`. Where this prose and that contract
+> disagree, **the served code wins** and both documents are corrected to match
+> it.
 
 ---
 
@@ -99,9 +100,27 @@ either repo:
   not coming back through a display door.
 - **No sequential identifiers.** `legacy_id` is enumeration bait and reaches no
   projection. Entries are addressed by slug; `entry_id` is a UUID.
-- **No database counts.** `meta.total` is a band or absent. Exact result counts
-  are suppressed under §2 of the service spec and are the one Display App
-  feature the port states will not come back.
+- **No database counts.** **`meta.total` is never emitted on this tier** — not
+  as an exact count, and not as a range. Earlier wording here said "a band or
+  absent", which was inherited from the ported envelope's own comment in
+  `src/http/envelope.ts`; no route implements it, and a consumer must not parse
+  for it. Exact result counts are suppressed under §2 of the service spec and
+  are the one Display App feature the port states will not come back.
+
+  The `meta` a display route actually emits, and nothing else:
+
+  | Route | `meta` |
+  | :-- | :-- |
+  | `/v1/display/languages` | omitted |
+  | `/v1/display/entry` | omitted |
+  | `/v1/display/search` | `{ is_suggestion, truncated }` |
+  | `/v1/display/domains` | `{ truncated }` |
+  | `/v1/display/word-of-day` | `{ date }` |
+
+  `truncated` is the only signal that more exists — a boolean, never a
+  remainder. It says "there is more" without saying how much, which is the
+  whole point: a count is a corpus measurement, and repeated counts are a
+  census.
 - **Every entry-bearing request names exactly one ISO 639-3 language.**
   `/v1/display/languages` returns metadata about languages; it returns no words.
   "All languages available" means *all may be selected*, never *fetch them all*.
