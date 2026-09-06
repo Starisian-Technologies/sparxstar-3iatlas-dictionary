@@ -1,0 +1,347 @@
+# 3iAtlas Dictionary — Display JSON Contract
+
+## Version 1.0 · Starisian Technologies · AIWA · Confidential
+
+---
+
+> **Status: `contract`** — the seam between `sparxstar-3iatlas-dictionary-node`
+> (private authoritative data service) and `sparxstar-3iatlas-dictionary` (the
+> public WordPress display application). Shared as **byte-identical copies** in
+> both repos. **Any further edit must land in both, in one change.**
+>
+> Governing record: `DICT-ADR-001` (`docs/adr/`), accepted 2026-09-06.
+> Machine-readable home: `docs/dictionary-openapi.yaml` in the Node repo. Where
+> this prose and that contract disagree, **the served code wins** and both
+> documents are corrected to match it.
+
+---
+
+## 1. What this seam is
+
+One sentence: **the Dictionary Node owns the words; WordPress owns the page.**
+
+```
+reader's browser
+  → same-origin   /wp-json/sparxstar/v1/dictionary/*        (WordPress display adapter)
+  → machine token POST {identity}/oauth2/token              (private_key_jwt, aud=dictionary)
+  → private       GET  {node}/v1/display/*                  (scope: display)
+```
+
+The browser never holds a Dictionary credential, never learns the Node's URL,
+and never receives a signed upstream header. WordPress is a **display adapter**:
+it renders, caches nothing of the corpus, and stores no lexical data.
+
+### 1.1 What each side owns
+
+| Fact | Home | Never lives in |
+| :-- | :-- | :-- |
+| Headwords, definitions, IPA, examples, relations, media | Dictionary Node | WordPress |
+| Language and domain **display names** | Dictionary Node (§5) | WordPress |
+| Which languages this deployment *shows* | WordPress admin setting (§6) | Dictionary Node |
+| Page markup, routing, theme, shortcodes, SEO | WordPress | Dictionary Node |
+| Who the reader is | WordPress | Dictionary Node (§4.3) |
+| Whether a caller may read at all | Identity node (authn) + Node caller registry (authz) | WordPress |
+
+**The invariant that makes this a seam and not a sync:** no Dictionary record is
+ever copied, mirrored, imported, or written into WordPress. Not as a CPT row,
+not as post meta, not as a transient, not as an option. The only thing
+WordPress persists from upstream is the machine access token (§4.2).
+
+---
+
+## 2. The routes
+
+All new routes are **JSON**, live under `/v1/display/`, and sit in the
+**`display` authorization tier** — the same tier as the existing HTML `/w/:slug`
+and `/search`, and separate from `m2m`, `import`, artifacts, and the
+public-domain route.
+
+`/v1/display/` is not a new surface. It is the surface this service was already
+documented to expose in `3IATLAS-SUITE-ARCHITECTURE-v1.0.md`
+(`/v1/m2m/…`, `/v1/display/…`, `/v1/import/…`); it was simply unimplemented.
+
+| Route | Purpose | Language parameter |
+| :-- | :-- | :-- |
+| `GET /v1/display/languages` | Languages with a compiled display projection | **none** — the one language-less route |
+| `GET /v1/display/entry` | One entry, by stable slug + language | **required** |
+| `GET /v1/display/search` | Bounded search within one language | **required** |
+| `GET /v1/display/domains` | Domains available for one language | **required** |
+| `GET /v1/display/word-of-day` | One deterministic entry per calendar day | **required** |
+
+### 2.1 The anti-enumeration invariant
+
+This is the rule the whole tier exists to preserve, and it is not negotiable by
+either repo:
+
+- **No "all entries" route.** Ever. In any tier.
+- **No pagination.** There is no `page`, `offset`, `cursor`, or `after`
+  parameter on any route in this contract. `/wordlist` was retired on purpose
+  (`docs/PORT-AND-MIGRATION.md`) and is not coming back through a display door.
+- **No sequential identifiers.** `legacy_id` is enumeration bait and reaches no
+  projection. Entries are addressed by slug; `entry_id` is a UUID.
+- **No database counts.** `meta.total` is a band or absent. Exact result counts
+  are suppressed under §2 of the service spec and are the one Display App
+  feature the port states will not come back.
+- **Every entry-bearing request names exactly one ISO 639-3 language.**
+  `/v1/display/languages` returns metadata about languages; it returns no words.
+  "All languages available" means *all may be selected*, never *fetch them all*.
+- **Over-cap is a `400 over_cap`, never a silent clamp.**
+
+A route that violates any bullet above is a defect regardless of what a ticket,
+a UI need, or this document's own prose appears to ask for.
+
+---
+
+## 3. The envelope
+
+**Verified against `src/http/envelope.ts`. This is the served shape.**
+
+Success — note the key is `success`, not `ok`. `ok()` is the name of the helper
+function that builds it:
+
+```json
+{ "success": true, "data": { }, "meta": { } }
+```
+
+`meta` is omitted entirely when there is nothing to report; it is never `null`.
+
+Error — deliberately WordPress-shaped, so `WP_Error` maps across without a
+translation layer:
+
+```json
+{ "code": "bad_request", "message": "…", "data": { "status": 400 } }
+```
+
+The shared error codes and their statuses, from `ERRORS` in the same file:
+
+| Code | Status | Meaning |
+| :-- | :-- | :-- |
+| `bad_request` | 400 | Malformed or missing parameter |
+| `over_cap` | 400 | Asked for more results than the maximum |
+| `unauthorized` | 401 | No valid credential. Every authn failure is this one code |
+| `forbidden` | 403 | Valid credential, wrong scope for this route |
+| `not_found` | 404 | No such entry |
+| `budget_exceeded` | 429 | Rolling unique-entry budget exhausted |
+| `internal_error` | 500 | Request could not be served |
+
+Two rules about error detail, both already enforced upstream and both binding on
+the WordPress adapter:
+
+- **Authentication failures are indistinguishable to the caller.** Thirty
+  internal reasons, one `401`. The reason is recorded for the operator, never
+  returned. WordPress must not attempt to infer or surface a reason.
+- **Authorization failures never name the required scope.** Telling a caller
+  which scope a route wants is telling it what to go and look for.
+
+---
+
+## 4. Authentication and metering
+
+### 4.1 Chain of trust
+
+Identity answers *who is calling*. The Dictionary answers *what they may read*.
+Neither answers the other's question — that split is the whole point and is
+ratified in the identity node's
+`docs/SERVICE-CLIENT-AUTH-SPEC-v1.0.md` §0.
+
+1. WordPress holds an RSA private key and a registered `client_id`.
+2. It mints a `private_key_jwt` client assertion (RS256, `exp` ≤ `iat` + 60s,
+   unique `jti`, `aud` = the token endpoint URL **exactly**) and posts it to
+   `POST /oauth2/token` with `grant_type=client_credentials` and
+   `audience=dictionary`.
+3. Identity returns an RS256 access token: `aud: dictionary`,
+   `sub: service:<registered-subject>`, `token_use: service`, **300-second
+   lifetime**, no refresh token.
+4. WordPress presents it as `Authorization: Bearer <token>` to the Node.
+5. The Node verifies it against Identity's JWKS, then looks up its **own**
+   caller row by `subject`. An authenticated caller with no caller row is
+   `subject_unknown` → `401`. There is no default.
+
+**No client secret exists anywhere in this flow.** The access token carries no
+`scope`, `permissions`, or `trust_level` claim — the Dictionary's caller
+registry holds the `display` scope and the entry budget, and Identity never
+learns them.
+
+### 4.2 Token handling in WordPress
+
+- The private key lives **outside the plugin directory and outside the web
+  root**. It is never in the repository, never in an option row, never in a
+  build artifact.
+- Tokens are obtained **server-side only** and cached until shortly before
+  `exp` — never to the second, because a token that expires in flight is a
+  failed page render.
+- On a `401` from the Node, discard the cached token, mint exactly **one** fresh
+  token, and retry the request **once**. A second `401` is a controlled error,
+  never a third attempt.
+- The token, the assertion, the key, the Node base URL, and any signed upstream
+  header are **never** emitted into JavaScript, HTML, `wp_localize_script`
+  settings, logs, error output, or browser storage.
+
+### 4.3 Reader metering — `X-Reader-Ref`
+
+The Node meters the Display App as **one credential**, with a per-reader
+sub-budget underneath it (`READER_BUDGET_CEILING`, default 300). That sub-budget
+only functions if the adapter identifies readers to it.
+
+**The WordPress adapter MUST send `X-Reader-Ref` on every entry-bearing
+request.** Without it, every reader on the site meters as a single bucket and
+one scraper exhausts the whole deployment's budget for everybody.
+
+The value is **opaque by contract**: a salted hash or a pseudonymous
+per-session id. Never a username, an email, an IP address, a WordPress user id,
+or anything the Node could correlate back to a person. Reader identity is
+WordPress's business and stays there — the Node must remain unable to learn
+which entries a named person looked up.
+
+### 4.4 Budget
+
+Entry-bearing responses charge the caller's rolling unique-entry budget before
+they are sent. Search charges its hits: a reader walking the alphabet through
+search harvests the wordlist just as surely as one opening every page. A
+`429 budget_exceeded` is a normal operating condition the adapter must render as
+a courteous, non-blank degradation — not a stack trace and not an empty page.
+
+---
+
+## 5. Language and domain names — where they come from
+
+**A verified gap, stated here so neither repo fills it by inventing.**
+
+The Node schema holds **codes, not names**: `entries.language` (ISO 639-3) and
+`concepts.domain_code`. There is no language-name or domain-name column
+anywhere in `migrations/001`–`006`. The human-readable names that the live
+dictionary shows today come from the WordPress `starmus_tax_language` and
+`aiwa_domain` taxonomies — which is precisely the SCF/taxonomy layer this work
+retires.
+
+The ruling, per **one home per fact**:
+
+1. **The Node is the only home for display names.** It supplies them, or
+   nobody does.
+2. **WordPress never hardcodes a name and never maps a code to a name locally.**
+   No Mandinka string, no language table, no fallback dictionary of names — not
+   in PHP, not in JavaScript, not in a translation file.
+3. **Until a name exists upstream, the Node returns the code as the name** and
+   says so in the payload, so the UI degrades to `mnk` rather than to a guess or
+   a blank. Rendering a code is honest; rendering an invented name is not.
+4. Where the name source lands in the Node is the Node PR's call, made against
+   its own code. One candidate is already visible in that repo: the import tree
+   carries a language NAME in the entries filename
+   (`mnk/mandinka_entries.csv`), and the README states plainly that the exports
+   "carry a language NAME that no rule can derive from its code." Domain names
+   have no such source in the Node today and need one.
+
+---
+
+## 6. Language configuration (WordPress side)
+
+Exactly **one** administrator setting, with three modes. Codes are stored;
+names are displayed and always come from the Node (§5).
+
+| Mode | Behaviour | Public language selector |
+| :-- | :-- | :-- |
+| `single` | One ISO 639-3 code | Hidden |
+| `selected` | An allowlist of ISO 639-3 codes | Shows only those |
+| `all_available` | Every language the Node reports | Shows all reported |
+
+Binding rules:
+
+- **Never hardcode a language.** No default of `mnk`, no "Mandinka" string
+  anywhere in the plugin. An unconfigured deployment shows a configuration
+  notice, not a guess.
+- **Validate configured codes against the Node.** A configured code the Node
+  does not report is rejected at save time with a clear admin error.
+- **Fall back safely when a configured language disappears.** A language that
+  was valid and is no longer reported must degrade to a controlled notice. It
+  must never produce a fatal, a blank page, or a silent switch to a different
+  language — silently serving Wolof to someone who asked for Pulaar is a worse
+  failure than an honest error.
+- **`all_available` selects, it never fetches.** It expands the *choices*; it
+  never issues a request per language, and never fetches entries for more than
+  the one language in play.
+
+---
+
+## 7. Cutover order — this is a sequence, not a preference
+
+1. Contract + `DICT-ADR-001` land in both repos.
+2. **Node ships and deploys** the `/v1/display/*` JSON routes.
+3. WordPress is registered: its own Identity service client, its own Dictionary
+   caller row with `scope=display`. **Its own** — the WordPad and Games
+   credentials are never reused. A shared key means one compromise is three
+   compromises, and it destroys per-caller metering and per-caller revocation.
+4. WordPress switches Browse mode to the adapter, behind a flag, and is verified
+   against a live Node.
+5. Only then is the old WordPress dictionary API retired as a data authority.
+
+**Step 2 must be deployed before step 4 is enabled.** A plugin that switches
+first is a dictionary serving blank pages.
+
+Two live implementations of the same read path, or two independently edited
+schemas, are forbidden at every step. The migration window is for one switch,
+not for a parallel system.
+
+---
+
+## 8. Contract fixtures
+
+One set of fixtures, versioned with the OpenAPI document in the Node repo, and
+consumed by **both** sides:
+
+- The Node's tests assert its handlers produce exactly these payloads.
+- The plugin's tests assert its adapter parses exactly these payloads, without a
+  live Node.
+
+A fixture is the enforcement; this document is only the agreement. Both repos
+must cover, at minimum:
+
+| Case | Both sides assert |
+| :-- | :-- |
+| Content type | `application/json` demanded and produced |
+| Success envelope | `success`/`data`/`meta` exactly |
+| Error envelope | `code`/`message`/`data.status` exactly |
+| Every language mode | `single`, `selected`, `all_available` |
+| Same slug, two languages | Disambiguated by explicit language, never guessed |
+| Rights-filtered fields | A withheld field is absent/empty, and the entry still renders |
+| Authentication | Token minted, sent, accepted |
+| Token refresh | `401` → one refresh → one retry → success |
+| Second `401` | Controlled error, no third attempt |
+| Timeout | Controlled error, no blank page |
+| Node unavailable | Controlled error, no fatal |
+| Malformed JSON | Controlled error |
+| **HTML upstream** | An HTML body (proxy error page, WAF block, login wall) is a controlled error and is **never** parsed or rendered |
+| Oversized response | Refused before it is decoded |
+
+The HTML case earns its own row because it is the failure this seam invites:
+the Node's `/w/:slug` and `/search` return HTML by design, so a mistyped base
+URL or a captive proxy yields a `200` whose body is a web page. An adapter that
+trusts `200` renders that page inside the dictionary.
+
+---
+
+## 9. What WordPress must never do
+
+- Copy, sync, mirror, import, or cache Dictionary records in any WordPress
+  store — CPT, post meta, taxonomy, option, or transient.
+- Write to the Dictionary. There is no write door on this seam; the Node's only
+  write door is `POST /v1/import/release`, and it is not reachable from here.
+- Call the Node from the browser, or expose its URL, credential, key, token, or
+  signed headers to the browser.
+- Request more than one language's entries in a request.
+- Reuse the WordPad or Games credential.
+- Hardcode a language or domain name.
+- Reintroduce enumeration: no wordlist, no export, no sitemap of entries, no
+  pagination walk, no exact counts.
+- Identify to the Node which entries a named reader looked up.
+
+---
+
+## Version History
+
+| Version | Date | Changes |
+| :-- | :-- | :-- |
+| 1.0 | 2026-09-06 | Initial contract. `/v1/display/*` JSON tier, envelope verified against `src/http/envelope.ts`, machine-token chain, reader metering, the language/domain name gap (§5), WordPress language modes, cutover order, fixture matrix. Governing record `DICT-ADR-001`. |
+
+---
+
+*Starisian Technologies · AIWA · Confidential — Internal Use Only*

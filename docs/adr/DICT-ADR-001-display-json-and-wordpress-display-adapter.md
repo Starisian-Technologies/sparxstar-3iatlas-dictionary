@@ -1,0 +1,112 @@
+# DICT-ADR-001: Serve the WordPress dictionary from the Node over a bounded display JSON tier
+
+**Date:** 2026-09-06
+**Status:** accepted
+**Applies to:** `sparxstar-3iatlas-dictionary-node`, `sparxstar-3iatlas-dictionary`,
+`sparxstar-3iatlas-identity-node`
+
+---
+
+## Context
+
+The WordPress plugin has been the authoritative lexical store, reading SCF/ACF
+fields off an `aiwa-cpt-dictionary` CPT and exposing its own
+`sparxstar/v1/dictionary/*` REST namespace. `sparxstar-3iatlas-dictionary-node`
+was then built as a **port** of that system and now holds the canonical corpus,
+the governed compilers, the immutable ledger, and field-level provenance rules
+the plugin never had.
+
+That left two live implementations of the same read path, with the authoritative
+one being the newer. `docs/PORT-AND-MIGRATION.md` §Cutover assumed the plugin
+would simply be **removed** and WordPress reduced to a frame around the Node's
+server-rendered pages.
+
+The platform owner has ruled otherwise: WordPress remains the **public display
+application** — its React UI, routing, theme and SEO are the product surface —
+while the Node remains the **private authoritative data service**. The Node's
+existing display tier returns HTML (`/w/:slug`, `/search`), which cannot power
+that UI, and the JSON routes that could (`/wordlist`, `/languages`, `/domains`)
+were retired on purpose as enumeration bait.
+
+## Decision
+
+1. The Node gains **bounded, credentialed JSON display endpoints** under
+   `/v1/display/` — languages, entry lookup by slug + ISO 639-3 language,
+   search, domains, word-of-day — in the **`display` authorization tier**,
+   separate from `m2m`, `import`, artifacts, and the public-domain route.
+   `/v1/display/` is the surface `3IATLAS-SUITE-ARCHITECTURE-v1.0.md` already
+   documented for this service; this implements it rather than inventing it.
+2. **WordPress becomes a display adapter and UI only.** Browse mode reads
+   through a same-origin WordPress REST adapter that calls the Node
+   server-side. No Dictionary record is copied, synced, mirrored, or re-imported
+   into WordPress in any store.
+3. **WordPress authenticates as its own machine identity** — its own Identity
+   service client and its own Dictionary caller row with `scope=display`. The
+   WordPad and Games credentials are not reused.
+4. **The anti-enumeration invariants are carried into the new tier unchanged**:
+   no all-entries route, no pagination, no sequential-id walking, no database
+   counts, no bulk export. Language discovery may list every available language;
+   every entry-bearing request names exactly one ISO 639-3 language.
+5. **One versioned OpenAPI contract and one fixture set**, owned by the Node and
+   consumed by both repos, is the enforcement. The prose contract is the
+   agreement; the fixtures are what make it true.
+6. **Display names for languages and domains are the Node's to supply.** The
+   Node schema currently holds codes only. WordPress never hardcodes a name and
+   never maps a code to a name locally; until a name exists upstream the Node
+   returns the code as the name.
+
+## Affects
+
+- **Contract:** `3IATLAS-DICTIONARY-DISPLAY-JSON-CONTRACT-v1.0.md`, shared
+  byte-identically by the Node and plugin repos.
+- **Machine-readable contract:** `docs/dictionary-openapi.yaml` (Node).
+- **Supersedes, in part:** `docs/PORT-AND-MIGRATION.md` §Cutover step 2 — the
+  plugin is **not** removed and is not reduced to a frame. Its data layer, CPT
+  and SCF dependency still retire; its UI does not. The rest of that document,
+  including every retired-route ruling, stands.
+- **Identity:** one new registered service client, `allowed_audiences:
+  ['dictionary']`, per `SERVICE-CLIENT-AUTH-SPEC-v1.0.md` §6.
+
+## Consequence
+
+**Now true:**
+
+- The Node is the single source of lexical truth for every surface, WordPress
+  included. WordPress holds no corpus.
+- The plugin's `aiwa-cpt-dictionary` CPT, its SCF/ACF field dependency, and its
+  WPGraphQL lexical schema stop being a data authority.
+- A reader's page render depends on the Node being reachable, so every upstream
+  failure — timeout, `401`, `429`, malformed JSON, an HTML error page, an
+  oversized body — must produce a controlled WordPress error. A blank page or a
+  fatal is a defect, not a degradation.
+- The Node's per-reader sub-budget only works if the adapter sends an opaque
+  `X-Reader-Ref`; without it the whole site meters as one bucket.
+
+**Now forbidden:**
+
+- Any route, in any tier, that returns all entries or permits a pagination walk.
+- Copying Dictionary records into WordPress in any form.
+- Exposing the Node URL, credential, private key, service token, or signed
+  upstream headers to the browser.
+- Reusing the WordPad or Games credential for WordPress.
+- Hardcoding a language or domain name, in either repo.
+- Maintaining two live implementations of the read path, or two independently
+  edited schemas, past the cutover.
+
+**Sequencing:** the Node's JSON support must be deployed before the WordPress
+plugin switches its UI. The old WordPress dictionary API is retired as a data
+authority only after a tested cutover.
+
+## Provenance
+
+Ruled by the platform owner (max.b@sparxstar.com), 2026-09-06, in the working
+session that opened branch `claude/dictionary-plugin-api-cyvzs4` across
+`sparxstar-3iatlas-dictionary-node`, `sparxstar-3iatlas-dictionary`, and
+`sparxstar-3iatlas-identity-node`.
+
+Repo facts this ADR rests on were read from the code, not from specs:
+`src/http/envelope.ts` (envelope shape), `src/http/middleware/authenticate.ts`
+(tier gating, `x-reader-ref`, no-store), `src/http/routes/display.ts` (existing
+HTML display tier, budget charging, provenance filtering),
+`src/domain/projections.ts` and `src/domain/types.ts` (projection safety and
+`DisplayEntry`), `migrations/001`–`006` (codes, not names).
