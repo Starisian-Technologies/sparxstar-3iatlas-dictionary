@@ -29,6 +29,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * REST API for the 3iAtlas dictionary.
+ *
+ * RETIRING AS A DATA AUTHORITY — see `docs/adr/DICT-ADR-001-…`.
+ *
+ * Every lexical read below (`build_entry()` and each `get_field()` /
+ * `get_post_meta()` call) reads the `aiwa-cpt-dictionary` CPT and its SCF/ACF
+ * fields. DICT-ADR-001 makes the Dictionary Node the authoritative lexical
+ * store and this plugin a display adapter, so these reads stop being a source
+ * of truth.
+ *
+ * They are still here because the cutover is a sequence, not a switch
+ * (contract §7): Browse mode moves to `src/api/display/` behind a flag that
+ * defaults to OFF, and this API is retired as a data authority only afterwards,
+ * once the other suite consumers (WordPad, RLC, Sound to Symbol, Games) have
+ * moved with it. Exactly one read path is live for Browse at any moment.
+ *
+ * Do not extend the lexical reads here, and do not add a third read path.
  */
 final class Sparxstar3IAtlasDictionaryRestApi {
 
@@ -667,6 +683,10 @@ final class Sparxstar3IAtlasDictionaryRestApi {
 
     /**
      * Build entry.
+     *
+     * LEGACY LEXICAL READ — retiring with this class as a data authority
+     * (DICT-ADR-001). Browse mode no longer reaches this method when the
+     * display adapter is switched on; the Dictionary Node answers instead.
      *
      * @param int  $post_id Post id.
      * @param bool $include_audio Include audio.

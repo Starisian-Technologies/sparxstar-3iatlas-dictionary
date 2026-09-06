@@ -1,0 +1,16 @@
+{
+  "success": true,
+  "data": {
+    "entry": {
+      "slug": "kaŋo",
+      "header_word": "kaŋo",
+      "language": "zxx",
+      "part_of_speech": "noun",
+      "definition": "The word of the day.",
+      "examples": [],
+      "audio_url": null,
+      "image_url": null
+    },
+    "date": "2026-09-06"
+  }
+}

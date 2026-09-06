@@ -1,0 +1,9 @@
+{
+  "success": true,
+  "data": {
+    "domains": [
+      { "code": "dom-one", "name": "dom-one" },
+      { "code": "dom-two", "name": "Example Domain Name" }
+    ]
+  }
+}

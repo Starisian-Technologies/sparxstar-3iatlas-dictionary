@@ -30,6 +30,7 @@ import {
     Users,
     Leaf,
 } from 'lucide-react';
+import { createDisplaySource, MIN_QUERY_LENGTH, toDisplayWord } from './displaySource';
 import '../css/sparxstar-3iatlas-dictionary-style.css';
 
 // ---------------------------------------------------------------------------
@@ -38,6 +39,14 @@ import '../css/sparxstar-3iatlas-dictionary-style.css';
 const settings = window.sparxstarDictionarySettings || {};
 const GRAPHQL_ENDPOINT = settings.graphqlUrl || '/graphql';
 const REST_URL = settings.restUrl || '/wp-json/sparxstar/v1/dictionary';
+
+/**
+ * The cutover flag (contract §7 step 4). Defaults to OFF: WordPress switches
+ * Browse mode to the dictionary service only once that service's JSON routes
+ * are deployed and verified. Exactly one read path is live at a time — never
+ * both — and the legacy path below is deleted after a tested cutover.
+ */
+const DISPLAY_ADAPTER = settings.displayAdapter === true;
 
 // ---------------------------------------------------------------------------
 // apiFetch — authenticated fetch helper for dictionary REST endpoints.
@@ -96,6 +105,13 @@ async function apiFetch(url, options = {}) {
 
     return res;
 }
+
+/**
+ * Browse mode's data source when the adapter is on. It calls the same-origin
+ * WordPress adapter only: the dictionary service's URL, this site's credential
+ * and its machine token never reach the browser.
+ */
+const displaySource = DISPLAY_ADAPTER ? createDisplaySource(REST_URL, apiFetch) : null;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -247,7 +263,13 @@ const FEATURE_CARDS = [
 ];
 
 // ---------------------------------------------------------------------------
-// GraphQL queries
+// GraphQL queries — LEGACY READ PATH, SCHEDULED FOR REMOVAL
+//
+// These two queries read the WordPress CPT/SCF lexical layer, which
+// DICT-ADR-001 retires as a data authority. They are selected only while
+// DISPLAY_ADAPTER is false and are deleted once the switch to the dictionary
+// service has been tested against a live service (contract §7 step 5). Do not
+// extend them, and do not add a third read path.
 // ---------------------------------------------------------------------------
 const GET_ALL_WORDS_INDEX = gql`
     query GetWordIndex($first: Int = 20000) {
@@ -351,6 +373,175 @@ const GET_SINGLE_WORD_DETAILS = gql`
         }
     }
 `;
+
+// ---------------------------------------------------------------------------
+// Browse data hooks — the only place the two read paths meet
+//
+// Each hook keeps both paths behind one return shape, and the cutover flag
+// selects exactly one of them. When the flag is removed, the legacy branch goes
+// with it and no component changes.
+// ---------------------------------------------------------------------------
+
+/** Debounce, in ms, before a typed query is sent upstream. Bandwidth is not free. */
+const SEARCH_DEBOUNCE_MS = 300;
+
+const EMPTY_WORDS = [];
+
+/**
+ * The words the Browse list renders.
+ *
+ * Legacy path: the whole word index, fetched once and filtered in the browser.
+ * Adapter path: a bounded, server-side search inside exactly one language.
+ * There is no index to fetch — no all-entries route exists, by design
+ * (contract §2.1) — so Browse is search-first and the reader is told so.
+ *
+ * @param {string} searchTerm     The reader's query.
+ * @param {string} sourceLanguage ISO 639-3 code of the language in play.
+ * @returns {{loading: boolean, error: (Error|null), words: Array, isSuggestion: boolean, needsQuery: boolean, serverFiltered: boolean}}
+ */
+function useBrowseWords(searchTerm, sourceLanguage) {
+    const legacy = useQuery(GET_ALL_WORDS_INDEX, { client, skip: DISPLAY_ADAPTER });
+    const [remote, setRemote] = useState({
+        loading: false,
+        error: null,
+        words: EMPTY_WORDS,
+        isSuggestion: false,
+        needsQuery: true,
+    });
+
+    const trimmed = searchTerm.trim();
+
+    useEffect(() => {
+        if (!DISPLAY_ADAPTER) return undefined;
+
+        if (trimmed.length < MIN_QUERY_LENGTH || !sourceLanguage) {
+            setRemote({
+                loading: false,
+                error: null,
+                words: EMPTY_WORDS,
+                isSuggestion: false,
+                needsQuery: true,
+            });
+            return undefined;
+        }
+
+        let cancelled = false;
+        setRemote((prev) => ({ ...prev, loading: true, error: null, needsQuery: false }));
+
+        const timer = setTimeout(() => {
+            displaySource
+                .search(trimmed, sourceLanguage)
+                .then((result) => {
+                    if (cancelled) return;
+                    setRemote({
+                        loading: false,
+                        error: null,
+                        words: result.words,
+                        isSuggestion: result.isSuggestion,
+                        needsQuery: false,
+                    });
+                })
+                .catch((error) => {
+                    if (cancelled) return;
+                    setRemote({
+                        loading: false,
+                        error,
+                        words: EMPTY_WORDS,
+                        isSuggestion: false,
+                        needsQuery: false,
+                    });
+                });
+        }, SEARCH_DEBOUNCE_MS);
+
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+        };
+    }, [trimmed, sourceLanguage]);
+
+    const legacyWords = useMemo(
+        () => (legacy.data?.dictionaries?.edges || []).map((edge) => edge.node),
+        [legacy.data]
+    );
+
+    if (!DISPLAY_ADAPTER) {
+        return {
+            loading: legacy.loading,
+            error: legacy.error,
+            words: legacyWords,
+            isSuggestion: false,
+            needsQuery: false,
+            serverFiltered: false,
+        };
+    }
+
+    return { ...remote, serverFiltered: true };
+}
+
+/**
+ * One word's full detail.
+ *
+ * @param {string} slug           Entry slug.
+ * @param {string} sourceLanguage ISO 639-3 code — a slug is only unique within a language.
+ * @returns {{loading: boolean, error: (Error|null), word: (object|null)}}
+ */
+function useWordDetail(slug, sourceLanguage) {
+    const legacy = useQuery(GET_SINGLE_WORD_DETAILS, {
+        variables: { slug },
+        skip: DISPLAY_ADAPTER || !slug,
+    });
+    const [remote, setRemote] = useState({ loading: true, error: null, word: null });
+
+    useEffect(() => {
+        if (!DISPLAY_ADAPTER) return undefined;
+        if (!slug || !sourceLanguage) {
+            setRemote({ loading: false, error: null, word: null });
+            return undefined;
+        }
+
+        let cancelled = false;
+        setRemote({ loading: true, error: null, word: null });
+
+        displaySource
+            .getEntry(slug, sourceLanguage)
+            .then((word) => {
+                if (!cancelled) setRemote({ loading: false, error: null, word });
+            })
+            .catch((error) => {
+                if (!cancelled) setRemote({ loading: false, error, word: null });
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [slug, sourceLanguage]);
+
+    if (!DISPLAY_ADAPTER) {
+        return {
+            loading: legacy.loading,
+            error: legacy.error,
+            word: legacy.data?.dictionaryBy || null,
+        };
+    }
+
+    return remote;
+}
+
+/**
+ * A placeholder row for a saved or recently-viewed word while the adapter is on.
+ *
+ * Favourites and history hold slugs, never dictionary records — nothing lexical
+ * is kept on the device (contract §9). Without a word index there is no title to
+ * show until the entry is opened, so the slug stands in for it and opening the
+ * row fetches the real entry.
+ *
+ * @param {string} slug           Entry slug.
+ * @param {string} sourceLanguage ISO 639-3 code.
+ * @returns {object}
+ */
+function placeholderWord(slug, sourceLanguage) {
+    return toDisplayWord({ slug, headword: slug, language: sourceLanguage, examples: [] });
+}
 
 // ---------------------------------------------------------------------------
 // Custom hooks
@@ -928,6 +1119,7 @@ const DetailView = ({
     slug,
     initialTitle,
     language,
+    sourceLanguage,
     onClose,
     onSelectWord,
     favorites,
@@ -935,9 +1127,8 @@ const DetailView = ({
     isSheet = false,
 }) => {
     const [activeTab, setActiveTab] = useState('overview');
-    const { loading, error, data } = useQuery(GET_SINGLE_WORD_DETAILS, { variables: { slug } });
+    const { loading, error, word } = useWordDetail(slug, sourceLanguage);
 
-    const word = data?.dictionaryBy;
     const d = word?.dictionaryEntryDetails;
     const translation = d
         ? language === 'fr'
@@ -985,7 +1176,13 @@ const DetailView = ({
 
             {error && (
                 <div className="p-6 text-red-500 text-center text-sm">
-                    Could not load word details.
+                    {error.message || 'Could not load word details.'}
+                </div>
+            )}
+
+            {!loading && !error && !word && (
+                <div className="p-6 text-gray-400 text-center text-sm">
+                    That word is not in this dictionary.
                 </div>
             )}
 
@@ -1695,6 +1892,7 @@ const DesktopSidebar = ({
     themePref,
     onThemeToggle,
     languages,
+    showLanguageSelector = true,
     sourceLanguage,
     onSourceLanguage,
     activeNav,
@@ -1762,14 +1960,19 @@ const DesktopSidebar = ({
 
         <hr className="border-gray-100 dark:border-gray-800 mb-4" />
 
-        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">
-            Source Language
-        </h3>
-        <LanguageSelectorList
-            languages={languages}
-            selected={sourceLanguage}
-            onSelect={onSourceLanguage}
-        />
+        {/* Single-language deployments hide the selector entirely (contract §6). */}
+        {showLanguageSelector && (
+            <>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">
+                    Source Language
+                </h3>
+                <LanguageSelectorList
+                    languages={languages}
+                    selected={sourceLanguage}
+                    onSelect={onSourceLanguage}
+                />
+            </>
+        )}
 
         {/* Sidebar footer (v3 §3.6) — [OPEN — OQ-V1] logo asset + tagline copy pending AIWA approval */}
         <div className="mt-auto pt-4 border-t border-gray-100 dark:border-gray-800">
@@ -1846,13 +2049,39 @@ export default function DictionaryApp() {
     const [activeNav, setActiveNav] = useState('home');
     const [scrollState, setScrollState] = useState({ atTop: true, atBottom: false });
     const [languages, setLanguages] = useState([]);
+    const [showLanguageSelector, setShowLanguageSelector] = useState(true);
+    const [languageNotice, setLanguageNotice] = useState('');
     const [wordOfDaySlug, setWordOfDaySlug] = useState(null);
+    const [wordOfDayEntry, setWordOfDayEntry] = useState(null);
 
     const virtuosoRef = useRef(null);
     const isDesktop = useIsDesktop();
 
-    // Fetch source languages from REST API
+    // Languages. Codes are configured by an administrator; the NAMES shown here
+    // are always the dictionary service's own — this app never maps a code to a
+    // name and never ships a language name of its own (contract §5, §6).
     useEffect(() => {
+        if (DISPLAY_ADAPTER) {
+            displaySource
+                .getLanguages()
+                .then((result) => {
+                    setLanguages(result.languages);
+                    setShowLanguageSelector(result.showSelector);
+                    setLanguageNotice(result.notice);
+                    setSourceLanguage((current) => {
+                        const known = result.languages.some((lang) => lang.slug === current);
+                        return known ? current : result.defaultLanguage || null;
+                    });
+                })
+                .catch((error) => {
+                    // A controlled notice, never a blank page and never a silent
+                    // switch to a language nobody asked for.
+                    setLanguages([]);
+                    setLanguageNotice(error.message);
+                });
+            return;
+        }
+
         apiFetch(`${REST_URL}/languages`)
             .then((r) => (r.ok ? r.json() : null))
             .then((json) => {
@@ -1861,17 +2090,40 @@ export default function DictionaryApp() {
                 }
             })
             .catch(() => {});
+        // Mount only. `setSourceLanguage` comes from useLocalStorage and changes
+        // identity whenever the stored value does, so listing it here would cost
+        // a second language request for no new information.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Word of the Day — server endpoint with a 24h localStorage cache keyed by date (v3 §3.7).
-    // The server returns the same word for all users on a given calendar day.
+    // Word of the Day. The service returns the same word for every reader on a
+    // given calendar day, for one language.
     useEffect(() => {
+        if (DISPLAY_ADAPTER) {
+            if (!sourceLanguage) {
+                setWordOfDayEntry(null);
+                return;
+            }
+            let cancelled = false;
+            displaySource
+                .getWordOfDay(sourceLanguage)
+                .then((result) => {
+                    if (!cancelled) setWordOfDayEntry(result.word);
+                })
+                .catch(() => {
+                    if (!cancelled) setWordOfDayEntry(null);
+                });
+            return () => {
+                cancelled = true;
+            };
+        }
+
         const today = new Date().toISOString().slice(0, 10);
         try {
             const cached = JSON.parse(localStorage.getItem('aiwa-dict-word-of-day') || 'null');
             if (cached && cached.date === today && cached.slug) {
                 setWordOfDaySlug(cached.slug);
-                return;
+                return undefined;
             }
         } catch {
             /* ignore malformed cache */
@@ -1894,13 +2146,19 @@ export default function DictionaryApp() {
                 }
             })
             .catch(() => {});
-    }, []);
+        return undefined;
+    }, [sourceLanguage]);
 
-    const { loading, error, data } = useQuery(GET_ALL_WORDS_INDEX, { client });
-
-    const allWords = useMemo(() => (data?.dictionaries?.edges || []).map((e) => e.node), [data]);
+    const {
+        loading,
+        error,
+        words: allWords,
+        needsQuery,
+        serverFiltered,
+    } = useBrowseWords(searchTerm, sourceLanguage);
 
     const wordOfDay = useMemo(() => {
+        if (DISPLAY_ADAPTER) return wordOfDayEntry;
         if (!allWords.length) return null;
         // Prefer the server-selected word; fall back to a deterministic client-side pick
         // if the endpoint is unavailable or its slug is not in the loaded index.
@@ -1909,9 +2167,14 @@ export default function DictionaryApp() {
             if (match) return match;
         }
         return allWords[wordOfDayIndex(allWords.length)];
-    }, [allWords, wordOfDaySlug]);
+    }, [allWords, wordOfDaySlug, wordOfDayEntry]);
 
     const filteredWords = useMemo(() => {
+        // Adapter path: the service already answered for exactly one language and
+        // exactly this query, within its own bounds. Re-filtering here would only
+        // hide results the service chose to return.
+        if (serverFiltered) return allWords;
+
         let entries = allWords;
 
         if (sourceLanguage) {
@@ -1953,7 +2216,7 @@ export default function DictionaryApp() {
         }
 
         return entries;
-    }, [allWords, sourceLanguage, searchTerm, activeFilter]);
+    }, [allWords, sourceLanguage, searchTerm, activeFilter, serverFiltered]);
 
     // Real server-side count for the selected language (from /languages REST endpoint).
     // GraphQL is capped by WPGraphQL's max query amount, so allWords.length can be lower
@@ -1969,7 +2232,19 @@ export default function DictionaryApp() {
         return sourceLangTotal ?? filteredWords.length;
     }, [searchTerm, activeFilter, filteredWords.length, sourceLangTotal]);
 
+    /*
+     * Exact corpus counts are suppressed by the dictionary service on purpose
+     * (contract §2.1), so the adapter path asks the reader to search rather than
+     * advertising a number it must not know.
+     */
+    const searchPlaceholder = serverFiltered
+        ? 'Search the dictionary\u2026'
+        : `Search ${searchPlaceholderCount.toLocaleString()} words\u2026`;
+
     const prefetchWord = useCallback((slug) => {
+        // No speculative fetch on the adapter path: every entry read is metered
+        // against this deployment's budget, and a hover is not a reader's intent.
+        if (DISPLAY_ADAPTER) return;
         client.query({
             query: GET_SINGLE_WORD_DETAILS,
             variables: { slug },
@@ -1994,6 +2269,18 @@ export default function DictionaryApp() {
         },
         [setFavorites]
     );
+
+    /*
+     * Favourites and history hold slugs and nothing else — no lexical data is
+     * kept on the device (contract §9, AGENTS.md). On the legacy path the loaded
+     * index supplies the titles; on the adapter path there is no index, so the
+     * slug stands in until the reader opens the entry.
+     */
+    const savedWords = useMemo(() => {
+        if (!serverFiltered) return allWords;
+        const slugs = Array.from(new Set([...favorites, ...history]));
+        return slugs.map((slug) => placeholderWord(slug, sourceLanguage));
+    }, [serverFiltered, allWords, favorites, history, sourceLanguage]);
 
     const handleScrollToLetter = useCallback(
         (char) => {
@@ -2024,7 +2311,7 @@ export default function DictionaryApp() {
                     <input
                         id="aiwa-dict-search"
                         type="search"
-                        placeholder={`Search ${searchPlaceholderCount.toLocaleString()} words\u2026`}
+                        placeholder={searchPlaceholder}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 pl-10 pr-4 py-2.5 rounded-xl focus:outline-none transition-all text-sm"
@@ -2033,9 +2320,11 @@ export default function DictionaryApp() {
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 shrink-0">
-                <FilterPills active={activeFilter} onChange={setActiveFilter} />
-            </div>
+            {!serverFiltered && (
+                <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 shrink-0">
+                    <FilterPills active={activeFilter} onChange={setActiveFilter} />
+                </div>
+            )}
 
             {loading && (
                 <div className="flex-1 flex flex-col items-center justify-center gap-4">
@@ -2046,11 +2335,24 @@ export default function DictionaryApp() {
 
             {error && (
                 <div className="flex-1 flex items-center justify-center p-8 text-center">
-                    <p className="text-red-500 text-sm">Could not load dictionary data.</p>
+                    <p className="text-red-500 text-sm">
+                        {error.message || 'Could not load dictionary data.'}
+                    </p>
                 </div>
             )}
 
-            {!loading && !error && (
+            {!loading && !error && needsQuery && (
+                <div className="flex-1 flex items-center justify-center p-8 text-center">
+                    <p className="text-gray-400 text-sm">
+                        {languageNotice ||
+                            (sourceLanguage
+                                ? 'Type a word to search the dictionary.'
+                                : 'Choose a language to begin.')}
+                    </p>
+                </div>
+            )}
+
+            {!loading && !error && !needsQuery && (
                 <div className="relative flex-1 overflow-hidden">
                     <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
                         {filteredWords.length} words found
@@ -2121,6 +2423,7 @@ export default function DictionaryApp() {
                             themePref={themePref}
                             onThemeToggle={cycleTheme}
                             languages={languages}
+                            showLanguageSelector={showLanguageSelector}
                             sourceLanguage={sourceLanguage}
                             onSourceLanguage={setSourceLanguage}
                             activeNav={activeNav}
@@ -2140,7 +2443,9 @@ export default function DictionaryApp() {
                         {activeNav === 'home' && (
                             <>
                                 {wordListArea}
-                                <AlphaBar onSelect={handleScrollToLetter} />
+                                {/* No alphabet jump on the adapter path: there is no
+                                    word index to jump through, by design. */}
+                                {!serverFiltered && <AlphaBar onSelect={handleScrollToLetter} />}
                             </>
                         )}
                         {(activeNav === 'explore' || activeNav === 'categories') && (
@@ -2155,7 +2460,7 @@ export default function DictionaryApp() {
                         )}
                         {activeNav === 'favorites' && (
                             <FavoritesView
-                                words={allWords}
+                                words={savedWords}
                                 favorites={favorites}
                                 language={language}
                                 onSelect={handleSelectWord}
@@ -2166,7 +2471,7 @@ export default function DictionaryApp() {
                         )}
                         {activeNav === 'history' && (
                             <HistoryView
-                                words={allWords}
+                                words={savedWords}
                                 history={history}
                                 language={language}
                                 onSelect={handleSelectWord}
@@ -2185,6 +2490,7 @@ export default function DictionaryApp() {
                                 slug={selectedSlug}
                                 initialTitle={selectedTitle}
                                 language={language}
+                                sourceLanguage={sourceLanguage}
                                 onClose={null}
                                 onSelectWord={handleSelectWord}
                                 favorites={favorites}
@@ -2290,7 +2596,7 @@ export default function DictionaryApp() {
                         </button>
                     </div>
                 </div>
-                {languages.length > 0 && (
+                {showLanguageSelector && languages.length > 0 && (
                     <LanguageSelectorPills
                         languages={languages}
                         selected={sourceLanguage}
@@ -2325,7 +2631,7 @@ export default function DictionaryApp() {
                 )}
                 {activeNav === 'favorites' && (
                     <FavoritesView
-                        words={allWords}
+                        words={savedWords}
                         favorites={favorites}
                         language={language}
                         onSelect={handleSelectWord}
@@ -2336,7 +2642,7 @@ export default function DictionaryApp() {
                 )}
                 {activeNav === 'history' && (
                     <HistoryView
-                        words={allWords}
+                        words={savedWords}
                         history={history}
                         language={language}
                         onSelect={handleSelectWord}
@@ -2349,7 +2655,9 @@ export default function DictionaryApp() {
             </main>
 
             {/* Alpha bar (home tab only) */}
-            {activeNav === 'home' && <AlphaBar onSelect={handleScrollToLetter} />}
+            {activeNav === 'home' && !serverFiltered && (
+                <AlphaBar onSelect={handleScrollToLetter} />
+            )}
 
             {/* Bottom navigation */}
             <BottomNav active={activeNav} onChange={setActiveNav} />
@@ -2361,6 +2669,7 @@ export default function DictionaryApp() {
                     slug={selectedSlug}
                     initialTitle={selectedTitle}
                     language={language}
+                    sourceLanguage={sourceLanguage}
                     onClose={() => setSelectedSlug(null)}
                     onSelectWord={handleSelectWord}
                     favorites={favorites}

@@ -1,0 +1,15 @@
+{
+  "success": true,
+  "data": {
+    "entry": {
+      "slug": "kaŋo",
+      "header_word": "kaŋo (second language)",
+      "part_of_speech": "verb",
+      "definition": "The same slug in a different language is a different entry.",
+      "language": "mis",
+      "examples": [],
+      "audio_url": null,
+      "image_url": null
+    }
+  }
+}
