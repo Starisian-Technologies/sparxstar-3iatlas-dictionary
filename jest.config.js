@@ -11,7 +11,7 @@
 module.exports = {
     testEnvironment: 'node',
     transform: {
-        '/src/js/.+\\.[jt]sx?$': 'babel-jest',
+        '[\\\\/]src[\\\\/]js[\\\\/].+\\.[jt]sx?$': 'babel-jest',
     },
     testPathIgnorePatterns: [
         '/node_modules/',

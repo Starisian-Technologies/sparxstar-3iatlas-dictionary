@@ -1176,7 +1176,11 @@ const DetailView = ({
 
             {error && (
                 <div className="p-6 text-red-500 text-center text-sm">
-                    {error.message || 'Could not load word details.'}
+                    {/* Adapter-path messages are deliberately reader-safe static
+                        strings. Apollo errors on the legacy GraphQL path are not,
+                        and can carry implementation detail, so they never reach a
+                        reader. */}
+                    {(DISPLAY_ADAPTER && error.message) || 'Could not load word details.'}
                 </div>
             )}
 
@@ -1960,8 +1964,12 @@ const DesktopSidebar = ({
 
         <hr className="border-gray-100 dark:border-gray-800 mb-4" />
 
-        {/* Single-language deployments hide the selector entirely (contract §6). */}
-        {showLanguageSelector && (
+        {/* Single-language deployments hide the selector entirely (contract §6).
+            The length check matches the mobile pills below: when the adapter
+            cannot reach the Node it sets `languages` to [], and a bare "Source
+            Language" heading over an empty list is the confusing blank the
+            contract's controlled-degradation rule exists to prevent. */}
+        {showLanguageSelector && languages.length > 0 && (
             <>
                 <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">
                     Source Language
@@ -2336,7 +2344,9 @@ export default function DictionaryApp() {
             {error && (
                 <div className="flex-1 flex items-center justify-center p-8 text-center">
                     <p className="text-red-500 text-sm">
-                        {error.message || 'Could not load dictionary data.'}
+                        {/* Same rule as the detail view: only the adapter's own
+                            controlled messages are reader-safe. */}
+                        {(DISPLAY_ADAPTER && error.message) || 'Could not load dictionary data.'}
                     </p>
                 </div>
             )}
