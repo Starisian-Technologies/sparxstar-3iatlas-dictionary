@@ -35,8 +35,11 @@ were retired on purpose as enumeration bait.
    `/v1/display/` — languages, entry lookup by slug + ISO 639-3 language,
    search, domains, word-of-day — in the **`display` authorization tier**,
    separate from `m2m`, `import`, artifacts, and the public-domain route.
-   `/v1/display/` is the surface `3IATLAS-SUITE-ARCHITECTURE-v1.0.md` already
-   documented for this service; this implements it rather than inventing it.
+   `/v1/display/` is the surface the suite architecture document already
+   named for this service; this implements it rather than inventing it. That
+   document (`3IATLAS-SUITE-ARCHITECTURE-v1.0.md`) is not in this repository —
+   it is shared byte-identically by `sparxstar-3iatlas-dictionary` and
+   `sparxstar-3iatlas-wordpad` at `.github/instructions/`.
 2. **WordPress becomes a display adapter and UI only.** Browse mode reads
    through a same-origin WordPress REST adapter that calls the Node
    server-side. No Dictionary record is copied, synced, mirrored, or re-imported
@@ -66,7 +69,15 @@ were retired on purpose as enumeration bait.
   and SCF dependency still retire; its UI does not. The rest of that document,
   including every retired-route ruling, stands.
 - **Identity:** one new registered service client, `allowed_audiences:
-  ['dictionary']`, per `SERVICE-CLIENT-AUTH-SPEC-v1.0.md` §6.
+  ['dictionary']`, per `SERVICE-CLIENT-AUTH-SPEC-v1.0.md` §6 in
+  `sparxstar-3iatlas-identity-node`.
+- **Inherited, not restated:** platform invariants **INV-015** (a credential is
+  valid for exactly one resource, in exactly one class) and **INV-010** (one
+  identity authority; opaque refs everywhere) already govern the dedicated
+  machine identity and the opaque `X-Reader-Ref`. They are cited by the
+  contract, not re-derived in it. Both are distributed to this repo by the
+  `sparxstar-contract-sync` App at
+  `.github/instructions/governance/invariants.compiled.md`.
 
 ## Consequence
 
@@ -142,6 +153,17 @@ defeats the purpose of having a contract at all.
 - **Ultimate home:** `sparxstar-contracts-registry`. When that registry takes
   the contract, the canonical designation moves with it and both current files
   become snapshots.
+
+That move is not hypothetical, and the mechanism for it already runs. The
+`sparxstar-contract-sync` App compiles the registry into
+`.github/instructions/governance/` in this repo — `contracts.compiled.md`,
+`invariants.compiled.md`, `adr-reference.compiled.md`,
+`open-questions.compiled.md` — each stamped `DO NOT EDIT`. Checked at
+registry@78a426f, **no existing registry contract covers this seam**, so this
+document fills a gap rather than duplicating an authority. It is hand-placed at
+`.github/instructions/` precisely because the registry does not yet carry it;
+authoring it in the registry and letting the sync distribute it is the end
+state, and is the one change that would retire the snapshot problem entirely.
 
 ## Provenance
 

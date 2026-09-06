@@ -24,9 +24,9 @@
 > re-sourced from there.
 >
 > Governing record: `DICT-ADR-001` (`docs/adr/`), accepted 2026-09-06.
-> Machine-readable home: `docs/dictionary-openapi.yaml` in the Node repo. Where
-> this prose and that contract disagree, **the served code wins** and both
-> documents are corrected to match it.
+> Machine-readable home: `docs/dictionary-openapi.yaml` in this repo. Where this
+> prose and that contract disagree, **the served code wins** and both documents
+> are corrected to match it.
 
 ---
 
@@ -71,8 +71,13 @@ and `/search`, and separate from `m2m`, `import`, artifacts, and the
 public-domain route.
 
 `/v1/display/` is not a new surface. It is the surface this service was already
-documented to expose in `3IATLAS-SUITE-ARCHITECTURE-v1.0.md`
-(`/v1/m2m/…`, `/v1/display/…`, `/v1/import/…`); it was simply unimplemented.
+documented to expose — `/v1/m2m/…`, `/v1/display/…`, `/v1/import/…` — and it was
+simply unimplemented.
+
+That surface is named in `3IATLAS-SUITE-ARCHITECTURE-v1.0.md`, which is **not a
+file in this repository**: it is the suite document shared byte-identically by
+`sparxstar-3iatlas-dictionary` and `sparxstar-3iatlas-wordpad`, at
+`.github/instructions/` in each.
 
 | Route | Purpose | Language parameter |
 | :-- | :-- | :-- |
@@ -155,8 +160,18 @@ the WordPress adapter:
 
 Identity answers *who is calling*. The Dictionary answers *what they may read*.
 Neither answers the other's question — that split is the whole point and is
-ratified in the identity node's
-`docs/SERVICE-CLIENT-AUTH-SPEC-v1.0.md` §0.
+ratified in the identity node's `docs/SERVICE-CLIENT-AUTH-SPEC-v1.0.md` §0 (that
+file lives in `sparxstar-3iatlas-identity-node`, not here).
+
+**This seam does not restate the credential rule; it inherits it.**
+Platform invariant **INV-015 — a credential is valid for exactly one resource,
+in exactly one class** already governs why WordPress gets its own `client_id`
+and its own `aud: dictionary` token rather than reusing WordPad's or Games',
+and why a scalar `aud` matching this resource exactly is the only acceptable
+claim. Read it in `.github/instructions/governance/invariants.compiled.md`,
+which the `sparxstar-contract-sync` App maintains from the registry. Where that
+invariant and this contract appear to differ, the invariant wins and this
+document is corrected.
 
 1. WordPress holds an RSA private key and a registered `client_id`.
 2. It mints a `private_key_jwt` client assertion (RS256, `exp` ≤ `iat` + 60s,
@@ -206,6 +221,12 @@ per-session id. Never a username, an email, an IP address, a WordPress user id,
 or anything the Node could correlate back to a person. Reader identity is
 WordPress's business and stays there — the Node must remain unable to learn
 which entries a named person looked up.
+
+That is not a rule this contract invents either. Platform invariant **INV-010 —
+one identity authority; opaque refs everywhere** already requires that every
+system other than the identity authority sees only opaque references, and that
+computed scores attach to sessions and artifacts rather than to persons. The
+`X-Reader-Ref` header is this seam's instance of it, not a local policy.
 
 ### 4.4 Budget
 
