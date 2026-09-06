@@ -4,6 +4,7 @@
 **Status:** accepted
 **Applies to:** `sparxstar-3iatlas-dictionary-node`, `sparxstar-3iatlas-dictionary`,
 `sparxstar-3iatlas-identity-node`
+**Canonical:** `sparxstar-3iatlas-dictionary-node`, `docs/adr/`. This file is a read-only snapshot — do not edit it here.
 
 ---
 
@@ -96,6 +97,51 @@ were retired on purpose as enumeration bait.
 **Sequencing:** the Node's JSON support must be deployed before the WordPress
 plugin switches its UI. The old WordPress dictionary API is retired as a data
 authority only after a tested cutover.
+
+## Scope boundary — what this tier is, and what it is not
+
+Ruled by the platform owner 2026-09-06, after a proposal to publish the corpus
+as versioned static JSON artifacts was considered and bounded. Recorded here
+rather than as a superseding ADR, because it confirms this decision rather than
+replacing it.
+
+| Consumer need | Mechanism |
+| :-- | :-- |
+| WordPress browse / search / display | `/v1/display/*` |
+| WordPress language selection | Display-tier language filters |
+| Keyboard / WordPad spell support | The existing versioned SpellLexicon artifact |
+| Handwriting recognition backend | The same SpellLexicon artifact |
+| Offline full-dictionary mirror | A future requirement, and its own ADR |
+
+Consequences of that boundary:
+
+- **Artifacts do not replace the display tier.** They serve bulk and offline
+  consumers. No full-dictionary artifact is built to power ordinary WordPress
+  Browse mode.
+- **The existing SpellLexicon is the compact lexicon projection.** It is
+  extended only where a required field is genuinely missing. A second lexicon
+  implementation is forbidden — one pipeline, no independently maintained
+  copies.
+- **No public tier.** Every route stays credentialed and
+  `PUBLIC_ENTRY_GATE_OPEN` is not touched. WordPress calls the Node
+  server-to-server; no credential reaches browser code.
+- **An offline full-dictionary mirror is out of scope here.** It is a real
+  future requirement and gets its own ADR, not an extension of this one.
+
+## Contract distribution
+
+A shared contract may exist as byte-identical copies **only while exactly one
+of them is canonical and the others are generated, read-only consumer
+snapshots.** Two independently edited copies are two authorities, which
+defeats the purpose of having a contract at all.
+
+- **Canonical:** `sparxstar-3iatlas-dictionary-node`,
+  `.github/instructions/3IATLAS-DICTIONARY-DISPLAY-JSON-CONTRACT-v1.0.md`.
+- **Snapshot:** the copy in `sparxstar-3iatlas-dictionary`, re-taken from the
+  canonical file and never edited in place.
+- **Ultimate home:** `sparxstar-contracts-registry`. When that registry takes
+  the contract, the canonical designation moves with it and both current files
+  become snapshots.
 
 ## Provenance
 
