@@ -18,7 +18,8 @@ the governed compilers, the immutable ledger, and field-level provenance rules
 the plugin never had.
 
 That left two live implementations of the same read path, with the authoritative
-one being the newer. `docs/PORT-AND-MIGRATION.md` §Cutover assumed the plugin
+one being the newer. `docs/PORT-AND-MIGRATION.md` in that repo §Cutover assumed
+the plugin
 would simply be **removed** and WordPress reduced to a frame around the Node's
 server-rendered pages.
 
@@ -64,7 +65,8 @@ were retired on purpose as enumeration bait.
 - **Contract:** `3IATLAS-DICTIONARY-DISPLAY-JSON-CONTRACT-v1.0.md`, shared
   byte-identically by the Node and plugin repos.
 - **Machine-readable contract:** `docs/dictionary-openapi.yaml` (Node).
-- **Supersedes, in part:** `docs/PORT-AND-MIGRATION.md` §Cutover step 2 — the
+- **Supersedes, in part:** `sparxstar-3iatlas-dictionary-node`
+  `docs/PORT-AND-MIGRATION.md` §Cutover step 2 — the
   plugin is **not** removed and is not reduced to a frame. Its data layer, CPT
   and SCF dependency still retire; its UI does not. The rest of that document,
   including every retired-route ruling, stands.

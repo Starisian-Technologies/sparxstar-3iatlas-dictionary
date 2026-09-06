@@ -95,7 +95,8 @@ either repo:
 - **No "all entries" route.** Ever. In any tier.
 - **No pagination.** There is no `page`, `offset`, `cursor`, or `after`
   parameter on any route in this contract. `/wordlist` was retired on purpose
-  (`docs/PORT-AND-MIGRATION.md`) and is not coming back through a display door.
+  (`docs/PORT-AND-MIGRATION.md`, in `sparxstar-3iatlas-dictionary-node`) and is
+  not coming back through a display door.
 - **No sequential identifiers.** `legacy_id` is enumeration bait and reaches no
   projection. Entries are addressed by slug; `entry_id` is a UUID.
 - **No database counts.** `meta.total` is a band or absent. Exact result counts
