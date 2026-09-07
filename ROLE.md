@@ -2,6 +2,12 @@
 
 ## Owns
 
+> **Changing — `DICT-ADR-001` (`docs/adr/`), accepted 2026-09-06.** The Dictionary
+> Node becomes the authoritative lexical store and this repo becomes the public
+> display application: its UI, routing, theme and SEO stay; its data layer, CPT
+> and SCF dependency retire. The ownership lines below describe the state before
+> that cutover completes and are corrected by the ADR, not restated here.
+
 - Authoritative storage of approved dictionary entries (WordPress CPT `aiwa-cpt-dictionary` + ACF/SCF fields)
 - The public REST API at `sparxstar/v1/dictionary` (lookup, search, wordlist, languages, domains, game-set, word-of-day, pronounce, page-token, spell, and the deprecated progress/sync)
 - Ephemeral page-token issuance and consumer API key validation for that API (Webster Model auth)

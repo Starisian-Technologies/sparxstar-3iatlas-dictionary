@@ -1,0 +1,10 @@
+{
+  "success": true,
+  "data": {
+    "languages": [
+      { "code": "zxx", "name": "zxx" },
+      { "code": "mis", "name": "Example Reported Name" }
+    ]
+  },
+  "meta": {}
+}

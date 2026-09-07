@@ -30,6 +30,19 @@ You are a reviewer, not the authority. Flag and explain. The owner decides.
 
 ## What This Repo Is
 
+> **Superseded in part by `DICT-ADR-001` (accepted 2026-09-06).** The Dictionary
+> Node (`sparxstar-3iatlas-dictionary-node`) is the authoritative lexical data
+> service. This plugin is the **public display application**: it owns the UI,
+> routing, theme and SEO, and reads lexical data from the Node's credentialed
+> `/v1/display/*` JSON tier through a server-side adapter. It stores no corpus,
+> and its CPT/SCF fields stop being a data authority.
+>
+> The description below records the **pre-cutover** state, which is still what
+> runs in production until the adapter is enabled. Read it as history, not as
+> instruction. See `docs/adr/DICT-ADR-001-display-json-and-wordpress-display-adapter.md`
+> and `.github/instructions/3IATLAS-DICTIONARY-DISPLAY-JSON-CONTRACT-v1.0.md`.
+
+
 A standalone WordPress plugin that is the **authoritative lexical data store and REST API** for the 3iAtlas platform. It is part of the SPARXSTAR family but is **not a DVE component** — it does not use Sirus, Helios, Mḗh₁n̥s, or Dheghom at runtime. It operates in standalone mode by design.
 
 Every other 3iAtlas tool (WordPad, RLC, Sound to Symbol) is a consumer of this plugin's REST API. Data flow is one-way: this repo serves, others consume. No reverse flow.

@@ -1,0 +1,28 @@
+{
+  "success": true,
+  "data": {
+    "entry": {
+      "slug": "kaŋo",
+      "header_word": "kaŋo",
+      "normalized_headword": "kango",
+      "part_of_speech": "noun",
+      "definition": "An example definition carrying ŋ ɓ ɗ ñ ɲ ʔ.",
+      "ipa_pronunciation": "kaŋo",
+      "phonetic_pronunciation": "kang-o",
+      "language": "zxx",
+      "locale": "zxx-XX",
+      "accepted_spellings": ["kango", "kaŋo"],
+      "examples": [
+        {
+          "sentence": "An example sentence with ɓ.",
+          "ipa": "ɓa",
+          "phonetic": "ba",
+          "translation_en": "An example sentence.",
+          "translation_fr": "Une phrase d'exemple."
+        }
+      ],
+      "audio_url": "https://example.invalid/signed/audio.mp3",
+      "image_url": "https://example.invalid/signed/image.jpg"
+    }
+  }
+}

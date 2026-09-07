@@ -131,6 +131,10 @@ if ( ! function_exists( 'register_post_type' ) ) {
             public function get_error_code(): string {
                 return $this->code;
             }
+
+            public function get_error_message( string $code = '' ): string {
+                return $this->message;
+            }
         }
     }
 
@@ -210,7 +214,15 @@ if ( ! function_exists( 'register_post_type' ) ) {
         }
     }
     if ( ! function_exists( 'apply_filters' ) ) {
+        /**
+         * Runs callbacks registered through add_filter(), in registration order.
+         * With nothing registered this behaves exactly like the previous no-op
+         * stub: the value is returned unchanged.
+         */
         function apply_filters( string $tag, mixed $value, mixed ...$args ): mixed {
+            foreach ( $GLOBALS['__wp_filters'][ $tag ] ?? [] as $callback ) {
+                $value = $callback( $value, ...$args );
+            }
             return $value;
         }
     }
@@ -218,7 +230,14 @@ if ( ! function_exists( 'register_post_type' ) ) {
         function add_action( mixed ...$args ): void {}
     }
     if ( ! function_exists( 'add_filter' ) ) {
-        function add_filter( mixed ...$args ): void {}
+        function add_filter( string $tag, callable $callback, int $priority = 10, int $accepted = 1 ): void {
+            $GLOBALS['__wp_filters'][ $tag ][] = $callback;
+        }
+    }
+    if ( ! function_exists( 'remove_all_filters' ) ) {
+        function remove_all_filters( string $tag ): void {
+            unset( $GLOBALS['__wp_filters'][ $tag ] );
+        }
     }
     if ( ! function_exists( '__' ) ) {
         function __( string $text, string $domain = 'default' ): string {
@@ -305,4 +324,73 @@ if ( ! isset( $GLOBALS['__wp_options_store'] ) ) {
 // Initialise the object cache store used by wp_cache_* stubs.
 if ( ! isset( $GLOBALS['__wp_object_cache'] ) ) {
     $GLOBALS['__wp_object_cache'] = [];
+}
+
+// ---------------------------------------------------------------------------
+// Stubs for the Dictionary Node display adapter (src/api/display). Added
+// separately, each individually guarded, so the existing stubs keep their exact
+// behaviour.
+// ---------------------------------------------------------------------------
+
+if ( ! isset( $GLOBALS['__wp_filters'] ) ) {
+    $GLOBALS['__wp_filters'] = [];
+}
+
+if ( ! function_exists( 'wp_parse_url' ) ) {
+    function wp_parse_url( string $url, int $component = -1 ): mixed {
+        return parse_url( $url, $component );
+    }
+}
+if ( ! function_exists( 'add_query_arg' ) ) {
+    /** @param array<string,string> $args */
+    function add_query_arg( array $args, string $url ): string {
+        $query = http_build_query( $args );
+        return '' === $query ? $url : $url . ( str_contains( $url, '?' ) ? '&' : '?' ) . $query;
+    }
+}
+if ( ! function_exists( 'wp_remote_retrieve_response_code' ) ) {
+    /** @param array<string,mixed>|WP_Error $response */
+    function wp_remote_retrieve_response_code( mixed $response ): int {
+        return is_array( $response ) ? (int) ( $response['response']['code'] ?? 0 ) : 0;
+    }
+}
+if ( ! function_exists( 'wp_remote_retrieve_body' ) ) {
+    /** @param array<string,mixed>|WP_Error $response */
+    function wp_remote_retrieve_body( mixed $response ): string {
+        return is_array( $response ) ? (string) ( $response['body'] ?? '' ) : '';
+    }
+}
+if ( ! function_exists( 'wp_remote_retrieve_header' ) ) {
+    /** @param array<string,mixed>|WP_Error $response */
+    function wp_remote_retrieve_header( mixed $response, string $name ): string {
+        if ( ! is_array( $response ) || ! is_array( $response['headers'] ?? null ) ) {
+            return '';
+        }
+        foreach ( $response['headers'] as $key => $value ) {
+            if ( strtolower( (string) $key ) === strtolower( $name ) ) {
+                return (string) $value;
+            }
+        }
+        return '';
+    }
+}
+if ( ! function_exists( 'esc_url_raw' ) ) {
+    function esc_url_raw( string $url ): string {
+        return $url;
+    }
+}
+if ( ! function_exists( 'esc_html' ) ) {
+    function esc_html( string $text ): string {
+        return htmlspecialchars( $text, ENT_QUOTES );
+    }
+}
+if ( ! function_exists( 'is_ssl' ) ) {
+    function is_ssl(): bool {
+        return false;
+    }
+}
+if ( ! function_exists( 'wp_salt' ) ) {
+    function wp_salt( string $scheme = 'auth' ): string {
+        return 'phpunit-stub-salt-' . $scheme;
+    }
 }
