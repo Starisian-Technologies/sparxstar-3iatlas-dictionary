@@ -18,7 +18,6 @@
         "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
         "php-stubs/acf-pro-stubs": "^6.5",
         "phpcompatibility/php-compatibility": "^9.3",
-        "phpdocumentor/phpdocumentor": "^3.9",
         "phpstan/extension-installer": "^1.4",
         "phpstan/phpstan": "^1.12",
         "phpunit/phpunit": "^10",
@@ -29,10 +28,7 @@
     "autoload": {
         "psr-4": {
             "Starisian\\Sparxstar\\IAtlas\\": "src/"
-        },
-        "exclude-from-classmap": [
-            "vendor/phpdocumentor/filesystem/Flysystem/"
-        ]
+        }
     },
     "scripts": {
         "lint:php": "phpcs -q",
