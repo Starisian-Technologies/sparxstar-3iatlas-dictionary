@@ -3,7 +3,7 @@
     "private": true,
     "packageManager": "pnpm@10.33.0",
     "engines": {
-        "node": ">=20",
+        "node": ">=26",
         "pnpm": ">=10"
     },
     "scripts": {
@@ -75,7 +75,7 @@
         "tailwindcss": "^3.4.19",
         "terser-webpack-plugin": "^5.6.1",
         "webpack": "^5.110.1",
-        "webpack-cli": "^7.2.2"
+        "webpack-cli": "^7.2.3"
     },
     "lint-staged": {
         "*.{js,ts,jsx,tsx}": [

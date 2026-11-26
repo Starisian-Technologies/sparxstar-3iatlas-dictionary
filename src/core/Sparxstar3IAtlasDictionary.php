@@ -119,11 +119,20 @@ final class Sparxstar3IAtlasDictionary {
         if ( '' === $graphql_url || filter_var( $graphql_url, FILTER_VALIDATE_URL ) === false ) {
             return null;
         }
+
+        /*
+         * SECRECY BOUNDARY (contract §4.2, §9): this array reaches the browser.
+         * The Dictionary Node's base URL, this site's client_id, its kid, its
+         * private key, its client assertion and its access token are NEVER in it
+         * — the browser calls only the same-origin adapter under `restUrl`.
+         * `displayAdapter` is a boolean switch, not a credential.
+         */
         return array(
-            'root_id'    => 'sparxstar-dictionary-root',
-            'graphqlUrl' => $graphql_url,
-            'restUrl'    => \untrailingslashit( \rest_url( 'sparxstar/v1/dictionary' ) ),
-            'pageToken'  => \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryRestApi::mint_initial_page_token(),
+            'root_id'        => 'sparxstar-dictionary-root',
+            'graphqlUrl'     => $graphql_url,
+            'restUrl'        => \untrailingslashit( \rest_url( 'sparxstar/v1/dictionary' ) ),
+            'pageToken'      => \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryRestApi::mint_initial_page_token(),
+            'displayAdapter' => ( new \Starisian\Sparxstar\IAtlas\api\display\DisplayConfig() )->is_adapter_enabled(),
         );
     }
 
@@ -442,6 +451,12 @@ final class Sparxstar3IAtlasDictionary {
             // REST API endpoints.
             if ( class_exists( \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryRestApi::class ) ) {
                 ( new \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryRestApi() )->register_hooks();
+            }
+
+            // Dictionary Node display adapter (DICT-ADR-001). Its REST routes
+            // register only when the cutover flag is on; the admin screen always does.
+            if ( class_exists( \Starisian\Sparxstar\IAtlas\api\display\Sparxstar3IAtlasDisplayAdapter::class ) ) {
+                ( new \Starisian\Sparxstar\IAtlas\api\display\Sparxstar3IAtlasDisplayAdapter() )->register_hooks();
             }
 
             if ( class_exists( \Starisian\Sparxstar\IAtlas\api\Sparxstar3IAtlasDictionaryTts::class ) ) {

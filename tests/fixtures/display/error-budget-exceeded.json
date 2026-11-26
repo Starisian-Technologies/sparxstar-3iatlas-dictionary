@@ -1,0 +1,1 @@
+{ "code": "budget_exceeded", "message": "The rolling unique-entry budget for this credential is exhausted.", "data": { "status": 429 } }

@@ -45,6 +45,15 @@ module.exports = [
         },
     },
     {
+        // Test files run under jest, which supplies describe/test/expect.
+        files: ['tests/js/**/*.js'],
+        languageOptions: {
+            globals: {
+                ...globals.jest,
+            },
+        },
+    },
+    {
         ignores: [
             'node_modules/',
             'dist/',
