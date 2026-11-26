@@ -1,4 +1,4 @@
-# Coding agent review rules — Auto-synced from registry@0440e75
+# Coding agent review rules — Auto-synced from registry@88b381c
 # DO NOT EDIT
 # Coding agent review and merge rules
 
