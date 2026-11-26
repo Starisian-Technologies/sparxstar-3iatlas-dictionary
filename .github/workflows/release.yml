@@ -224,18 +224,16 @@ jobs:
             - name: Set up Node.js
               uses: actions/setup-node@v7
               with:
-                  # NOTE: this is the Node that *builds* the shipped assets, not
-                  # an action runtime — the Node 20 runtime deprecation does not
-                  # apply to it, and retiring that runtime (see the pinned action
-                  # versions above) deliberately left this value alone.
-                  #
-                  # It is nonetheless out of step with ci.yml and security.yml,
-                  # which test on Node 22, so a green CI run does not prove this
-                  # build works. Node 20 is also EOL. Aligning them is a one-line
-                  # change, but it alters the environment that produces the
-                  # release ZIP, so it belongs in its own change rather than
-                  # riding along with an action-runtime bump.
-                  node-version: '20'
+                  # NOTE: this is the Node that *builds* the shipped assets
+                  # (the release ZIP), not an action runtime. It is kept equal
+                  # to the node-version in ci.yml and security.yml so a green
+                  # CI run exercises the same Node line that produces the
+                  # release. All three run the floor declared in package.json
+                  # engines.node (the one home of that number, ADR-041); see
+                  # https://raw.githubusercontent.com/nodejs/Release/main/schedule.json
+                  # for its support window. Change engines.node, .nvmrc and these
+                  # three node-version values together.
+                  node-version: '26'
                   cache: 'pnpm'
 
             - name: Install JS dependencies
@@ -316,7 +314,7 @@ jobs:
             # workflow_dispatch the run's own ref is a branch, not the tag —
             # action-gh-release would otherwise infer the wrong tag to attach to.
             - name: Create GitHub Release
-              uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2 (Node 24)
+              uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.2 (Node 24)
               with:
                   tag_name: ${{ env.TAG }}
                   files: |

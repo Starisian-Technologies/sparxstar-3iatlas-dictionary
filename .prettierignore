@@ -29,3 +29,9 @@ CHANGELOG.md
 # the AIWA-Dictionary-Direction snippets invalid where they are meant to be
 # pasted into a JSX return.
 *.md
+
+# Contract fixtures for the display seam. These are payloads copied verbatim
+# from the Dictionary Node's own fixture set (see the provenance note in
+# tests/phpunit/DisplayAdapterTest.php); reformatting them would break the
+# "both repos assert against one identical set" property they exist for.
+tests/fixtures/
