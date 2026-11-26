@@ -1,4 +1,4 @@
-# Platform Decisions — Auto-synced from registry@a5df903
+# Platform Decisions — Auto-synced from registry@cc2c31f
 # DO NOT EDIT — this file is overwritten on every registry change
 
 - ADR-001: Relational canonical record; graph is derived projection only
