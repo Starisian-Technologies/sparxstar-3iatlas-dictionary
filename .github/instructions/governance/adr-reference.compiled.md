@@ -1,0 +1,61 @@
+# Platform Decisions — Auto-synced from registry@d0ca62c
+# DO NOT EDIT — this file is overwritten on every registry change
+
+- ADR-001: Relational canonical record; graph is derived projection only
+- ADR-002: Three trust zones; comparative/etymology lives in the Reference zone
+- ADR-003: v1 comparative scope — cognacy + borrowing now; expressions v1.5; register deferred
+- ADR-004: Morpheme tier at Phase 3.5; segmentation authority boundary
+- ADR-005: Idiolect analytics deferred; timed-token provenance invariant adopted now
+- ADR-006: Recurrence promotion rule — no "cognate/ancient" from recurrence alone
+- ADR-007: Visual writing and sign evidence layer; Phase 3.6 reserved
+- ADR-008: Two doors, one chain — ingress topology and custody
+- ADR-009: The Librarian — meaning organization and pedagogical synthesis
+- ADR-010: SPARXSTAR Anansi — the entity weaver; proposer, never decider
+- ADR-011: Unconditional capture; asynchronous governance — deny nothing, quarantine instead
+- ADR-012: Contributor identity keystone — Helios-minted, suite-wide, durable, pseudonymous-but-stable
+- ADR-013: Contribution vs. carrier — retention by consent; INV-009 amended
+- ADR-014: SPARXSTAR Naming Convention — SPX Prefix Standard
+- ADR-015: Decision-record namespaces
+- ADR-016: SPARXSTAR Naming Convention
+- ADR-017: Three-layer identity reference scheme
+- ADR-018: The ADR Registry Hosts Executable Conformance Enforcement Scoped to Invariant Contracts
+- ADR-019: Platform Toolchain and Quality Enforcement Standard (STD-TOOLCHAIN-001)
+- ADR-020: Four Identity credential classes, each with its own audience and issuance policy
+- ADR-021: What ADR immutability covers — decision content, not the index or supersession metadata
+- ADR-022: Assign WordPress Ability Registration by Domain
+- ADR-023: Require WordPress 7.1 for Ability-Registering Repositories
+- ADR-024: Rename DVE's Compiled SCF Schemas to Tool Schemas
+- ADR-025: Sanitize Ability Attempt Telemetry and Queue It Durably
+- ADR-026: Treat Ability Validation Filters as Assertions Only
+- ADR-027: Ratify `wordpress/mcp-adapter` as a Legitimate Dependency
+- ADR-028: Adopt `Starisian\Sparxstar\{Product}\…` as the Canonical PHP Namespace
+- ADR-029: Reward authority is platform-level — the engine settles, clients render, myCred mirrors
+- ADR-030: Assign the `sky` Product Spec to a Single Proposing Repository
+- ADR-031: Require a Terminal Validation Outcome Before an Audit Event Is Delivered
+- ADR-032: No repository ships a `key-vault` grant surface until its wire contract is recorded where every side can read it
+- ADR-033: Name the product-specification registry the canonical home for RLC-Spec-v4.0
+- ADR-034: Divide the spoken-audio stack by capture experience and platform audio lifecycle, not by language runtime
+- ADR-035: Set audio constraints from a named capture profile, never from a single platform-wide ceiling
+- ADR-036: Separate elicitation pacing from acoustic prosody; a paced reader measures nothing
+- ADR-037: A Pull Request Merges on Green CI *and* Zero Open Review Threads
+- ADR-038: `sparxstar-starmus-audio` is the Spoken Audio Node — a Node/TypeScript service, not a WordPress plugin
+- ADR-039: The archive never edits audio — release rendering is a separate pipeline
+- ADR-040: The object storage backend for spoken audio is Cloudflare R2
+- ADR-041: A Runtime Version Floor Is a Dated Support Window, Not a Constant
+- ADR-042: Device-Key Proof at Session Refresh Is Bound to an Identity Nonce, Not to the Expired Access Token
+- ADR-043: Device Trust Contracts v1 and v2 Are Both Accepted Until Identity Runs v2 in Production, Plus 30 Days
+- ADR-044: A service acts for a person only through an Identity token exchange that names the service in `act`
+- ADR-045: Identity Node ↔ Device Trust Node Boundary for 3iAtlas SSO
+- ADR-046: Identity's Device Trust End-to-End Tests Run the Real Device Trust Server at a Pinned Commit
+- ADR-047: 3iAtlas services do not use Helios or Sirus — consent goes to the Consent Node, and no identity is linked across platforms
+- ADR-048: Centralize Provider Review Execution and Keep Consumer Keys Out
+- ADR-049: A 3iAtlas service checks a person's service consent with the Consent Node at accept and again at dispatch, refuses when unsure, and learns of withdrawal from a signed, versioned push it may lose safely
+- ADR-050: Machine-client registrations change only through reviewed, versioned data migrations in the Identity Node; the operator CLI keeps only emergency suspend and revoke
+- ADR-051: Record `error-intake` as the machine/service audience for the Error Intake Node
+- ADR-052: The Node Floor for 3iAtlas Modules Is 26
+- ADR-053: Release every repository the same way — Semantic Versioning, cut by release-please from Conventional Commits
+- ADR-054: The contract-sync App opens release pull requests
+- ADR-055: Release container images are published to ghcr.io
+- ADR-056: Workflows may use only the two Apps, GITHUB_TOKEN and declared deploy secrets — checked in CI
+- ADR-057: Secrets Management, Credential Isolation, and Disclosure Prevention
+- ADR-058: Dependabot updates merge without waiting for CI; main is fixed forward, and nothing ships from a red main
