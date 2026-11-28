@@ -1,4 +1,4 @@
-# Cross-Repo Contracts — Auto-synced from registry@5bbda70
+# Cross-Repo Contracts — Auto-synced from registry@bc0913a
 # DO NOT EDIT — this file is overwritten on every registry change
 
 
