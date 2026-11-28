@@ -1,4 +1,4 @@
-# Invariants — Auto-synced from registry@33efe1e
+# Invariants — Auto-synced from registry@8ee28a6
 # DO NOT EDIT
 
 # Platform Invariants
